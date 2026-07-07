@@ -10,6 +10,7 @@ Guidelines **opérationnelles par domaine**, destinées à l'agent `developpeur-
 - [`etat-vuex.md`](etat-vuex.md) — écrire un module de store, où placer la logique.
 - [`nommage-et-conventions.md`](nommage-et-conventions.md) — nommage, dates/jours, commits.
 - [`accessibilite-ergonomie.md`](accessibilite-ergonomie.md) — checklist a11y & ergonomie.
+- [`workflow-implementation.md`](workflow-implementation.md) — orchestration : une tâche = un sous-agent (`model: sonnet`, effort `medium`).
 
 ## Rappel des règles d'or
 

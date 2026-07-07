@@ -11,7 +11,7 @@ Ce dossier contient les **plans de features** d'Idelia. Chaque plan trace **ce q
 ## Cycle de vie d'une feature
 
 1. **Rédaction** — l'agent [`architecte`](../.claude/agents/architecte.md) écrit le plan `NNN-*.md` à partir du [gabarit](000-modele-feature.md), en s'appuyant sur les [ADR](../docs/adr/), l'[architecture](../docs/architecture/) et les [instructions](../docs/instructions/).
-2. **Implémentation** — l'agent [`developpeur-vue`](../.claude/agents/developpeur-vue.md) réalise la feature en suivant le plan.
+2. **Implémentation** — l'agent [`developpeur-vue`](../.claude/agents/developpeur-vue.md) réalise le plan, **une tâche par sous-agent** (`model: sonnet`, effort `medium`) selon [`docs/instructions/workflow-implementation.md`](../docs/instructions/workflow-implementation.md).
 3. **Relecture ergonomie** — l'agent [`relecteur-ergonomie`](../.claude/agents/relecteur-ergonomie.md) vérifie les écrans.
 4. **Trace** — le plan reste dans ce dossier comme mémoire du projet.
 

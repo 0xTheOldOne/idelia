@@ -32,7 +32,7 @@ Idelia aide un **cabinet infirmier** à établir ses **plannings** (personnes, s
 ## Flux de travail
 
 1. L'agent **`architecte`** transforme une demande en plan `features/NNN-*.md` (gabarit : [`features/000-modele-feature.md`](features/000-modele-feature.md)).
-2. L'agent **`developpeur-vue`** implémente une feature à partir de son plan, en respectant instructions + ADR.
+2. L'agent **`developpeur-vue`** implémente le plan. **Règle : une tâche = un nouveau sous-agent** lancé via l'outil Agent, **`model: sonnet`**, effort **`medium`**, à qui l'on passe le chemin du fichier de feature, le n° + titre de la tâche, la liste des fichiers à créer/modifier, et le contexte d'architecture déjà chargé. Voir [`docs/instructions/workflow-implementation.md`](docs/instructions/workflow-implementation.md).
 3. L'agent **`relecteur-ergonomie`** relit les écrans sous l'angle utilisateurs non-informaticiens.
 
 ## Git / commits
