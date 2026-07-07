@@ -1,7 +1,9 @@
 # ADR 0012 — Style en SCSS
 
-- **Statut** : Accepté
+- **Statut** : Accepté — **amendé par l'[ADR 0015](0015-bootstrap-librairie-composants-scss.md)**
 - **Date** : 2026-07-07
+
+> **Mise à jour** : la décision d'utiliser **SCSS** reste valable, mais le **rejet de Bootstrap** ci-dessous est **levé**. Bootstrap 5 est désormais utilisé comme librairie de composants, intégrée en SCSS et thémée via nos tokens — voir [ADR 0015](0015-bootstrap-librairie-composants-scss.md).
 
 ## Contexte
 
@@ -19,4 +21,4 @@ Nous stylons l'application en **SCSS**. Nous centralisons les **tokens de design
 
 ## Alternatives considérées
 
-- Frameworks CSS utilitaires ou composants (Tailwind, Bootstrap…) : écartés pour rester maître du rendu ergonomique et éviter une dépendance structurante.
+- Frameworks CSS utilitaires ou composants (Tailwind, Bootstrap…) : initialement écartés pour rester maître du rendu ergonomique et éviter une dépendance structurante. **Décision révisée pour Bootstrap** par l'[ADR 0015](0015-bootstrap-librairie-composants-scss.md) : Bootstrap étant distribué en SCSS et entièrement thémable, il outille le choix SCSS plutôt qu'il ne le contredit, et accélère la mise en place de composants accessibles.

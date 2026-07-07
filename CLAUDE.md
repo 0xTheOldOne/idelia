@@ -11,7 +11,7 @@ Idelia aide un **cabinet infirmier** à établir ses **plannings** (personnes, s
 1. **Aucun backend, aucune webapi.** Tout se passe dans le navigateur. Hébergement statique (Pages).
 2. **JavaScript pur — PAS de TypeScript.** Le typage se documente en **JSDoc** (`@typedef`, `@param`, `@returns`).
 3. **Vue 3 en Options API** (pas de Composition API), **Vuex** (pas de Pinia), **vue-router**, **Vite**.
-4. **Style en SCSS.** Icônes exclusivement depuis **`@phosphor-icons/vue`**.
+4. **Style en SCSS**, avec **Bootstrap 5** comme base de composants/utilitaires (importé via son source SCSS, thémé par nos tokens) — voir [ADR 0015](docs/adr/0015-bootstrap-librairie-composants-scss.md). Pas de wrapper Vue (`bootstrap-vue-next`). Icônes exclusivement depuis **`@phosphor-icons/vue`** (pas Bootstrap Icons).
 5. **Validation des formulaires** avec **Vuelidate** ; débounce des saisies avec **vue-debounce**.
 6. **Jours de la semaine en ISO 8601 : `1`=Lundi … `7`=Dimanche.** Ne **jamais** utiliser le `0`=dimanche de `Date.getDay()` sans conversion. Voir [ADR 0010](docs/adr/0010-conventions-dates-et-jours-iso.md).
 7. **Dates calendaires** = chaînes `"YYYY-MM-DD"` ; **heures** = `"HH:mm"` ; **horodatages techniques** = ISO UTC (`toISOString()`). Jamais d'objet `Date` dans le state persistant.

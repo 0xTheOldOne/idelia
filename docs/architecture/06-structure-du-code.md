@@ -55,6 +55,7 @@ Idelia/
     │
     └── styles/                 # SCSS (voir instructions/style-scss.md)
         ├── _tokens.scss        # couleurs, espacements, typographie, rayons…
+        ├── _bootstrap.scss     # surcharge des variables Bootstrap via les tokens + import ciblé [ADR 0015]
         ├── _mixins.scss
         ├── _base.scss
         └── main.scss           # point d'entrée importé dans main.js

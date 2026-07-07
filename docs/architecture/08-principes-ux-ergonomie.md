@@ -26,6 +26,10 @@
 
 11. **Impression et diffusion lisibles.** Les vues destinées à être imprimées/exportées (planning diffusé, [ADR 0009](../adr/0009-workflow-referent-diffusion-lecture.md)) sont conçues pour le papier : lisibles en noir & blanc, sans dépendance à l'interactivité, avec les informations essentielles (qui, quoi, quand).
 
+## Base de composants
+
+**Bootstrap 5** ([ADR 0015](../adr/0015-bootstrap-librairie-composants-scss.md)) fournit une base de composants accessibles et cohérents (focus, ARIA, tailles confortables) qui **sert** ces principes. Attention : cette base ne dispense **pas** d'appliquer la [checklist](../instructions/accessibilite-ergonomie.md) — un composant Bootstrap mal utilisé (libellé manquant, information par la seule couleur, contraste insuffisant après thème) reste non conforme.
+
 ## Application concrète
 
 - **Formulaires** : peu de champs visibles à la fois, groupés logiquement, avec des exemples/placeholders et des valeurs par défaut. Débounce des saisies ([ADR 0011](../adr/0011-validation-vuelidate-vue-debounce.md)) pour un retour fluide.

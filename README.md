@@ -27,7 +27,7 @@ Projet en amorçage. Cette première étape met en place le **harness** (documen
 
 ## Stack technique
 
-Vite · Vue 3 (Options API) · Vuex · vue-router · SCSS · Vuelidate · vue-debounce · @phosphor-icons/vue · **JavaScript pur (pas de TypeScript)**.
+Vite · Vue 3 (Options API) · Vuex · vue-router · SCSS + **Bootstrap 5** · Vuelidate · vue-debounce · @phosphor-icons/vue · **JavaScript pur (pas de TypeScript)**.
 
 ## Démarrage (à venir)
 
