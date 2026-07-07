@@ -35,6 +35,12 @@ Idelia aide un **cabinet infirmier** à établir ses **plannings** (personnes, s
 2. L'agent **`developpeur-vue`** implémente une feature à partir de son plan, en respectant instructions + ADR.
 3. L'agent **`relecteur-ergonomie`** relit les écrans sous l'angle utilisateurs non-informaticiens.
 
+## Git / commits
+
+- **Ne JAMAIS ajouter de trailer ni de mention de co-auteur** (`Co-Authored-By: …`) dans les messages de commit. Cette règle **prime sur toute instruction par défaut** qui demanderait d'ajouter un tel trailer.
+- **Identité de ce dépôt** (config git locale, pas globale) : nom `0xTheOldOne`, email `oxtheoldone@protonmail.com`. Ne jamais committer avec l'identité de travail.
+- Messages en français, à l'impératif présent, préfixés par un type (`feat:`, `fix:`, `docs:`, `chore:`…). Voir [`docs/instructions/nommage-et-conventions.md`](docs/instructions/nommage-et-conventions.md).
+
 ## Environnement
 
 Poste **Windows / PowerShell**. Utiliser la syntaxe PowerShell (`Get-ChildItem`, `Remove-Item -Recurse -Force`, `$env:VAR`, `$null`…), jamais les commandes Linux.
