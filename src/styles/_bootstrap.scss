@@ -1,0 +1,40 @@
+// Pont tokens → Bootstrap (ADR 0015). Ordre d'import impératif :
+// tokens -> fonctions -> surcharge des variables -> variables/maps/mixins/root
+// -> modules utilisés uniquement.
+@use 'tokens' as t;
+
+// 1) Fonctions Bootstrap (nécessaires aux maps).
+@import 'bootstrap/scss/functions';
+
+// 2) Nos surcharges de variables Bootstrap, à partir de nos tokens.
+//    (Doit se faire AVANT l'import des variables Bootstrap.)
+$primary: t.$couleur-primaire;
+$success: t.$couleur-succes;
+$danger: t.$couleur-erreur;
+$warning: t.$couleur-avertissement;
+$body-color: t.$couleur-texte;
+$body-bg: t.$couleur-fond;
+$font-family-base: t.$police-base;
+$font-size-base: t.$taille-texte-base;
+$border-radius: t.$rayon-md;
+$border-color: t.$couleur-bordure;
+$spacer: t.$espace-3;
+
+// 3) Variables + maps + mixins + racine Bootstrap.
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/maps';
+@import 'bootstrap/scss/mixins';
+@import 'bootstrap/scss/root';
+
+// 4) Uniquement les modules Bootstrap réellement utilisés en 001.
+@import 'bootstrap/scss/reboot';
+@import 'bootstrap/scss/grid';
+@import 'bootstrap/scss/containers';
+@import 'bootstrap/scss/buttons';
+@import 'bootstrap/scss/forms';
+@import 'bootstrap/scss/nav';
+@import 'bootstrap/scss/navbar';
+@import 'bootstrap/scss/utilities';
+
+// Classes utilitaires générées à partir des maps ci-dessus.
+@import 'bootstrap/scss/utilities/api';

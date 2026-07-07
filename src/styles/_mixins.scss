@@ -1,0 +1,31 @@
+// Mixins réutilisables (feature 001 : socle minimal).
+@use 'tokens' as t;
+
+/// Focus clavier visible — ne jamais supprimer l'outline sans alternative
+/// claire (accessibilité).
+@mixin focus-visible {
+  outline: t.$epaisseur-focus solid t.$couleur-focus;
+  outline-offset: 2px;
+}
+
+/// Media query mobile-first à partir d'un point de rupture nommé.
+/// Usage : @include a-partir-de('md') { ... }
+@mixin a-partir-de($rupture) {
+  @if $rupture == 'sm' {
+    @media (min-width: t.$rupture-sm) {
+      @content;
+    }
+  } @else if $rupture == 'md' {
+    @media (min-width: t.$rupture-md) {
+      @content;
+    }
+  } @else if $rupture == 'lg' {
+    @media (min-width: t.$rupture-lg) {
+      @content;
+    }
+  } @else if $rupture == 'xl' {
+    @media (min-width: t.$rupture-xl) {
+      @content;
+    }
+  }
+}

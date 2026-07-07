@@ -8,7 +8,7 @@ Légende statut : ⬜ à faire · 🟡 en cours · ✅ fait.
 
 | N° | Feature | Résumé | Dépend de | Statut |
 |---|---|---|---|---|
-| 001 | Bootstrap projet Vite | Initialiser (via **npm**) Vite + Vue 3 (Options API) + Vuex + vue-router ; structure `src/` ([archi 06](../docs/architecture/06-structure-du-code.md)) ; SCSS + tokens + **intégration Bootstrap 5** thémé par les tokens ([ADR 0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md), [style](../docs/instructions/style-scss.md)) ; Phosphor ; layout & navigation de base ; app qui démarre. | — | ⬜ |
+| 001 | Bootstrap projet Vite | Initialiser (via **npm**) Vite + Vue 3 (Options API) + Vuex + vue-router ; structure `src/` ([archi 06](../docs/architecture/06-structure-du-code.md)) ; SCSS + tokens + **intégration Bootstrap 5** thémé par les tokens ([ADR 0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md), [style](../docs/instructions/style-scss.md)) ; Phosphor ; layout & navigation de base ; app qui démarre. | — | ✅ |
 | 002 | Couche persistance + store | `storageRepository` (LocalStorage, async) + `migrations` ([ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md)) ; modules Vuex + plugin de persistance débouncé + `bootstrap`/`REPLACE_ALL` ([archi 04](../docs/architecture/04-gestion-etat-vuex.md)) ; `schema.js` (défauts, (dé)sérialisation, intégrité). | 001 | ⬜ |
 
 ## Données de référence

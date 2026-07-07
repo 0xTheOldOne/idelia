@@ -1,0 +1,6 @@
+// Point d'entrée SCSS de l'application — importé une seule fois dans
+// src/main.js. Ordre impératif : tokens -> bootstrap -> mixins -> base.
+@use 'tokens';
+@use 'bootstrap';
+@use 'mixins';
+@use 'base';

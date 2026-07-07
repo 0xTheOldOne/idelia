@@ -1,0 +1,72 @@
+// Tokens de design — source de vérité unique (ADR 0012, ADR 0015).
+// Aucune valeur "magique" ne doit être écrite ailleurs : tout composant ou
+// partiel SCSS doit puiser ses couleurs/espacements/typographies ici.
+
+// ---------------------------------------------------------------------------
+// Couleurs — marque
+// ---------------------------------------------------------------------------
+$couleur-primaire: #1d5c63; // bleu-vert sobre, contraste AA sur blanc
+$couleur-primaire-claire: #4f8a91;
+$couleur-primaire-foncee: #123a3f;
+
+// ---------------------------------------------------------------------------
+// Couleurs — sémantiques
+// ---------------------------------------------------------------------------
+$couleur-succes: #2e7d4f;
+$couleur-erreur: #c62828;
+$couleur-avertissement: #b8860b;
+
+// ---------------------------------------------------------------------------
+// Couleurs — neutres
+// ---------------------------------------------------------------------------
+$couleur-texte: #212529;
+$couleur-texte-attenue: #495057;
+$couleur-fond: #ffffff;
+$couleur-fond-clair: #f5f6f7;
+$couleur-bordure: #ced4da;
+
+// ---------------------------------------------------------------------------
+// Espacements — échelle cohérente
+// ---------------------------------------------------------------------------
+$espace-1: 4px;
+$espace-2: 8px;
+$espace-3: 16px;
+$espace-4: 24px;
+$espace-5: 32px;
+$espace-6: 48px;
+
+// ---------------------------------------------------------------------------
+// Typographie
+// ---------------------------------------------------------------------------
+$police-base: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+$taille-texte-base: 1rem; // 16px, confortable pour un public non-technique
+$taille-texte-petite: 0.875rem;
+$taille-texte-grande: 1.25rem;
+$taille-titre-1: 2rem;
+$taille-titre-2: 1.5rem;
+$graisse-normale: 400;
+$graisse-gras: 700;
+$hauteur-ligne-base: 1.5;
+
+// ---------------------------------------------------------------------------
+// Rayons & ombres
+// ---------------------------------------------------------------------------
+$rayon-sm: 4px;
+$rayon-md: 8px;
+$rayon-lg: 16px;
+$ombre-legere: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+// ---------------------------------------------------------------------------
+// Points de rupture (repris de Bootstrap pour cohérence, valeurs explicites)
+// ---------------------------------------------------------------------------
+$rupture-sm: 576px;
+$rupture-md: 768px;
+$rupture-lg: 992px;
+$rupture-xl: 1200px;
+
+// ---------------------------------------------------------------------------
+// Accessibilité
+// ---------------------------------------------------------------------------
+$couleur-focus: $couleur-primaire-foncee;
+$epaisseur-focus: 3px;
+$cible-cliquable-min: 44px;

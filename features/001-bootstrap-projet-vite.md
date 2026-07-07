@@ -1,6 +1,6 @@
 # Feature 001 — Bootstrap projet Vite
 
-- **Statut** : À faire
+- **Statut** : Fait
 - **Dépend de** : — (première feature, aucune dépendance)
 - **ADR liés** : [0002](../docs/adr/0002-application-frontend-sans-backend.md) (sans backend), [0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md) (stack), [0004](../docs/adr/0004-pas-de-typescript-js-jsdoc.md) (JS pur), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (dates/jours ISO), [0012](../docs/adr/0012-style-scss.md) (SCSS), [0013](../docs/adr/0013-icones-phosphor.md) (Phosphor), [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) (Bootstrap), [0016](../docs/adr/0016-router-mode-hash-pour-pages.md) (router en mode hash). Préparent le terrain pour [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) et [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md), utilisés dès la feature 002+.
 

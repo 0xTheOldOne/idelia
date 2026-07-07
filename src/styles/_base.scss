@@ -1,0 +1,33 @@
+// Reset léger + styles de base des éléments, construits sur les tokens
+// (feature 001). Bootstrap `reboot` couvre déjà l'essentiel du reset.
+@use 'tokens' as t;
+@use 'mixins' as m;
+
+body {
+  color: t.$couleur-texte;
+  background-color: t.$couleur-fond;
+  line-height: t.$hauteur-ligne-base;
+}
+
+h1 {
+  font-size: t.$taille-titre-1;
+  font-weight: t.$graisse-gras;
+  margin-bottom: t.$espace-4;
+}
+
+h2 {
+  font-size: t.$taille-titre-2;
+  font-weight: t.$graisse-gras;
+}
+
+a {
+  color: t.$couleur-primaire;
+}
+
+// Focus clavier toujours visible, sur tout élément interactif.
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  @include m.focus-visible;
+}
