@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/logo.png" alt="Logo Idelia" width="200" />
+</p>
+
 # Idelia
 
 **Idelia** aide un cabinet infirmier à établir ses plannings, en tenant compte des personnes, de leurs souhaits, des tournées et de leurs horaires, et des absences (congés, arrêts, maternité/paternité/naissance…).
