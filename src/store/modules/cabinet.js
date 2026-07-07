@@ -7,8 +7,9 @@
  * par le plugin dédié du store racine, jamais ici (aucun accès
  * `localStorage`).
  *
- * Les actions CRUD (mise à jour des paramètres du cabinet) sont différées
- * à la feature 003.
+ * Action `majParametres` (feature 003) : met à jour les paramètres via une
+ * fusion immuable, en réutilisant la mutation `REPLACE` (aucune nouvelle
+ * mutation).
  */
 export default {
   namespaced: true,
@@ -26,5 +27,24 @@ export default {
       state.parametres = parametres;
     },
   },
-  actions: {},
+  actions: {
+    /**
+     * Met à jour les paramètres du cabinet par fusion immuable d'un patch
+     * partiel sur les paramètres courants, en rafraîchissant `updatedAt`
+     * (horodatage technique ISO UTC, ADR 0010). Les champs non présents
+     * dans `patch` (dont `couleursParDefaut`) sont préservés.
+     *
+     * Réutilise la mutation `REPLACE` existante ; aucune nouvelle mutation.
+     *
+     * @param {{ commit: Function, getters: object }} context
+     * @param {object} patch - Sous-ensemble de `ParametresCabinet` à modifier.
+     */
+    majParametres({ commit, getters }, patch) {
+      commit('REPLACE', {
+        ...getters.parametres,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+  },
 };

@@ -1,4 +1,5 @@
 import { createApp } from 'vue';
+import vueDebounce from 'vue-debounce';
 
 import App from './App.vue';
 import router from './router';
@@ -8,6 +9,11 @@ import '@/styles/main.scss';
 // Pas de JS Bootstrap importé ici : aucun composant interactif Bootstrap
 // n'est câblé en feature 001.
 const app = createApp(App).use(router).use(store);
+
+// Directive globale de débounce des saisies (ADR 0011), utilisée notamment
+// par le champ « Nom du cabinet » (feature 003). `lock: true` empêche la
+// touche Entrée de déclencher la fonction avant la fin du délai.
+app.directive('debounce', vueDebounce({ lock: true }));
 
 async function demarrer() {
   try {

@@ -65,11 +65,15 @@ async function sauvegarder(store) {
 
 /**
  * Planifie une écriture débouncée (~400 ms) : annule le timer en cours s'il
- * y en a un, puis en reprogramme un nouveau.
+ * y en a un, puis en reprogramme un nouveau. Bascule immédiatement le
+ * statut sur `EN_COURS` (état transitoire visible dans l'UI le temps du
+ * débounce) ; cette mutation est filtrée par la garde anti-boucle du plugin
+ * de persistance (`SET_STATUT_SAUVEGARDE`), donc sans risque de reboucler.
  *
  * @param {import('vuex').Store} store - Store racine.
  */
 function planifier(store) {
+  store.commit('SET_STATUT_SAUVEGARDE', 'EN_COURS');
   clearTimeout(timer);
   timer = setTimeout(() => sauvegarder(store), 400);
 }

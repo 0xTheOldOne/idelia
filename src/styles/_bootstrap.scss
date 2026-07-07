@@ -26,7 +26,7 @@ $spacer: t.$espace-3;
 @import 'bootstrap/scss/mixins';
 @import 'bootstrap/scss/root';
 
-// 4) Uniquement les modules Bootstrap réellement utilisés en 001.
+// 4) Uniquement les modules Bootstrap réellement utilisés.
 @import 'bootstrap/scss/reboot';
 @import 'bootstrap/scss/grid';
 @import 'bootstrap/scss/containers';
@@ -34,6 +34,8 @@ $spacer: t.$espace-3;
 @import 'bootstrap/scss/forms';
 @import 'bootstrap/scss/nav';
 @import 'bootstrap/scss/navbar';
+// Alertes (feature 003) : avertissement de cohérence des paramètres du cabinet.
+@import 'bootstrap/scss/alert';
 @import 'bootstrap/scss/utilities';
 
 // Classes utilitaires générées à partir des maps ci-dessus.

@@ -15,7 +15,7 @@ Légende statut : ⬜ à faire · 🟡 en cours · ✅ fait.
 
 | N° | Feature | Résumé | Dépend de | Statut |
 |---|---|---|---|---|
-| 003 | Paramètres cabinet | Écran de réglages (jours d'ouverture, créneaux actifs, repos hebdo, max jours consécutifs…). | 002 | ⬜ |
+| 003 | Paramètres cabinet | Écran de réglages (jours d'ouverture, créneaux actifs, repos hebdo, max jours consécutifs…). | 002 | ✅ |
 | 004 | Gestion de l'équipe | CRUD des personnes (statut, couleur, quotité, dates), soft-delete. | 002 | ⬜ |
 | 005 | Souhaits & préférences | Édition des préférences par personne (types dur/souple, poids). | 004 | ⬜ |
 | 006 | Gestion des tournées | CRUD des tournées (horaires, créneau, jours d'application, effectif requis), archivage. | 002 | ⬜ |

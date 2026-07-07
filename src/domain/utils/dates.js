@@ -93,6 +93,18 @@ function rangeInclusive(dateDebutStr, dateFinStr) {
   return dates;
 }
 
+/**
+ * Formate un horodatage technique ISO UTC (ex. `updatedAt`, `derniereSauvegarde`)
+ * en texte FR lisible (ex. « 7 juillet 2026 à 14:32 »).
+ *
+ * @param {string} iso - Horodatage ISO 8601 UTC complet (`new Date().toISOString()`).
+ * @returns {string} Texte FR lisible, ou chaîne vide si `iso` est vide/absent.
+ */
+function formatHorodatageFr(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
+}
+
 export const dateUtil = {
   parse,
   format,
@@ -100,4 +112,5 @@ export const dateUtil = {
   diffDays,
   weekdayISO,
   rangeInclusive,
+  formatHorodatageFr,
 };
