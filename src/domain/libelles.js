@@ -12,7 +12,7 @@
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */
 
-import { STATUTS_PERSONNE } from '@/domain/schema.js';
+import { STATUTS_PERSONNE, NATURES_PREFERENCE, TYPES_PREFERENCE } from '@/domain/schema.js';
 
 /**
  * @typedef {object} JourSemaine
@@ -104,4 +104,100 @@ export function libelleStatutPersonne(code) {
 export const STATUTS_PERSONNE_OPTIONS = STATUTS_PERSONNE.map((code) => ({
   code,
   libelle: libelleStatutPersonne(code),
+}));
+
+/**
+ * Table de correspondance code nature de préférence (`schema.js` →
+ * `NATURES_PREFERENCE`) → libellé FR.
+ *
+ * @type {{ DURE: string, SOUPLE: string }}
+ */
+export const LIBELLES_NATURE_PREFERENCE = {
+  DURE: 'Obligatoire',
+  SOUPLE: 'Souhait',
+};
+
+/**
+ * Renvoie le libellé FR d'une nature de préférence à partir de son code.
+ *
+ * @param {string} code - Code nature (`'DURE'`, `'SOUPLE'`).
+ * @returns {string} Libellé FR (ex. `'SOUPLE' → 'Souhait'`), ou chaîne vide si inconnu.
+ */
+export function libelleNaturePreference(code) {
+  return LIBELLES_NATURE_PREFERENCE[code] ?? '';
+}
+
+/** Phrases d'aide FR associées à chaque nature, pour les boutons radio du formulaire. */
+const AIDES_NATURE_PREFERENCE = {
+  DURE: 'Toujours respecté par le planning.',
+  SOUPLE: 'Pris en compte si possible.',
+};
+
+/**
+ * @typedef {object} OptionNaturePreference
+ * @property {string} code - Code nature (voir `NATURES_PREFERENCE`).
+ * @property {string} libelle - Libellé FR correspondant.
+ * @property {string} aide - Phrase d'aide FR expliquant la nature.
+ */
+
+/**
+ * Options de nature de préférence, prêtes à itérer pour un groupe de
+ * boutons radio, chacune accompagnée d'une phrase d'aide en langage clair.
+ * Dérivée de `NATURES_PREFERENCE` (schema.js) pour garantir sa cohérence.
+ *
+ * @type {OptionNaturePreference[]}
+ */
+export const NATURES_PREFERENCE_OPTIONS = NATURES_PREFERENCE.map((code) => ({
+  code,
+  libelle: libelleNaturePreference(code),
+  aide: AIDES_NATURE_PREFERENCE[code] ?? '',
+}));
+
+/**
+ * Table de correspondance code type de préférence (`schema.js` →
+ * `TYPES_PREFERENCE`) → libellé FR. Couvre les **8** types, y compris
+ * `PREFERENCE_TOURNEE` (différé `006`, non proposé au sélecteur mais
+ * décrit ici pour que `decrirePreference` sache le nommer sans planter).
+ *
+ * @type {Object<string, string>}
+ */
+export const LIBELLES_TYPE_PREFERENCE = {
+  JOUR_OFF_RECURRENT: 'Jour non travaillé (chaque semaine)',
+  JOURS_REPOS_SOUHAITES: 'Jours de repos souhaités',
+  CRENEAU_OFF: 'Demi-journée non travaillée',
+  INDISPO_HEBDO: 'Indisponibilité chaque semaine',
+  MAX_JOURS_CONSECUTIFS: "Maximum de jours d'affilée",
+  MIN_JOURS_CONSECUTIFS: "Minimum de jours d'affilée",
+  NB_JOURS_SEMAINE: 'Nombre de jours par semaine',
+  PREFERENCE_TOURNEE: 'Tournée préférée ou évitée',
+};
+
+/**
+ * Renvoie le libellé FR d'un type de préférence à partir de son code.
+ *
+ * @param {string} code - Code type (voir `TYPES_PREFERENCE`).
+ * @returns {string} Libellé FR, ou chaîne vide si inconnu.
+ */
+export function libelleTypePreference(code) {
+  return LIBELLES_TYPE_PREFERENCE[code] ?? '';
+}
+
+/**
+ * @typedef {object} OptionTypePreference
+ * @property {string} code - Code type (voir `TYPES_PREFERENCE`).
+ * @property {string} libelle - Libellé FR correspondant.
+ */
+
+/**
+ * Liste complète des types de préférence, prête à itérer. Dérivée de
+ * `TYPES_PREFERENCE` (schema.js) et de `LIBELLES_TYPE_PREFERENCE`. Le
+ * sélecteur de type du formulaire `005` n'itère **pas** sur cette liste mais
+ * sur `TYPES_PREFERENCE_OFFERTS` (`domain/preferences.js`), qui exclut
+ * `PREFERENCE_TOURNEE`.
+ *
+ * @type {OptionTypePreference[]}
+ */
+export const TYPES_PREFERENCE_OPTIONS = TYPES_PREFERENCE.map((code) => ({
+  code,
+  libelle: libelleTypePreference(code),
 }));

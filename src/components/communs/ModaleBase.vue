@@ -68,11 +68,18 @@ export default {
       // dans la page, chacune a besoin de son propre `aria-labelledby`).
       idTitre: `modale-titre-${genId()}`,
       instance: null,
+      // Élément focalisé juste avant l'ouverture (le déclencheur). Piloter
+      // la Modal Bootstrap par programmation (plutôt que `data-bs-toggle`)
+      // prive Bootstrap du déclencheur qu'il utilise habituellement pour
+      // restaurer le focus à la fermeture : on le mémorise donc nous-mêmes
+      // pour le restaurer dans `onMasquee`.
+      elementDeclencheur: null,
     };
   },
   watch: {
     visible(estVisible) {
       if (estVisible) {
+        this.elementDeclencheur = document.activeElement;
         this.instance.show();
       } else {
         this.instance.hide();
@@ -86,6 +93,7 @@ export default {
     // Cas où la modale est déjà `visible` au montage (peu fréquent, mais à
     // couvrir pour rester cohérent avec le watcher).
     if (this.visible) {
+      this.elementDeclencheur = document.activeElement;
       this.instance.show();
     }
   },
@@ -96,9 +104,18 @@ export default {
   },
   methods: {
     // Bootstrap vient de masquer la modale (croix, Échap, clic hors
-    // fenêtre) : on prévient le parent pour qu'il repositionne `visible`.
+    // fenêtre, ou fermeture programmatique via `visible = false`) : on
+    // prévient le parent pour qu'il repositionne `visible`, puis on restaure
+    // le focus sur l'élément déclencheur s'il est toujours présent dans le
+    // document (sinon on l'ignore proprement — le parent gère ce cas, ex.
+    // un bouton « Supprimer » retiré après suppression).
     onMasquee() {
       this.$emit('fermeture');
+      const cible = this.elementDeclencheur;
+      this.elementDeclencheur = null;
+      if (cible && typeof cible.focus === 'function' && document.body.contains(cible)) {
+        cible.focus();
+      }
     },
     // Bootstrap vient de terminer la transition d'ouverture : le parent peut
     // poser un focus déterministe sans risquer de se le faire reprendre par

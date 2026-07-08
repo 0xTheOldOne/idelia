@@ -71,6 +71,13 @@
                 <PhPencilSimple :size="18" aria-hidden="true" />
                 <span>Modifier</span>
               </button>
+              <router-link
+                class="btn btn-outline-secondary"
+                :to="{ name: 'souhaits', params: { id: personne.id } }"
+              >
+                <PhSlidersHorizontal :size="18" aria-hidden="true" />
+                <span>Souhaits</span>
+              </router-link>
               <button
                 type="button"
                 class="btn btn-outline-secondary"
@@ -169,6 +176,7 @@ import {
   PhArchive,
   PhArrowCounterClockwise,
   PhCaretRight,
+  PhSlidersHorizontal,
 } from '@phosphor-icons/vue';
 
 import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
@@ -195,6 +203,7 @@ export default {
     PhArchive,
     PhArrowCounterClockwise,
     PhCaretRight,
+    PhSlidersHorizontal,
     IndicateurSauvegarde,
     DialogueConfirmation,
     FormulairePersonne,
