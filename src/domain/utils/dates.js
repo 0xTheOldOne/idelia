@@ -105,6 +105,23 @@ function formatHorodatageFr(iso) {
   return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
 }
 
+/**
+ * Formate une date calendaire `"YYYY-MM-DD"` en texte FR courant
+ * `"JJ/MM/AAAA"` (ex. « 01/09/2019 »), par simple découpage de chaîne —
+ * **aucun objet `Date`** n'est manipulé ici (ADR 0010).
+ *
+ * @param {string} iso - Date au format `"YYYY-MM-DD"`.
+ * @returns {string} Date au format `"JJ/MM/AAAA"`, ou chaîne vide si `iso`
+ *   est vide/absent ou mal formé.
+ */
+function formatDateFr(iso) {
+  if (!iso) return '';
+  const segments = iso.split('-');
+  if (segments.length !== 3) return '';
+  const [annee, mois, jour] = segments;
+  return `${jour}/${mois}/${annee}`;
+}
+
 export const dateUtil = {
   parse,
   format,
@@ -113,4 +130,5 @@ export const dateUtil = {
   weekdayISO,
   rangeInclusive,
   formatHorodatageFr,
+  formatDateFr,
 };

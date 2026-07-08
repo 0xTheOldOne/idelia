@@ -1,15 +1,18 @@
 /**
  * Tables de correspondance code → libellé FR (affichage uniquement).
  *
- * Les **codes** métier (jours ISO, créneaux `CRENEAUX`) sont définis dans
- * `src/domain/schema.js` ; ce module ne porte que leur traduction en
- * libellés lisibles pour l'utilisateur (prêt pour une future i18n).
+ * Les **codes** métier (jours ISO, créneaux `CRENEAUX`, statuts
+ * `STATUTS_PERSONNE`) sont définis dans `src/domain/schema.js` ; ce module ne
+ * porte que leur traduction en libellés lisibles pour l'utilisateur (prêt
+ * pour une future i18n).
  *
  * Jours en ISO 8601 uniquement (ADR 0010) : `1` = lundi … `7` = dimanche.
  * Aucun appel à `Date.getDay()` ici — la correspondance est directe.
  *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */
+
+import { STATUTS_PERSONNE } from '@/domain/schema.js';
 
 /**
  * @typedef {object} JourSemaine
@@ -64,3 +67,41 @@ export const LIBELLES_CRENEAU = {
 export function libelleCreneau(code) {
   return LIBELLES_CRENEAU[code] ?? '';
 }
+
+/**
+ * Table de correspondance code statut (`schema.js` → `STATUTS_PERSONNE`) → libellé FR.
+ *
+ * @type {{ TITULAIRE: string, REMPLACANT: string }}
+ */
+export const LIBELLES_STATUT_PERSONNE = {
+  TITULAIRE: 'Titulaire',
+  REMPLACANT: 'Remplaçant',
+};
+
+/**
+ * Renvoie le libellé FR d'un statut de personne à partir de son code.
+ *
+ * @param {string} code - Code statut (`'TITULAIRE'`, `'REMPLACANT'`).
+ * @returns {string} Libellé FR (ex. `'REMPLACANT' → 'Remplaçant'`), ou chaîne vide si inconnu.
+ */
+export function libelleStatutPersonne(code) {
+  return LIBELLES_STATUT_PERSONNE[code] ?? '';
+}
+
+/**
+ * @typedef {object} OptionStatutPersonne
+ * @property {string} code - Code statut (voir `STATUTS_PERSONNE`).
+ * @property {string} libelle - Libellé FR correspondant.
+ */
+
+/**
+ * Liste des statuts de personne, prête à itérer pour un `form-select` ou un
+ * groupe de boutons radio. Dérivée de `STATUTS_PERSONNE` (schema.js) et de
+ * `LIBELLES_STATUT_PERSONNE` pour garantir leur cohérence.
+ *
+ * @type {OptionStatutPersonne[]}
+ */
+export const STATUTS_PERSONNE_OPTIONS = STATUTS_PERSONNE.map((code) => ({
+  code,
+  libelle: libelleStatutPersonne(code),
+}));
