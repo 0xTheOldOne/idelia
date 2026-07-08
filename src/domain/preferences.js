@@ -74,6 +74,20 @@ function normaliserEntier(valeur) {
 }
 
 /**
+ * Coerce une valeur en liste d'identifiants de tournée valides (chaînes non
+ * vides), dédupliqués, en conservant l'ordre de première apparition. Tolère
+ * les valeurs manquantes/invalides (ignorées).
+ *
+ * @param {*} valeur - Valeur brute (idéalement un `string[]`).
+ * @returns {string[]} Identifiants de tournée dédupliqués.
+ */
+function normaliserTourneeIds(valeur) {
+  const bruts = Array.isArray(valeur) ? valeur : [];
+  const valides = bruts.filter((id) => typeof id === 'string' && id.length > 0);
+  return [...new Set(valides)];
+}
+
+/**
  * Normalise `params` selon le `type` de préférence : ne conserve que les
  * clés pertinentes pour ce type, coerce jours/créneaux/nombres. Les clés
  * étrangères au type sont silencieusement ignorées.
@@ -106,7 +120,7 @@ function normaliserParams(type, params) {
       return { min: normaliserEntier(p.min), max: normaliserEntier(p.max) };
     case 'PREFERENCE_TOURNEE':
       return {
-        tourneeIds: Array.isArray(p.tourneeIds) ? p.tourneeIds.filter((id) => typeof id === 'string') : [],
+        tourneeIds: normaliserTourneeIds(p.tourneeIds),
         sens: p.sens === 'EVITE' ? 'EVITE' : 'PREFERE',
       };
     default:
@@ -201,23 +215,24 @@ export const META_TYPES_PREFERENCE = Object.freeze({
     aide: 'Indiquez un minimum et/ou un maximum de jours travaillés par semaine.',
   }),
   PREFERENCE_TOURNEE: Object.freeze({
-    champs: 'minMax',
+    champs: 'tournees',
     natureParDefaut: 'SOUPLE',
-    aide: 'Préférence liée à une tournée (disponible à partir de la feature 006).',
+    aide: 'Choisissez une ou plusieurs tournées, puis indiquez si la personne les préfère ou souhaite les éviter.',
   }),
 });
 
 /**
- * Liste des types de préférence proposés au sélecteur du formulaire en
- * `005` : `TYPES_PREFERENCE` privé de `'PREFERENCE_TOURNEE'` (différé `006`,
- * faute de tournées existantes). Le domaine reste structurellement prêt pour
- * ce type (voir `normaliserParams`/`decrirePreference`).
+ * Liste des types de préférence proposés au sélecteur du formulaire :
+ * `TYPES_PREFERENCE` dans son intégralité (les 8 types), y compris
+ * `PREFERENCE_TOURNEE` — réactivé en `006` maintenant que les tournées
+ * existent. Le **filtrage** « aucune tournée disponible » (retirer
+ * `PREFERENCE_TOURNEE` tant qu'aucune tournée active n'existe) se fait **côté
+ * formulaire** (`FormulairePreference`), pas ici : ce module reste
+ * indépendant de tout contexte d'affichage.
  *
  * @type {ReadonlyArray<string>}
  */
-export const TYPES_PREFERENCE_OFFERTS = Object.freeze(
-  TYPES_PREFERENCE.filter((type) => type !== 'PREFERENCE_TOURNEE')
-);
+export const TYPES_PREFERENCE_OFFERTS = TYPES_PREFERENCE;
 
 /**
  * Renvoie la nature suggérée par défaut pour un type de préférence donné.
@@ -398,14 +413,54 @@ function decrireNbJoursSemaine(params) {
 }
 
 /**
+ * Décrit une préférence `PREFERENCE_TOURNEE` (« Préfère certaines
+ * tournées » / « Préfère la tournée Nord et la tournée Sud »).
+ *
+ * Sans résolveur (ou si aucune des tournées ne résout), retombe sur une
+ * phrase générique selon `sens` — c'est ce qui garantit la **pureté** de
+ * `decrirePreference` : le nommage des tournées est **injecté** par
+ * l'appelant (`SouhaitsView`/`FormulairePreference`), jamais résolu ici via
+ * un accès au store.
+ *
+ * @param {Object} params - `{ tourneeIds, sens }`.
+ * @param {Object} [options] - Options de résolution (voir `decrirePreference`).
+ * @returns {string} Phrase FR.
+ */
+function decrirePreferenceTournee(params, options) {
+  const sens = params.sens === 'EVITE' ? 'EVITE' : 'PREFERE';
+  const verbe = sens === 'EVITE' ? 'Souhaite éviter' : 'Préfère';
+  const tourneeIds = normaliserTourneeIds(params.tourneeIds);
+  const resolveur = typeof options?.nomTournee === 'function' ? options.nomTournee : null;
+
+  const generique = `${verbe} certaines tournées`;
+  if (!resolveur || tourneeIds.length === 0) return generique;
+
+  const noms = tourneeIds
+    .map((id) => resolveur(id))
+    .filter((nom) => typeof nom === 'string' && nom.trim().length > 0)
+    .map((nom) => `la tournée ${nom.trim()}`);
+
+  if (noms.length === 0) return generique;
+  return `${verbe} ${joindreListe(noms)}`;
+}
+
+/**
  * Résume une `Preference` en une phrase française, pour l'affichage dans la
  * liste des souhaits et l'aperçu du formulaire. Pure, tolérante à un type
  * inconnu (n'échoue jamais).
  *
  * @param {Preference} preference - Préférence à décrire (ou brouillon partiel).
+ * @param {Object} [options] - Options additives, purement optionnelles
+ *   (**rétrocompatible** : tout appel existant sans ce paramètre continue de
+ *   fonctionner à l'identique pour les 7 autres types).
+ * @param {function(string): string} [options.nomTournee] - Résolveur
+ *   id → nom de tournée, utilisé **uniquement** pour `PREFERENCE_TOURNEE`
+ *   (nommer les tournées choisies). Sans résolveur, une phrase générique est
+ *   utilisée. Injecté par l'appelant pour garder ce module pur (aucun accès
+ *   au store `tournees` ici).
  * @returns {string} Phrase FR résumant la préférence.
  */
-export function decrirePreference(preference) {
+export function decrirePreference(preference, options) {
   const { type, params } = preference ?? {};
   const p = params ?? {};
 
@@ -425,6 +480,7 @@ export function decrirePreference(preference) {
     case 'NB_JOURS_SEMAINE':
       return decrireNbJoursSemaine(p);
     case 'PREFERENCE_TOURNEE':
+      return decrirePreferenceTournee(p, options);
     default:
       return 'Préférence de tournée';
   }

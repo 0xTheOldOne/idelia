@@ -293,6 +293,7 @@ export default {
       this.formulaireVisible = true;
     },
     onEnregistrer(champs) {
+      const estCreation = !this.personneEnCours;
       if (this.personneEnCours) {
         this.modifier({ id: this.personneEnCours.id, ...champs });
       } else {
@@ -301,6 +302,16 @@ export default {
       this.aEdite = true;
       this.formulaireVisible = false;
       this.personneEnCours = null;
+      if (estCreation) {
+        // Depuis l'état vide, le bouton « Ajouter une personne » qui a ouvert
+        // la modale disparaît du DOM en même temps que l'état vide (la liste
+        // n'est plus vide) : `ModaleBase` ne peut alors pas lui restaurer le
+        // focus à la fermeture, qui retombe sur `<body>`. On le replace donc
+        // nous-mêmes sur le bouton d'en-tête. Sans effet en édition : le
+        // bouton « Modifier » déclencheur reste dans le DOM et `ModaleBase`
+        // lui restaure normalement le focus (après le nôtre, donc prioritaire).
+        this.$nextTick(() => this.$refs.boutonAjout?.focus());
+      }
     },
     onAnnulerFormulaire() {
       this.formulaireVisible = false;

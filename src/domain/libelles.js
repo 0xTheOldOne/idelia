@@ -48,6 +48,23 @@ export function libelleJour(iso) {
 }
 
 /**
+ * Énumère une liste de jours ISO en toutes lettres, dans l'ordre ISO
+ * croissant quel que soit l'ordre d'entrée (« Lundi », « Lundi et Mardi »,
+ * « Lundi, Mardi et Jeudi »). Affichage uniquement, réutilisé par `006`
+ * (tournées), `007` (absences) et `010` (planning).
+ *
+ * @param {number[]} joursIso - Jours ISO 8601 (1 = lundi … 7 = dimanche).
+ * @returns {string} Énumération FR, ou chaîne vide si la liste est vide.
+ */
+export function libelleJours(joursIso) {
+  const jours = Array.isArray(joursIso) ? [...joursIso].sort((a, b) => a - b) : [];
+  const libelles = jours.map(libelleJour).filter(Boolean);
+  if (libelles.length === 0) return '';
+  if (libelles.length === 1) return libelles[0];
+  return `${libelles.slice(0, -1).join(', ')} et ${libelles[libelles.length - 1]}`;
+}
+
+/**
  * Table de correspondance code créneau (`schema.js` → `CRENEAUX`) → libellé FR.
  *
  * @type {{ MATIN: string, APRES_MIDI: string, JOURNEE: string }}
@@ -156,8 +173,9 @@ export const NATURES_PREFERENCE_OPTIONS = NATURES_PREFERENCE.map((code) => ({
 /**
  * Table de correspondance code type de préférence (`schema.js` →
  * `TYPES_PREFERENCE`) → libellé FR. Couvre les **8** types, y compris
- * `PREFERENCE_TOURNEE` (différé `006`, non proposé au sélecteur mais
- * décrit ici pour que `decrirePreference` sache le nommer sans planter).
+ * `PREFERENCE_TOURNEE` (réactivé en `006` maintenant que les tournées
+ * existent — voir `FormulairePreference`, prop `tourneesActives`, pour le
+ * filtrage « aucune tournée disponible »).
  *
  * @type {Object<string, string>}
  */
@@ -191,9 +209,10 @@ export function libelleTypePreference(code) {
 /**
  * Liste complète des types de préférence, prête à itérer. Dérivée de
  * `TYPES_PREFERENCE` (schema.js) et de `LIBELLES_TYPE_PREFERENCE`. Le
- * sélecteur de type du formulaire `005` n'itère **pas** sur cette liste mais
- * sur `TYPES_PREFERENCE_OFFERTS` (`domain/preferences.js`), qui exclut
- * `PREFERENCE_TOURNEE`.
+ * sélecteur de type du formulaire n'itère **pas** directement sur cette liste
+ * mais sur `TYPES_PREFERENCE_OFFERTS` (`domain/preferences.js`), filtrée côté
+ * `FormulairePreference` (retrait de `PREFERENCE_TOURNEE` tant qu'aucune
+ * tournée active n'existe).
  *
  * @type {OptionTypePreference[]}
  */
@@ -201,3 +220,41 @@ export const TYPES_PREFERENCE_OPTIONS = TYPES_PREFERENCE.map((code) => ({
   code,
   libelle: libelleTypePreference(code),
 }));
+
+/**
+ * Table de correspondance code sens de préférence de tournée (`PREFERE` /
+ * `EVITE`, voir `Preference.params.sens` pour `PREFERENCE_TOURNEE`) → libellé FR.
+ *
+ * @type {{ PREFERE: string, EVITE: string }}
+ */
+export const LIBELLES_SENS_PREFERENCE = {
+  PREFERE: 'Préfère',
+  EVITE: 'Souhaite éviter',
+};
+
+/**
+ * Renvoie le libellé FR d'un sens de préférence de tournée à partir de son code.
+ *
+ * @param {string} code - Code sens (`'PREFERE'`, `'EVITE'`).
+ * @returns {string} Libellé FR, ou chaîne vide si inconnu.
+ */
+export function libelleSensPreference(code) {
+  return LIBELLES_SENS_PREFERENCE[code] ?? '';
+}
+
+/**
+ * @typedef {object} OptionSensPreference
+ * @property {string} code - `'PREFERE'` | `'EVITE'`.
+ * @property {string} libelle - Libellé FR correspondant.
+ */
+
+/**
+ * Options de sens de préférence de tournée, prêtes à itérer pour un groupe
+ * de boutons radio (`FormulairePreference`, champ `PREFERENCE_TOURNEE`).
+ *
+ * @type {OptionSensPreference[]}
+ */
+export const SENS_PREFERENCE_OPTIONS = [
+  { code: 'PREFERE', libelle: 'Préfère' },
+  { code: 'EVITE', libelle: 'Souhaite éviter' },
+];

@@ -83,7 +83,7 @@
           :class="{ 'souhaits-ligne--pause': !preference.actif }"
         >
           <div class="souhaits-corps">
-            <p class="souhaits-resume">{{ decrirePreference(preference) }}</p>
+            <p class="souhaits-resume">{{ decrirePreference(preference, { nomTournee }) }}</p>
             <p class="souhaits-nature">
               <PhLock v-if="preference.nature === 'DURE'" :size="16" aria-hidden="true" />
               <PhStar v-else :size="16" aria-hidden="true" />
@@ -137,6 +137,8 @@
       <FormulairePreference
         :visible="formulaireVisible"
         :preference="preferenceEnCours"
+        :tournees-actives="tourneesActives"
+        :nom-tournee="nomTournee"
         @enregistrer="onEnregistrer"
         @annuler="onAnnulerFormulaire"
       />
@@ -220,6 +222,14 @@ export default {
   },
   computed: {
     ...mapGetters('personnes', ['byId']),
+    // Alias explicites (objet, pas tableau) pour éviter toute collision de
+    // nom avec `byId` de `personnes` ci-dessus : `tourneesActives` alimente
+    // `FormulairePreference` (tournées proposables) ; `tourneeParId` sert de
+    // résolveur pour `decrirePreference` (voir `nomTournee`), et couvre
+    // aussi les tournées **archivées** (le `byId` de `tournees` cherche dans
+    // `state.items`, actives et archivées confondues) pour ne jamais
+    // afficher la phrase générique par erreur sur un souhait existant.
+    ...mapGetters('tournees', { tourneesActives: 'actives', tourneeParId: 'byId' }),
     ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
     /** Identifiant de la personne, lu depuis la route paramétrée. */
     id() {
@@ -231,7 +241,7 @@ export default {
     },
     messageConfirmationSuppression() {
       const preference = this.preferenceASupprimer;
-      const resume = preference ? this.decrirePreference(preference) : 'Ce souhait';
+      const resume = preference ? this.decrirePreference(preference, { nomTournee: this.nomTournee }) : 'Ce souhait';
       return (
         `« ${resume} » sera définitivement supprimé et ne sera pas conservé. ` +
         'Pour l\'exclure temporairement sans le perdre, préférez « Pris en compte ».'
@@ -260,6 +270,20 @@ export default {
       return niveau ? niveau.libelle : '';
     },
 
+    /**
+     * Résolveur `id → nom` injecté dans `decrirePreference` pour nommer les
+     * tournées d'un souhait `PREFERENCE_TOURNEE` (voir `domain/preferences.js`).
+     * Résout via `tournees/byId` (toutes les tournées, actives **et**
+     * archivées) pour ne pas retomber sur la phrase générique si la tournée
+     * référencée a depuis été archivée. Renvoie `''` si l'id est inconnu.
+     * @param {string} id
+     * @returns {string}
+     */
+    nomTournee(id) {
+      const tournee = this.tourneeParId(id);
+      return tournee ? tournee.nom : '';
+    },
+
     ouvrirAjout() {
       this.preferenceEnCours = null;
       this.formulaireVisible = true;
@@ -269,6 +293,13 @@ export default {
       this.formulaireVisible = true;
     },
     onEnregistrer(champs) {
+      // Calculé avant la mutation : distingue une création déclenchée depuis
+      // l'état vide (le bouton « Ajouter un souhait » de `.souhaits-etat-vide`
+      // disparaît du DOM une fois la liste non vide, voir repli de focus
+      // ci-dessous), d'une édition ou d'un ajout depuis une liste déjà
+      // peuplée (où `ModaleBase` sait déjà rendre le focus normalement).
+      const creationDepuisEtatVide = !this.preferenceEnCours && this.personne.preferences.length === 0;
+
       if (this.preferenceEnCours) {
         this.modifierPreference({
           personneId: this.id,
@@ -281,6 +312,18 @@ export default {
       this.aEdite = true;
       this.formulaireVisible = false;
       this.preferenceEnCours = null;
+
+      if (creationDepuisEtatVide) {
+        // Le bouton d'ajout de l'état vide disparaît du DOM une fois la liste
+        // peuplée : `ModaleBase` ne peut donc pas lui rendre le focus. On le
+        // repose sur le bouton d'ajout persistant de l'en-tête. Ce bloc ne
+        // s'exécutant qu'à la création depuis l'état vide, le retour de focus
+        // normal (édition, ajout depuis une liste déjà peuplée) n'est pas
+        // perturbé. (Une garde `document.body.contains(document.activeElement)`
+        // serait inopérante : au moment du `$nextTick`, la transition de
+        // fermeture Bootstrap n'a pas encore retiré la modale du flux.)
+        this.$nextTick(() => this.$refs.boutonAjout?.focus());
+      }
     },
     onAnnulerFormulaire() {
       this.formulaireVisible = false;

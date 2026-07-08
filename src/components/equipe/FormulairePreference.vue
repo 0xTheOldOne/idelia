@@ -18,7 +18,7 @@
           aria-describedby="preference-type-aide"
           @change="onChangeType"
         >
-          <option v-for="type in TYPES_PREFERENCE_OFFERTS" :key="type" :value="type">
+          <option v-for="type in typesProposes" :key="type" :value="type">
             {{ libelleTypePreference(type) }}
           </option>
         </select>
@@ -202,6 +202,69 @@
         </div>
       </div>
 
+      <fieldset
+        v-else-if="metaType.champs === 'tournees'"
+        class="mb-4"
+        role="group"
+        :aria-describedby="
+          optionsTournees.length > 0 && v$.formulaire.params.tourneeIds.$error ? 'preference-tournees-erreur' : null
+        "
+      >
+        <legend class="formulaire-legende"><span class="form-label d-block">Tournées concernées</span></legend>
+
+        <div v-if="optionsTournees.length > 0" class="d-flex flex-column gap-2">
+          <div v-for="option in optionsTournees" :key="option.id" class="form-check formulaire-case">
+            <input
+              :id="'preference-tournee-' + option.id"
+              v-model="formulaire.params.tourneeIds"
+              :value="option.id"
+              type="checkbox"
+              class="form-check-input"
+              @change="v$.formulaire.params.tourneeIds.$touch()"
+            >
+            <label class="form-check-label" :for="'preference-tournee-' + option.id">
+              {{ option.libelle }}
+            </label>
+          </div>
+        </div>
+        <div v-else class="alert alert-warning d-flex gap-2 mb-0" role="alert">
+          <PhWarning :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
+          <p class="mb-0">
+            Toutes les tournées liées à ce souhait ont été archivées. Restaurez-en une, ou choisissez
+            un autre type de souhait.
+          </p>
+        </div>
+
+        <p
+          v-if="optionsTournees.length > 0 && v$.formulaire.params.tourneeIds.$error"
+          id="preference-tournees-erreur"
+          class="formulaire-erreur"
+        >
+          <PhWarning :size="14" weight="bold" aria-hidden="true" />
+          <span>{{ v$.formulaire.params.tourneeIds.$errors[0].$message }}</span>
+        </p>
+
+        <fieldset class="mt-3">
+          <legend class="formulaire-legende"><span class="form-label d-block">Préférence</span></legend>
+          <div class="d-flex flex-column gap-2">
+            <div v-for="option in SENS_PREFERENCE_OPTIONS" :key="option.code" class="form-check formulaire-radio">
+              <input
+                :id="'preference-sens-' + option.code"
+                v-model="formulaire.params.sens"
+                :value="option.code"
+                type="radio"
+                name="preference-sens"
+                class="form-check-input"
+                @change="v$.formulaire.params.sens.$touch()"
+              >
+              <label class="form-check-label" :for="'preference-sens-' + option.code">
+                <span class="formulaire-radio-libelle">{{ option.libelle }}</span>
+              </label>
+            </div>
+          </div>
+        </fieldset>
+      </fieldset>
+
       <!-- Nature -->
       <fieldset class="mb-4">
         <legend class="formulaire-legende">
@@ -294,7 +357,13 @@ import {
   poidsVersNiveau,
   decrirePreference,
 } from '@/domain/preferences.js';
-import { libelleTypePreference, NATURES_PREFERENCE_OPTIONS, JOURS_SEMAINE, libelleCreneau } from '@/domain/libelles.js';
+import {
+  libelleTypePreference,
+  NATURES_PREFERENCE_OPTIONS,
+  JOURS_SEMAINE,
+  libelleCreneau,
+  SENS_PREFERENCE_OPTIONS,
+} from '@/domain/libelles.js';
 import { CRENEAUX } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
 
@@ -327,6 +396,21 @@ export default {
     visible: { type: Boolean, required: true },
     /** `null` = mode création ; objet `Preference` = mode édition. */
     preference: { type: Object, default: null },
+    /**
+     * Tournées actives du cabinet (`tournees/actives`), pour la section
+     * `PREFERENCE_TOURNEE` (cases à cocher) et le filtrage du type au
+     * sélecteur (retiré tant qu'aucune tournée n'existe).
+     */
+    tourneesActives: { type: Array, default: () => [] },
+    /**
+     * Résolveur `id → nom` fourni par le parent (`SouhaitsView`), capable de
+     * nommer **n'importe quelle** tournée du cabinet — active ou archivée.
+     * Utilisé pour l'aperçu et pour labelliser les tournées référencées par
+     * le brouillon mais absentes de `tourneesActives` (voir `optionsTournees`).
+     * Facultatif (défaut : résolveur qui ne résout rien), avec repli sur
+     * `tourneesActives` dans `resoudreNomTournee`.
+     */
+    nomTournee: { type: Function, default: () => '' },
   },
   emits: ['enregistrer', 'annuler'],
   setup() {
@@ -341,6 +425,7 @@ export default {
       NIVEAUX_IMPORTANCE,
       JOURS_SEMAINE,
       CRENEAUX,
+      SENS_PREFERENCE_OPTIONS,
       // Identifiant unique du `<form>`, pour relier le bouton « Enregistrer »
       // du pied de modale (hors du `<form>`) via l'attribut HTML `form`.
       idFormulaire: `formulaire-preference-${genId()}`,
@@ -363,6 +448,48 @@ export default {
       return META_TYPES_PREFERENCE[this.formulaire.type] ?? {};
     },
     /**
+     * Types proposés au sélecteur : `TYPES_PREFERENCE_OFFERTS` (les 8 types),
+     * privé de `PREFERENCE_TOURNEE` tant qu'aucune tournée active n'existe —
+     * **sauf** si le souhait en cours d'édition est déjà de ce type (édition
+     * d'un souhait « Tournée préférée ou évitée » alors que la dernière
+     * tournée active a depuis été archivée) : sans cette exception, le
+     * `<select>` afficherait une valeur absente de ses options (piège pour
+     * l'utilisateur, voir relecture 006/M1). Le filtrage « aucune tournée
+     * disponible » vit ici, pas dans le domaine — voir `domain/preferences.js`.
+     */
+    typesProposes() {
+      const editionTourneePreference =
+        this.preference?.type === 'PREFERENCE_TOURNEE' || this.formulaire.type === 'PREFERENCE_TOURNEE';
+      if (this.tourneesActives.length > 0 || editionTourneePreference) return TYPES_PREFERENCE_OFFERTS;
+      return TYPES_PREFERENCE_OFFERTS.filter((type) => type !== 'PREFERENCE_TOURNEE');
+    },
+    /**
+     * Union des tournées actives et des tournées référencées par le
+     * brouillon mais absentes de `tourneesActives` (archivées, ou
+     * introuvables), pour la section « Tournées concernées » : une tournée
+     * déjà cochée doit rester visible et **décochable**, même si elle n'est
+     * plus active (voir 006/M1). Chaque entrée porte un `libelle` prêt à
+     * afficher et un indicateur `active` (non utilisé pour l'instant, prévu
+     * pour un futur style visuel si besoin).
+     * @returns {Array<{ id: string, libelle: string, active: boolean }>}
+     */
+    optionsTournees() {
+      const actives = this.tourneesActives.map((tournee) => ({
+        id: tournee.id,
+        libelle: this.libelleTourneeOption(tournee),
+        active: true,
+      }));
+      const idsActifs = new Set(this.tourneesActives.map((tournee) => tournee.id));
+      const idsReferences = this.formulaire.params.tourneeIds ?? [];
+      const inactives = idsReferences
+        .filter((id) => !idsActifs.has(id))
+        .map((id) => {
+          const nom = this.resoudreNomTournee(id);
+          return { id, libelle: nom ? `${nom} (archivée)` : '(tournée indisponible)', active: false };
+        });
+      return [...actives, ...inactives];
+    },
+    /**
      * Créneaux proposés pour `CRENEAU_OFF` (« Demi-journée non travaillée ») :
      * seulement matin/après-midi, sans « Journée entière » qui contredirait le
      * nom du type et recouperait « Jour non travaillé ». N'affecte pas
@@ -374,15 +501,18 @@ export default {
     },
     /** Phrase FR décrivant en direct le brouillon courant, pour relecture avant enregistrement. */
     apercu() {
-      return decrirePreference({
-        type: this.formulaire.type,
-        params: this.formulaire.params,
-        nature: this.formulaire.nature,
-        poids:
-          this.formulaire.nature === 'SOUPLE'
-            ? niveauVersPoids(this.formulaire.niveau)
-            : (this.preference?.poids ?? 5),
-      });
+      return decrirePreference(
+        {
+          type: this.formulaire.type,
+          params: this.formulaire.params,
+          nature: this.formulaire.nature,
+          poids:
+            this.formulaire.nature === 'SOUPLE'
+              ? niveauVersPoids(this.formulaire.niveau)
+              : (this.preference?.poids ?? 5),
+        },
+        { nomTournee: this.resoudreNomTournee }
+      );
     },
   },
   watch: {
@@ -447,6 +577,13 @@ export default {
           (valeur, parent) => estVide(parent.min) || estVide(valeur) || Number(parent.min) <= Number(valeur)
         ),
       };
+    } else if (champs === 'tournees') {
+      paramsRules.tourneeIds = {
+        required: helpers.withMessage('Choisissez au moins une tournée.', required),
+      };
+      paramsRules.sens = {
+        required: helpers.withMessage('Choisissez « Préfère » ou « Souhaite éviter ».', required),
+      };
     }
 
     return {
@@ -461,6 +598,45 @@ export default {
   methods: {
     libelleTypePreference,
     libelleCreneau,
+
+    /**
+     * Libellé d'une case à cocher de tournée active, nommant sans ambiguïté
+     * la tournée (nom + créneau/horaires) : « Tournée Nord — Matin
+     * 08:00 – 12:00 » (tiret cerné d'espaces, cohérent avec `TourneesView`).
+     * @param {{ nom: string, creneau: string, heureDebut: string, heureFin: string }} tournee
+     * @returns {string}
+     */
+    libelleTourneeOption(tournee) {
+      return `${tournee.nom} — ${libelleCreneau(tournee.creneau)} ${tournee.heureDebut} – ${tournee.heureFin}`;
+    },
+
+    /**
+     * Repli local pour nommer une tournée à partir de `tourneesActives`
+     * (prop) seulement : utilisé par `resoudreNomTournee` quand la prop
+     * `nomTournee` (fournie par le parent) ne résout rien — soit parce
+     * qu'elle n'a pas été fournie (valeur par défaut `() => ''`), soit parce
+     * que l'id est inconnu du parent. Renvoie `''` si l'id ne résout pas.
+     * @param {string} id
+     * @returns {string}
+     */
+    nomTourneeActiveLocale(id) {
+      const tournee = this.tourneesActives.find((t) => t.id === id);
+      return tournee ? tournee.nom : '';
+    },
+
+    /**
+     * Résolveur `id → nom` effectivement utilisé par le composant (aperçu et
+     * `optionsTournees`) : tente d'abord la prop `nomTournee` (fournie par le
+     * parent, capable de nommer les tournées actives **et** archivées), puis
+     * se replie sur `tourneesActives` (rétrocompatible si le parent ne
+     * fournit pas la prop). Renvoie `''` si aucun des deux ne résout — le
+     * cas est alors traité comme « tournée indisponible » par l'appelant.
+     * @param {string} id
+     * @returns {string}
+     */
+    resoudreNomTournee(id) {
+      return this.nomTournee(id) || this.nomTourneeActiveLocale(id);
+    },
 
     /**
      * Construit le brouillon local à partir de `preference` (édition) ou des
@@ -514,6 +690,8 @@ export default {
           return { min: p.min ?? null };
         case 'minMax':
           return { min: p.min ?? null, max: p.max ?? null };
+        case 'tournees':
+          return { tourneeIds: [...(p.tourneeIds ?? [])], sens: p.sens === 'EVITE' ? 'EVITE' : 'PREFERE' };
         default:
           return {};
       }
@@ -587,6 +765,14 @@ export default {
       } else if (champs === 'minMax') {
         ordre.push({ validation: this.v$.formulaire.params.min, id: 'preference-min' });
         ordre.push({ validation: this.v$.formulaire.params.max, id: 'preference-max' });
+      } else if (champs === 'tournees') {
+        if (this.optionsTournees.length > 0) {
+          ordre.push({
+            validation: this.v$.formulaire.params.tourneeIds,
+            id: `preference-tournee-${this.optionsTournees[0].id}`,
+          });
+        }
+        ordre.push({ validation: this.v$.formulaire.params.sens, id: 'preference-sens-PREFERE' });
       }
 
       ordre.push({ validation: this.v$.formulaire.libelle, id: 'preference-libelle' });

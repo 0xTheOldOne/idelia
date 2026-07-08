@@ -204,9 +204,9 @@ export function fromSaveDocument(doc) {
  * - structure racine : `schemaVersion` entier ; `cabinet` objet ;
  *   `personnes`/`tournees`/`absences`/`plannings` sont des tableaux ;
  * - intégrité référentielle (si la structure ci-dessus est saine) :
- *   `absence.personneId`, `affectation.personneId`, `affectation.tourneeId`
- *   et `planning.referentId` (s'il est non nul) doivent résoudre vers une
- *   entité existante.
+ *   `absence.personneId`, `affectation.personneId`, `affectation.tourneeId`,
+ *   `planning.referentId` (s'il est non nul) et `preference.params.tourneeIds`
+ *   (souhaits `PREFERENCE_TOURNEE`) doivent résoudre vers une entité existante.
  *
  * @param {*} doc - Document à vérifier (forme quelconque, non garantie).
  * @returns {ResultatIntegrite} Verdict et liste des erreurs éventuelles.
@@ -246,6 +246,25 @@ export function verifierIntegrite(doc) {
         erreurs.push(
           `Absence « ${absence.id} » : la personne « ${absence.personneId} » référencée est introuvable.`
         );
+      }
+    }
+  }
+
+  // Souhaits « Tournée préférée ou évitée » (`PREFERENCE_TOURNEE`, 006) :
+  // chaque tournée référencée dans `params.tourneeIds` doit exister.
+  if (personnesOk && idsTournees) {
+    for (const personne of doc.personnes) {
+      const preferences = Array.isArray(personne.preferences) ? personne.preferences : [];
+      for (const preference of preferences) {
+        if (preference.type !== 'PREFERENCE_TOURNEE') continue;
+        const tourneeIds = Array.isArray(preference.params?.tourneeIds) ? preference.params.tourneeIds : [];
+        for (const tourneeId of tourneeIds) {
+          if (!idsTournees.has(tourneeId)) {
+            erreurs.push(
+              `Personne « ${personne.id} », souhait « ${preference.id} » : la tournée « ${tourneeId} » référencée est introuvable.`
+            );
+          }
+        }
       }
     }
   }
