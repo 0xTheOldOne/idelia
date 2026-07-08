@@ -19,7 +19,7 @@ Légende statut : ⬜ à faire · 🟡 en cours · ✅ fait.
 | 004 | Gestion de l'équipe    | CRUD des personnes (statut, couleur, quotité, dates), soft-delete.                           | 002       | ✅     |
 | 005 | Souhaits & préférences | Édition des préférences par personne (types dur/souple, poids).                              | 004       | ✅     |
 | 006 | Gestion des tournées   | CRUD des tournées (horaires, créneau, jours d'application, effectif requis), archivage.      | 002       | ✅     |
-| 007 | Absences & congés      | Saisie et validation des absences (types, période, créneau, statut).                         | 004       | ⬜     |
+| 007 | Absences & congés      | Saisie et validation des absences (types, période, créneau, statut).                         | 004       | ✅     |
 
 ## Sauvegarde & moteur
 

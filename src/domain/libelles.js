@@ -12,7 +12,13 @@
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */
 
-import { STATUTS_PERSONNE, NATURES_PREFERENCE, TYPES_PREFERENCE } from '@/domain/schema.js';
+import {
+  STATUTS_PERSONNE,
+  NATURES_PREFERENCE,
+  TYPES_PREFERENCE,
+  TYPES_ABSENCE,
+  STATUTS_ABSENCE,
+} from '@/domain/schema.js';
 
 /**
  * @typedef {object} JourSemaine
@@ -258,3 +264,89 @@ export const SENS_PREFERENCE_OPTIONS = [
   { code: 'PREFERE', libelle: 'Préfère' },
   { code: 'EVITE', libelle: 'Souhaite éviter' },
 ];
+
+/**
+ * Table de correspondance code type d'absence (`schema.js` →
+ * `TYPES_ABSENCE`) → libellé FR.
+ *
+ * @type {Object<string, string>}
+ */
+export const LIBELLES_TYPE_ABSENCE = {
+  CONGE_PAYE: 'Congés payés',
+  RTT: 'RTT',
+  ARRET_MALADIE: 'Arrêt maladie',
+  MATERNITE: 'Congé maternité',
+  PATERNITE: 'Congé paternité',
+  NAISSANCE: 'Congé naissance',
+  FORMATION: 'Formation',
+  AUTRE: 'Autre',
+};
+
+/**
+ * Renvoie le libellé FR d'un type d'absence à partir de son code.
+ *
+ * @param {string} code - Code type (voir `TYPES_ABSENCE`).
+ * @returns {string} Libellé FR, ou chaîne vide si inconnu.
+ */
+export function libelleTypeAbsence(code) {
+  return LIBELLES_TYPE_ABSENCE[code] ?? '';
+}
+
+/**
+ * @typedef {object} OptionTypeAbsence
+ * @property {string} code - Code type (voir `TYPES_ABSENCE`).
+ * @property {string} libelle - Libellé FR correspondant.
+ */
+
+/**
+ * Liste des types d'absence, prête à itérer pour le `form-select` du
+ * formulaire. Dérivée de `TYPES_ABSENCE` (schema.js) et de
+ * `LIBELLES_TYPE_ABSENCE` pour garantir leur cohérence.
+ *
+ * @type {OptionTypeAbsence[]}
+ */
+export const TYPES_ABSENCE_OPTIONS = TYPES_ABSENCE.map((code) => ({
+  code,
+  libelle: libelleTypeAbsence(code),
+}));
+
+/**
+ * Table de correspondance code statut d'absence (`schema.js` →
+ * `STATUTS_ABSENCE`) → libellé FR. « En attente » (plutôt que « Demande »)
+ * est préféré pour un statut affiché sur une carte et dans un filtre.
+ *
+ * @type {{ DEMANDE: string, VALIDE: string, REFUSE: string }}
+ */
+export const LIBELLES_STATUT_ABSENCE = {
+  DEMANDE: 'En attente',
+  VALIDE: 'Validée',
+  REFUSE: 'Refusée',
+};
+
+/**
+ * Renvoie le libellé FR d'un statut d'absence à partir de son code.
+ *
+ * @param {string} code - Code statut (voir `STATUTS_ABSENCE`).
+ * @returns {string} Libellé FR, ou chaîne vide si inconnu.
+ */
+export function libelleStatutAbsence(code) {
+  return LIBELLES_STATUT_ABSENCE[code] ?? '';
+}
+
+/**
+ * @typedef {object} OptionStatutAbsence
+ * @property {string} code - Code statut (voir `STATUTS_ABSENCE`).
+ * @property {string} libelle - Libellé FR correspondant.
+ */
+
+/**
+ * Liste des statuts d'absence, prête à itérer (ex. filtre de liste).
+ * Dérivée de `STATUTS_ABSENCE` (schema.js) et de `LIBELLES_STATUT_ABSENCE`
+ * pour garantir leur cohérence.
+ *
+ * @type {OptionStatutAbsence[]}
+ */
+export const STATUTS_ABSENCE_OPTIONS = STATUTS_ABSENCE.map((code) => ({
+  code,
+  libelle: libelleStatutAbsence(code),
+}));

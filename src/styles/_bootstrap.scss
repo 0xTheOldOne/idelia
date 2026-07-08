@@ -12,6 +12,11 @@ $primary: t.$couleur-primaire;
 $success: t.$couleur-succes;
 $danger: t.$couleur-erreur;
 $warning: t.$couleur-avertissement;
+// `$info` (encarts informatifs, ex. AbsencesView) : pas de token dédié dans
+// `tokens.scss` ; on réutilise `$couleur-primaire-claire` (variante claire de
+// la couleur de marque) plutôt que le cyan par défaut de Bootstrap, pour
+// rester cohérent avec la palette teal du projet.
+$info: t.$couleur-primaire-claire;
 $body-color: t.$couleur-texte;
 $body-bg: t.$couleur-fond;
 $font-family-base: t.$police-base;
