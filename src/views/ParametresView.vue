@@ -214,6 +214,12 @@
         <div class="form-text">Utilisé pour l'affichage du calendrier.</div>
       </section>
     </form>
+
+    <!-- Sauvegarde (hors formulaire : ce n'est pas un réglage saisi mais une action) -->
+    <section class="parametres-section">
+      <h2>Sauvegarde</h2>
+      <BlocSauvegarde @donnees-remplacees="onDonneesRemplacees" />
+    </section>
   </div>
 </template>
 
@@ -224,6 +230,7 @@ import { required, maxLength, between, integer, helpers } from '@vuelidate/valid
 import { PhWarning } from '@phosphor-icons/vue';
 
 import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
+import BlocSauvegarde from '@/components/parametres/BlocSauvegarde.vue';
 import { JOURS_SEMAINE, libelleCreneau } from '@/domain/libelles.js';
 import { coherenceParametres } from '@/domain/cabinet.js';
 import { CRENEAUX } from '@/domain/schema.js';
@@ -240,7 +247,7 @@ import { CRENEAUX } from '@/domain/schema.js';
  */
 export default {
   name: 'ParametresView',
-  components: { IndicateurSauvegarde, PhWarning },
+  components: { IndicateurSauvegarde, BlocSauvegarde, PhWarning },
   setup() {
     // Seul usage de la Composition API : pont requis par Vuelidate 2 en
     // Options API (ADR 0011). Le reste du composant reste en Options API.
@@ -381,6 +388,21 @@ export default {
       // règle Vuelidate à vérifier avant l'enregistrement.
       this.majParametres({ premierJourSemaine: this.brouillon.premierJourSemaine });
     },
+
+    /**
+     * Après une restauration ou un effacement réussis (`BlocSauvegarde`),
+     * le `brouillon` local (copié depuis `this.parametres` en `created`) est
+     * périmé : on le réhydrate depuis le store pour que le formulaire
+     * reflète immédiatement les nouvelles valeurs, sans rechargement de
+     * page. On réinitialise aussi la validation (les anciennes erreurs ne
+     * correspondent plus aux nouvelles valeurs) et on annonce
+     * l'enregistrement via `IndicateurSauvegarde`.
+     */
+    onDonneesRemplacees() {
+      this.brouillon = { ...this.parametres };
+      this.v$.$reset();
+      this.aEdite = true;
+    },
   },
 };
 </script>
@@ -396,6 +418,13 @@ export default {
   &:last-child {
     border-bottom: none;
   }
+}
+
+// La section « Sauvegarde » vit hors du `<form>` : sans ceci, la dernière
+// section du formulaire (« Affichage ») serait `:last-child` de son parent et
+// perdrait son trait de séparation avant « Sauvegarde ». On le lui rend.
+form .parametres-section:last-child {
+  border-bottom: 1px solid t.$couleur-bordure;
 }
 
 // Une case + son libellé forment une cible cliquable confortable (~44px),

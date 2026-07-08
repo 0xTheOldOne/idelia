@@ -25,7 +25,7 @@ Légende statut : ⬜ à faire · 🟡 en cours · ✅ fait.
 
 | N°  | Feature                       | Résumé                                                                                                                                                                                               | Dépend de | Statut |
 | --- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ |
-| 008 | Sauvegarde import/export JSON | Export du `SaveDocument`, import avec migration + validation d'intégrité + remplacement atomique ([ADR 0006](../docs/adr/0006-sauvegarde-partage-par-export-import-json.md)) ; rappel de sauvegarde. | 002       | ⬜     |
+| 008 | Sauvegarde import/export JSON | Export du `SaveDocument`, import avec migration + validation d'intégrité + remplacement atomique ([ADR 0006](../docs/adr/0006-sauvegarde-partage-par-export-import-json.md)) ; rappel de sauvegarde. | 002       | ✅     |
 | 009 | Moteur de planification       | Module pur `src/domain/scheduling/` : contraintes, génération (glouton + recherche locale), validation ([archi 05](../docs/architecture/05-moteur-de-planification.md)).                             | 002       | ⬜     |
 
 ## Planning (cœur)
