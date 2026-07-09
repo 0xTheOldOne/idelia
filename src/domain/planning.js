@@ -55,3 +55,35 @@ export function creerPlanning(champs = {}) {
     updatedAt: maintenant,
   };
 }
+
+/**
+ * Construit une `Affectation` posée manuellement par un référent
+ * (`origine: 'MANUEL'`, `verrouillee: false`, `commentaire: ''`), en dehors
+ * du moteur pur (ADR 0008 — le moteur ne pose que de l'`AUTO`, via
+ * `creerAffectationAuto`). Modèle exact de `creerAffectationAuto`
+ * (`src/domain/scheduling/modele/affectation.js`), à l'exception de
+ * `origine`. Mêmes concessions techniques tolérées : `genId()` +
+ * `new Date().toISOString()`.
+ *
+ * @param {string} personneId - Identifiant de la Personne affectée.
+ * @param {string} tourneeId - Identifiant de la Tournee.
+ * @param {string} date - Date `"YYYY-MM-DD"`.
+ * @param {string} creneau - Créneau (`CRENEAUX`).
+ * @returns {import('./scheduling/modele/affectation.js').Affectation} Affectation complète, prête à être stockée.
+ */
+export function creerAffectationManuelle(personneId, tourneeId, date, creneau) {
+  const maintenant = new Date().toISOString();
+
+  return {
+    id: genId(),
+    personneId,
+    tourneeId,
+    date,
+    creneau,
+    origine: 'MANUEL',
+    verrouillee: false,
+    commentaire: '',
+    createdAt: maintenant,
+    updatedAt: maintenant,
+  };
+}

@@ -15,9 +15,30 @@
  * tournées non couvertes, score) ne sont **jamais** persistés : ils sont
  * retournés à l'appelant (`genererPropose`) ou recalculés à la demande
  * (`evaluerCourant`).
+ *
+ * Édition manuelle (feature 011) : `ajouterAffectation`/`retirerAffectation`/
+ * `deplacerAffectation`/`basculerVerrouillage` appliquent chacune un geste
+ * d'édition sur les affectations du planning courant, via le domaine
+ * (`creerAffectationManuelle`) et le moteur pur (`appliquerChangement`,
+ * ADR 0008 — jamais appelé depuis un composant). Chaque geste capture au
+ * préalable un instantané volatil (`snapshotEdition`, non sérialisé) des
+ * affectations d'avant.
+ *
+ * Undo (feature 011, tâche 2) : `annulerDerniereEdition` restaure ce
+ * snapshot (`RESTAURER_SNAPSHOT`) puis l'efface — undo **1 niveau, sans
+ * redo**. Le getter `peutAnnuler` invalide automatiquement un snapshot
+ * devenu obsolète (autre planning sélectionné) en comparant
+ * `snapshotEdition.planningId` au planning courant.
+ *
+ * Régénération en place (feature 011, tâche 6) : `regenerer` remplace les
+ * affectations du planning **courant** (mutation `UPDATE_AFFECTATIONS` sur
+ * le même `id`, jamais `ADD`/`SELECT` d'un nouveau `Planning`), en
+ * préservant les affectations verrouillées. Retourne le `Resultat` complet
+ * du moteur (comme `genererPropose`), pour que la vue alimente ses
+ * diagnostics volatils sans second passage moteur.
  */
-import { genererPlanning, diagnostiquer } from '@/domain/scheduling';
-import { creerPlanning } from '@/domain/planning.js';
+import { genererPlanning, diagnostiquer, appliquerChangement } from '@/domain/scheduling';
+import { creerPlanning, creerAffectationManuelle } from '@/domain/planning.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -43,11 +64,23 @@ function assemblerEntree(rootGetters, rootState, periode) {
 
 export default {
   namespaced: true,
-  state: () => ({ items: [], selectionId: null }),
+  state: () => ({ items: [], selectionId: null, snapshotEdition: null }),
   getters: {
     byId: (state) => (id) => state.items.find((pl) => pl.id === id),
     courant: (state, getters) =>
       state.selectionId ? getters.byId(state.selectionId) : null,
+    /**
+     * `true` uniquement si un snapshot d'annulation existe **et** cible le
+     * planning courant. La comparaison `planningId === courant.id` invalide
+     * automatiquement un snapshot devenu obsolète (nouvelle génération qui
+     * sélectionne un autre planning, import qui remplace tout) : le bouton
+     * « Annuler » se désactive de lui-même, sans nettoyage transverse.
+     * @param {{ snapshotEdition: (Object|null) }} state
+     * @param {Object} getters
+     * @returns {boolean}
+     */
+    peutAnnuler: (state, getters) =>
+      !!state.snapshotEdition && !!getters.courant && state.snapshotEdition.planningId === getters.courant.id,
   },
   mutations: {
     /**
@@ -89,6 +122,53 @@ export default {
       if (state.selectionId === id) {
         state.selectionId = null;
       }
+    },
+    /**
+     * Remplace immuablement les affectations du planning `id` (jamais de
+     * mutation en place) et bump son `updatedAt`. Met à jour
+     * `parametresGeneration` uniquement si fourni (régénération, feature
+     * `011` tâche 6) : les gestes d'édition manuelle ne le touchent pas.
+     * @param {{ items: object[] }} state
+     * @param {{ id: string, affectations: object[], parametresGeneration?: (Object|null) }} payload
+     */
+    UPDATE_AFFECTATIONS(state, { id, affectations, parametresGeneration }) {
+      state.items = state.items.map((pl) =>
+        pl.id === id
+          ? {
+              ...pl,
+              affectations,
+              updatedAt: new Date().toISOString(),
+              ...(parametresGeneration !== undefined ? { parametresGeneration } : {}),
+            }
+          : pl
+      );
+    },
+    /**
+     * Capture un instantané volatil des affectations d'un planning, pris
+     * juste avant un geste d'édition (undo 1-niveau, non sérialisé — ne
+     * touche jamais `items`).
+     * @param {{ snapshotEdition: (Object|null) }} state
+     * @param {{ planningId: string, affectations: object[] }} payload
+     */
+    CAPTURER_SNAPSHOT(state, { planningId, affectations }) {
+      state.snapshotEdition = { planningId, affectations: [...affectations] };
+    },
+    /**
+     * Réapplique le snapshot d'annulation au planning ciblé (immuable, bump
+     * `updatedAt`), puis **efface** le snapshot : undo 1-niveau, après
+     * annulation il n'y a plus rien à annuler (pas de redo). No-op si aucun
+     * snapshot n'existe.
+     * @param {{ items: object[], snapshotEdition: (Object|null) }} state
+     */
+    RESTAURER_SNAPSHOT(state) {
+      const snap = state.snapshotEdition;
+      if (!snap) return;
+      state.items = state.items.map((pl) =>
+        pl.id === snap.planningId
+          ? { ...pl, affectations: snap.affectations, updatedAt: new Date().toISOString() }
+          : pl
+      );
+      state.snapshotEdition = null;
     },
   },
   actions: {
@@ -141,6 +221,160 @@ export default {
       });
 
       return diagnostiquer(planning.affectations, entree);
+    },
+    /**
+     * Ajoute une affectation posée à la main (`origine: 'MANUEL'`) sur le
+     * planning courant. Capture un snapshot des affectations d'avant le
+     * geste, puis délègue au domaine (`creerAffectationManuelle`) et au
+     * moteur pur (`appliquerChangement`, ADR 0008). Ne recalcule pas les
+     * diagnostics (recalcul volatil laissé à la vue, `evaluerCourant`).
+     *
+     * @param {import('vuex').ActionContext} context
+     * @param {{ tourneeId: string, personneId: string, date: string, creneau: string }} payload
+     */
+    ajouterAffectation({ commit, getters }, { tourneeId, personneId, date, creneau }) {
+      const courant = getters.courant;
+      if (!courant) return;
+
+      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+
+      const affectation = creerAffectationManuelle(personneId, tourneeId, date, creneau);
+      const affectations = appliquerChangement(courant.affectations, { type: 'AJOUTER', affectation });
+
+      commit('UPDATE_AFFECTATIONS', { id: courant.id, affectations });
+    },
+    /**
+     * Retire une affectation du planning courant (immuable, via le moteur
+     * pur). Capture un snapshot des affectations d'avant le geste.
+     *
+     * @param {import('vuex').ActionContext} context
+     * @param {{ affectationId: string }} payload
+     */
+    retirerAffectation({ commit, getters }, { affectationId }) {
+      const courant = getters.courant;
+      if (!courant) return;
+
+      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+
+      const affectations = appliquerChangement(courant.affectations, { type: 'RETIRER', affectationId });
+
+      commit('UPDATE_AFFECTATIONS', { id: courant.id, affectations });
+    },
+    /**
+     * Déplace une affectation existante vers une autre case (tournée/date/
+     * créneau), en **préservant son identité** : même `id`, `verrouillee`
+     * et `commentaire` (le verrou suit l'affectation à destination). Ne
+     * fabrique pas d'affectation neuve (pas de `creerAffectationManuelle`) :
+     * la destination est construite par spread de la source. Capture un
+     * snapshot des affectations d'avant le geste.
+     *
+     * @param {import('vuex').ActionContext} context
+     * @param {{ affectationId: string, versTourneeId: string, versDate: string, versCreneau: string }} payload
+     */
+    deplacerAffectation({ commit, getters }, { affectationId, versTourneeId, versDate, versCreneau }) {
+      const courant = getters.courant;
+      if (!courant) return;
+
+      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+
+      const source = courant.affectations.find((a) => a.id === affectationId);
+      const destination = {
+        ...source,
+        tourneeId: versTourneeId,
+        date: versDate,
+        creneau: versCreneau,
+        origine: 'MANUEL',
+        updatedAt: new Date().toISOString(),
+        // id, verrouillee, commentaire, personneId, createdAt : préservés (spread de la source)
+      };
+      const affectations = appliquerChangement(courant.affectations, {
+        type: 'DEPLACER',
+        affectationId,
+        affectation: destination,
+      });
+
+      commit('UPDATE_AFFECTATIONS', { id: courant.id, affectations });
+    },
+    /**
+     * Bascule le verrouillage (`verrouillee`) d'une affectation du planning
+     * courant et bump son `updatedAt`. Change un champ, pas une position :
+     * n'appelle pas `appliquerChangement`. Capture un snapshot des
+     * affectations d'avant le geste (le verrouillage est annulable).
+     *
+     * @param {import('vuex').ActionContext} context
+     * @param {{ affectationId: string }} payload
+     */
+    basculerVerrouillage({ commit, getters }, { affectationId }) {
+      const courant = getters.courant;
+      if (!courant) return;
+
+      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+
+      const affectations = courant.affectations.map((a) =>
+        a.id === affectationId ? { ...a, verrouillee: !a.verrouillee, updatedAt: new Date().toISOString() } : a
+      );
+
+      commit('UPDATE_AFFECTATIONS', { id: courant.id, affectations });
+    },
+    /**
+     * Régénère **en place** les affectations du planning courant (mutation
+     * `UPDATE_AFFECTATIONS` sur le **même** `id`, jamais un nouveau
+     * `Planning` — complément de `genererPropose`) : le reste des slots est
+     * reconstruit par le moteur pur, en **préservant à l'identique** les
+     * affectations verrouillées (`entree.affectationsVerrouillees`, ADR
+     * 0007). Capture un snapshot des affectations d'avant le geste (une
+     * régénération est annulable, comme les gestes d'édition manuelle).
+     *
+     * Sémantique de `variante` (§4.5) : reconstruit la graine de **base**
+     * à partir de `planning.parametresGeneration` (= `Resultat.meta` d'une
+     * génération précédente, où `meta.seed` est la graine **effective** =
+     * base + variante) puis choisit la graine effective à utiliser —
+     * `variante: false` (« à l'identique ») conserve la **même** graine
+     * effective, `variante: true` (« essayer une variante ») incrémente la
+     * variante à base inchangée (déterministe et progressif, `009` §6). Si
+     * `parametresGeneration` est absent/altéré (import ancien), repli sur
+     * `{ seed: 0, variante: 0 }` — dégradé mais sans plantage.
+     *
+     * @param {import('vuex').ActionContext} context
+     * @param {{ variante?: boolean }} [payload]
+     * @returns {import('@/domain/scheduling/modele/types.js').Resultat|undefined} Résultat complet du moteur, pour que l'appelant alimente ses diagnostics volatils sans second passage moteur.
+     */
+    regenerer({ commit, getters, rootGetters, rootState }, { variante = false } = {}) {
+      const planning = getters.courant;
+      if (!planning) return undefined;
+
+      commit('CAPTURER_SNAPSHOT', { planningId: planning.id, affectations: planning.affectations });
+
+      const pg = planning.parametresGeneration ?? { seed: 0, variante: 0 };
+      const base = (pg.seed ?? 0) - (pg.variante ?? 0);
+      const options = variante
+        ? { seed: base, variante: (pg.variante ?? 0) + 1 }
+        : { seed: base, variante: pg.variante ?? 0 };
+
+      const entree = assemblerEntree(rootGetters, rootState, { debut: planning.dateDebut, fin: planning.dateFin });
+      entree.affectationsVerrouillees = planning.affectations.filter((a) => a.verrouillee);
+
+      const resultat = genererPlanning(entree, options);
+
+      commit('UPDATE_AFFECTATIONS', {
+        id: planning.id,
+        affectations: resultat.affectations,
+        parametresGeneration: resultat.meta,
+      });
+
+      return resultat;
+    },
+    /**
+     * Annule le dernier geste d'édition (ou la dernière régénération) en
+     * restaurant le snapshot pris juste avant. No-op si rien n'est
+     * annulable (`peutAnnuler`). Lecture seule vis-à-vis du moteur (aucun
+     * appel) : c'est la vue qui rafraîchit ensuite ses diagnostics.
+     *
+     * @param {import('vuex').ActionContext} context
+     */
+    annulerDerniereEdition({ commit, getters }) {
+      if (!getters.peutAnnuler) return;
+      commit('RESTAURER_SNAPSHOT');
     },
   },
 };

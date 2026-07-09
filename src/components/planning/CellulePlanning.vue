@@ -22,7 +22,14 @@
       </p>
 
       <ul v-if="elements.length" class="cellule-planning-elements">
-        <li v-for="element in elements" :key="element.id" class="cellule-planning-element">
+        <li
+          v-for="element in elements"
+          :key="element.id"
+          class="cellule-planning-element"
+          :draggable="editable ? true : null"
+          @dragstart="onDebutGlisser(element, $event)"
+          @dragend="$emit('fin-glisser')"
+        >
           <span
             class="cellule-planning-pastille"
             :style="{ backgroundColor: element.couleur }"
@@ -33,6 +40,31 @@
             <span v-if="element.libelleSecondaire" class="cellule-planning-libelle-secondaire">
               {{ element.libelleSecondaire }}
             </span>
+            <span v-if="element.verrouillee" class="cellule-planning-repere-verrou">
+              <PhLockSimple :size="12" weight="bold" aria-hidden="true" />
+              <span>Verrouillée</span>
+            </span>
+          </span>
+          <span v-if="editable" class="cellule-planning-actions-element">
+            <button
+              type="button"
+              class="btn btn-outline-secondary cellule-planning-bouton-verrouiller"
+              :aria-label="element.verrouillee ? 'Déverrouiller cette affectation' : 'Verrouiller cette affectation'"
+              :title="element.verrouillee ? 'Déverrouiller cette affectation' : 'Verrouiller cette affectation'"
+              @click="$emit('verrouiller', { affectationId: element.id })"
+            >
+              <PhLockSimple v-if="element.verrouillee" :size="14" weight="bold" aria-hidden="true" />
+              <PhLockSimpleOpen v-else :size="14" weight="bold" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-danger cellule-planning-bouton-retirer"
+              :aria-label="`Retirer ${element.libellePrincipal} de cette case`"
+              :title="`Retirer ${element.libellePrincipal} de cette case`"
+              @click="onRetirer(element)"
+            >
+              <PhX :size="14" weight="bold" aria-hidden="true" />
+            </button>
           </span>
         </li>
       </ul>
@@ -45,13 +77,32 @@
         </span>
       </p>
 
+      <button
+        v-if="ajoutable"
+        ref="boutonAjouter"
+        type="button"
+        class="btn btn-outline-primary btn-sm cellule-planning-bouton-ajouter"
+        @click="$emit('ajouter-ici')"
+      >
+        <PhUserPlus :size="16" aria-hidden="true" />
+        <span>Ajouter une personne</span>
+      </button>
+
       <span v-if="horsPeriode" class="cellule-planning-hors-periode-texte">Hors période</span>
     </template>
   </div>
 </template>
 
 <script>
-import { PhWarning, PhWarningCircle, PhWarningOctagon } from '@phosphor-icons/vue';
+import {
+  PhWarning,
+  PhWarningCircle,
+  PhWarningOctagon,
+  PhX,
+  PhUserPlus,
+  PhLockSimple,
+  PhLockSimpleOpen,
+} from '@phosphor-icons/vue';
 
 /**
  * Rendu **présentational** d'une cellule de `GrillePlanning` (feature 010) :
@@ -60,17 +111,55 @@ import { PhWarning, PhWarningCircle, PhWarningOctagon } from '@phosphor-icons/vu
  * drapeau « concernée par un conflit ». Ne calcule rien : `GrillePlanning`
  * lui fournit des données déjà prêtes à afficher (aucune règle métier ici).
  *
- * **Lecture seule** en 010 : n'émet aucun événement. `011` enrichira cette
- * unité (poignées de glisser-déposer) sans changer sa responsabilité
- * d'affichage.
+ * **Lecture seule par défaut** (`editable`/`ajoutable` à `false`, valeurs par
+ * défaut) : rendu **strictement identique** à `010`, aucun bouton, aucune
+ * émission — invariant de non-régression de la feature `011`. Quand
+ * `editable` (feature 011, tâche 3), chaque élément affiche un bouton
+ * « Retirer » (icône + `aria-label`, aucun appel store ici : l'émission
+ * `retirer` remonte jusqu'à `PlanningView` via `GrillePlanning`, seule à
+ * dispatcher). Quand `ajoutable`, un bouton « Ajouter une personne » clôt la
+ * case (icône + libellé visible).
+ *
+ * Verrouillage (feature 011, tâche 4) : un élément `verrouillee` affiche un
+ * repère **permanent** cadenas (`PhLockSimple`) + libellé « Verrouillée »
+ * (jamais la seule couleur) — visible **que la case soit éditable ou non**
+ * (utile au référent même en lecture). Quand `editable`, chaque élément
+ * porte en plus un **bouton de bascule** (`PhLockSimpleOpen` déverrouillée →
+ * cliquer pour verrouiller ; `PhLockSimple` verrouillée → cliquer pour
+ * déverrouiller), `aria-label` explicite, qui émet `verrouiller`. Aucun
+ * bouton de bascule hors édition.
+ *
+ * Glisser-déposer natif (feature 011, tâche 5, **surcouche** de confort au
+ * clic — API HTML5 native, aucune dépendance) : quand `editable`, chaque
+ * élément devient `draggable`. `dragstart` émet `debut-glisser` (identifie
+ * l'affectation glissée) ; `dragend` émet `fin-glisser` (glisse terminée,
+ * déposée ou abandonnée). `GrillePlanning` tient l'état de glisse et les
+ * zones de dépôt ; ce composant ne connaît que sa propre case. Hors édition,
+ * aucun élément n'est `draggable` : rendu strictement identique à `010`.
+ *
+ * Correctifs ergonomie (relecture post-011) : les boutons verrouiller/
+ * retirer portent un `title` (en plus de l'`aria-label`), pour l'infobulle
+ * au survol (MAJ-3). Le clic sur « Retirer » (clic/clavier, pas le
+ * glisser-déposer) replace ensuite le focus sur le bouton « Ajouter une
+ * personne » de la même case, quand il existe (MAJ-2).
  */
 export default {
   name: 'CellulePlanning',
-  components: { PhWarning, PhWarningCircle, PhWarningOctagon },
+  components: {
+    PhWarning,
+    PhWarningCircle,
+    PhWarningOctagon,
+    PhX,
+    PhUserPlus,
+    PhLockSimple,
+    PhLockSimpleOpen,
+  },
   props: {
     /**
      * Éléments déjà résolus à afficher (une affectation par élément).
-     * `{ id: string, couleur: string, libellePrincipal: string, libelleSecondaire?: string }`.
+     * `{ id: string, couleur: string, libellePrincipal: string, libelleSecondaire?: string, verrouillee?: boolean }`.
+     * `verrouillee` pilote le repère cadenas + libellé « Verrouillée »
+     * (feature 011, tâche 4), affiché que la case soit éditable ou non.
      */
     elements: { type: Array, default: () => [] },
     /**
@@ -89,6 +178,50 @@ export default {
     ferme: { type: Boolean, default: false },
     /** `true` si la colonne (jour) est hors `[planning.dateDebut, planning.dateFin]`. */
     horsPeriode: { type: Boolean, default: false },
+    /**
+     * `true` en mode édition (feature 011). Affiche un bouton « Retirer »
+     * par élément. Par défaut `false` : rendu `010` inchangé.
+     */
+    editable: { type: Boolean, default: false },
+    /**
+     * `true` si cette case accepte l'ajout d'une personne (édition, orientation
+     * Tournées, case ni fermée ni hors période — calculé par `GrillePlanning`).
+     * Affiche le bouton « Ajouter une personne ». Par défaut `false`.
+     */
+    ajoutable: { type: Boolean, default: false },
+  },
+  emits: ['ajouter-ici', 'retirer', 'verrouiller', 'debut-glisser', 'fin-glisser'],
+  methods: {
+    /**
+     * Démarre le glisser-déposer d'un élément (feature 011, tâche 5) :
+     * émet `debut-glisser` avec l'identifiant de l'affectation glissée.
+     * `dataTransfer` reçoit l'id en texte brut (robustesse inter-navigateurs
+     * pour l'initiation du glisser), même si `GrillePlanning` s'appuie sur
+     * l'événement Vue (pas sur `dataTransfer`) pour retrouver l'affectation.
+     * @param {{ id: string }} element
+     * @param {DragEvent} event
+     */
+    onDebutGlisser(element, event) {
+      event.dataTransfer?.setData('text/plain', element.id);
+      this.$emit('debut-glisser', { affectationId: element.id });
+    },
+
+    /**
+     * Retire un élément de la case (bouton « Retirer », clic/clavier
+     * uniquement — ne concerne pas le glisser-déposer) : émet `retirer`,
+     * puis replace le focus clavier sur le bouton « Ajouter une personne »
+     * de la même case une fois le DOM mis à jour, quand celui-ci existe
+     * (case éditable et ajoutable). Évite que l'utilisateur clavier ne
+     * reparte de `<body>` après la disparition du bouton cliqué (correctif
+     * ergonomie MAJ-2, feature 011).
+     * @param {{ id: string }} element
+     */
+    onRetirer(element) {
+      this.$emit('retirer', { affectationId: element.id });
+      this.$nextTick(() => {
+        this.$refs.boutonAjouter?.focus();
+      });
+    },
   },
 };
 </script>
@@ -191,6 +324,40 @@ export default {
   color: t.$couleur-texte-attenue;
 }
 
+// Repère **permanent** d'une affectation verrouillée : cadenas + libellé
+// (jamais la seule couleur), visible que la case soit éditable ou non.
+.cellule-planning-repere-verrou {
+  display: flex;
+  align-items: center;
+  gap: t.$espace-1;
+  margin-top: t.$espace-1;
+  color: t.$couleur-texte-attenue;
+  font-size: t.$taille-texte-petite;
+  font-style: italic;
+}
+
+// Regroupe les boutons d'action par élément (verrouiller, retirer).
+.cellule-planning-actions-element {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: t.$espace-1;
+  margin-left: auto;
+}
+
+// Boutons d'action par élément : icône seule (accompagnée d'un
+// `aria-label`, jamais réduite à une icône « nue » au sens accessibilité),
+// cible cliquable confortable malgré la densité de la liste.
+.cellule-planning-bouton-retirer,
+.cellule-planning-bouton-verrouiller {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: t.$cible-cliquable-min;
+  min-height: t.$cible-cliquable-min;
+  padding: 0;
+}
+
 .cellule-planning-sous-couverture {
   display: flex;
   align-items: center;
@@ -205,5 +372,16 @@ export default {
   font-size: t.$taille-texte-petite;
   color: t.$couleur-texte-attenue;
   font-style: italic;
+}
+
+// Bouton « Ajouter une personne » : toujours visible (jamais réservé au
+// survol, inutilisable au tactile/clavier sinon), icône + libellé en clair.
+.cellule-planning-bouton-ajouter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$espace-1;
+  min-height: t.$cible-cliquable-min;
+  width: 100%;
 }
 </style>

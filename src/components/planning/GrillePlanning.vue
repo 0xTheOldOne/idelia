@@ -76,6 +76,9 @@
               v-for="cellule in ligne.cellules"
               :key="cellule.date"
               class="grille-planning-cellule"
+              :class="{ 'grille-planning-cellule--cible-depot': estCibleDepot(cellule) }"
+              @dragover="onSurvolCellule(cellule, $event)"
+              @drop="onDeposer(cellule, $event)"
             >
               <slot name="cellule" v-bind="cellule">
                 <CellulePlanning
@@ -84,6 +87,13 @@
                   :concernee="cellule.concernee"
                   :ferme="cellule.ferme"
                   :hors-periode="cellule.horsPeriode"
+                  :editable="cellule.editable"
+                  :ajoutable="cellule.ajoutable"
+                  @ajouter-ici="onAjouterIci(cellule)"
+                  @retirer="$emit('retirer', $event)"
+                  @verrouiller="$emit('verrouiller', $event)"
+                  @debut-glisser="onDebutGlisser($event)"
+                  @fin-glisser="onFinGlisser"
                 />
               </slot>
             </td>
@@ -116,24 +126,49 @@ import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
  * @property {string} couleur
  * @property {string} libellePrincipal
  * @property {string} [libelleSecondaire]
+ * @property {boolean} verrouillee
  */
 
 /**
- * Composant central, en **lecture seule**, de visualisation d'un planning
- * (feature 010). Rend **toujours** une matrice lignes × jours (§6.1 du
- * plan) : l'échelle (`JOUR`/`SEMAINE`/`MOIS`) ne change que l'ensemble des
- * colonnes-jours, l'orientation (`TOURNEES`/`PERSONNES`) ne change que ce
- * que sont les lignes et le contenu d'une cellule.
+ * Composant central de visualisation d'un planning (feature 010),
+ * **éditable au clic** en mode édition (feature 011, prop `editable`, par
+ * défaut `false`). Rend **toujours** une matrice lignes × jours (§6.1 du
+ * plan `010`) : l'échelle (`JOUR`/`SEMAINE`/`MOIS`) ne change que l'ensemble
+ * des colonnes-jours, l'orientation (`TOURNEES`/`PERSONNES`) ne change que
+ * ce que sont les lignes et le contenu d'une cellule.
  *
  * Ne fait **aucune dérivation métier** : la sous-couverture vient
  * directement de la prop `tourneesNonCouvertes` (jamais des violations), le
  * surlignage est un mapping purement présentational de `Violation.cible`
- * vers une cellule/un en-tête de ligne (§6.2). Aucun import de
+ * vers une cellule/un en-tête de ligne (§6.2 de `010`). Aucun import de
  * `@/domain/scheduling` ici.
  *
+ * Édition (`011` §6.1) : ancrée sur l'orientation `TOURNEES` — quand
+ * `editable` est `true` mais que l'orientation est `PERSONNES`, la grille
+ * reste **strictement en lecture seule** (aucun bouton, aucune émission),
+ * `PlanningView` affichant alors un message invitant à repasser sur
+ * « Tournées ». Reste **présentational** : n'appelle ni store ni moteur ;
+ * **traduit** l'événement élémentaire `ajouter-ici` de `CellulePlanning` en
+ * événement **sémantique** `ajouter` enrichi du contexte, et **réémet tel
+ * quel** `retirer`/`verrouiller` (feature 011, tâche 4 : la bascule de
+ * verrouillage ne nécessite aucun contexte supplémentaire, `element.id`
+ * porte déjà l'`affectationId`), vers `PlanningView` (seule à dispatcher,
+ * ADR 0008).
+ *
+ * Glisser-déposer natif (feature 011, tâche 5, **surcouche** de confort au
+ * clic, API HTML5 native, aucune dépendance ajoutée) : tient l'état volatil
+ * `affectationEnGlissement` (mis à jour via `debut-glisser`/`fin-glisser`
+ * remontés de `CellulePlanning`) et `celluleCible` (case survolée comme
+ * cible de dépôt valide, pour le repère visuel §6.3). Sur les `<td>`
+ * éditables (orientation Tournées, case ni fermée ni hors période — même
+ * condition que `ajoutable`), `dragover` autorise le dépôt et met à jour le
+ * repère ; `drop` traduit l'événement élémentaire en événement **sémantique**
+ * `deplacer` enrichi du contexte (créneau résolu via `tournees/byId`),
+ * ignoré sur la case source, une case non éligible, ou hors glisse. Reste
+ * **présentational** : n'appelle ni store ni moteur.
+ *
  * Expose un **slot scopé `cellule`** (point de greffe `011`), dont le
- * contenu par défaut est `CellulePlanning`. **N'émet aucun événement
- * d'édition.**
+ * contenu par défaut est `CellulePlanning`.
  */
 export default {
   name: 'GrillePlanning',
@@ -151,11 +186,48 @@ export default {
     violations: { type: Array, default: () => [] },
     /** `NonCouverture[]` du moteur — source unique de la sous-couverture affichée. */
     tourneesNonCouvertes: { type: Array, default: () => [] },
+    /**
+     * `true` en mode édition (feature 011), piloté par `PlanningView`
+     * (`:editable="modeEdition"`). Par défaut `false` : comportement `010`
+     * strictement inchangé (aucun bouton, aucune émission).
+     */
+    editable: { type: Boolean, default: false },
+  },
+  emits: ['ajouter', 'retirer', 'verrouiller', 'deplacer'],
+  data() {
+    return {
+      /**
+       * Identifiant de l'affectation en cours de glisser-déposer (feature
+       * 011, tâche 5), mis à jour via `debut-glisser`/`fin-glisser` remontés
+       * de `CellulePlanning`. `null` hors glisse.
+       */
+      affectationEnGlissement: null,
+      /**
+       * Coordonnées `{ tourneeId, date }` de la case actuellement survolée
+       * comme cible de dépôt valide, pour le repère visuel (§6.3). `null`
+       * hors glisse ou hors case éligible. Effacé à `fin-glisser` et après
+       * chaque dépôt.
+       */
+      celluleCible: null,
+    };
   },
   computed: {
     ...mapGetters('tournees', { tourneesActives: 'actives', tourneeParId: 'byId' }),
     ...mapGetters('personnes', { personnesActives: 'actifs', personneParId: 'byId' }),
     ...mapGetters('cabinet', ['parametres']),
+
+    /**
+     * Édition réellement active : `editable` **et** orientation `TOURNEES`
+     * (§6.1 — l'édition reste ancrée sur les cases-tournée, qui seules ont
+     * un créneau propre). En orientation `PERSONNES`, l'édition reste
+     * désactivée même si `editable` est `true` (la grille y est
+     * strictement en lecture seule ; `PlanningView` affiche alors un
+     * message invitant à revenir sur « Tournées »).
+     * @returns {boolean}
+     */
+    editableEffectif() {
+      return this.editable && this.orientation === 'TOURNEES';
+    },
 
     /**
      * Fenêtre de dates `"YYYY-MM-DD"` couverte par la grille, selon
@@ -292,7 +364,9 @@ export default {
 
     /**
      * Résout une `Affectation` en élément d'affichage (pastille + nom, +
-     * créneau en orientation Personnes, masqué si `JOURNEE`).
+     * créneau en orientation Personnes, masqué si `JOURNEE`). Enrichi de
+     * `verrouillee` (feature 011, tâche 3), rendu par `CellulePlanning`
+     * (cadenas + libellé « Verrouillée », tâche 4).
      * @param {object} affectation
      * @returns {ElementCellule}
      */
@@ -300,23 +374,35 @@ export default {
       if (this.orientation === 'TOURNEES') {
         const personne = this.personneParId(affectation.personneId);
         if (!personne) {
-          return { id: affectation.id, couleur: 'transparent', libellePrincipal: 'Personne inconnue' };
+          return {
+            id: affectation.id,
+            couleur: 'transparent',
+            libellePrincipal: 'Personne inconnue',
+            verrouillee: affectation.verrouillee,
+          };
         }
         return {
           id: affectation.id,
           couleur: personne.couleur,
           libellePrincipal: `${personne.prenom} ${personne.nom}${personne.actif ? '' : ' (archivée)'}`,
+          verrouillee: affectation.verrouillee,
         };
       }
       const tournee = this.tourneeParId(affectation.tourneeId);
       if (!tournee) {
-        return { id: affectation.id, couleur: 'transparent', libellePrincipal: 'Tournée inconnue' };
+        return {
+          id: affectation.id,
+          couleur: 'transparent',
+          libellePrincipal: 'Tournée inconnue',
+          verrouillee: affectation.verrouillee,
+        };
       }
       return {
         id: affectation.id,
         couleur: tournee.couleur,
         libellePrincipal: `${tournee.nom}${tournee.archivee ? ' (archivée)' : ''}`,
         libelleSecondaire: affectation.creneau === 'JOURNEE' ? '' : libelleCreneau(affectation.creneau),
+        verrouillee: affectation.verrouillee,
       };
     },
 
@@ -370,8 +456,15 @@ export default {
 
     /**
      * Construit le descripteur complet d'une cellule, exposé tel quel par le
-     * slot scopé `cellule` (§6.3). Les jours fermés n'ont « aucune cellule
-     * active » : éléments et sous-couverture y sont vidés.
+     * slot scopé `cellule` (§6.3 de `010`). Les jours fermés n'ont « aucune
+     * cellule active » : éléments et sous-couverture y sont vidés.
+     *
+     * `editable`/`ajoutable` (feature 011, tâche 3) : `editable` reflète
+     * `editableEffectif` (retirer un élément reste possible même sur une
+     * case hors période, pour corriger une affectation existante) ;
+     * `ajoutable` restreint en plus le bouton « Ajouter une personne » aux
+     * cases ni fermées ni hors période (§7 — on ne crée pas d'affectation
+     * qui serait immédiatement signalée).
      * @param {LigneGrille} ligne
      * @param {{date: string, jourIso: number, ferme: boolean, horsPeriode: boolean}} colonne
      * @returns {object}
@@ -390,7 +483,104 @@ export default {
         concernee: colonne.ferme ? false : this.concerneeCellule(ligne, colonne.date),
         ferme: colonne.ferme,
         horsPeriode: colonne.horsPeriode,
+        editable: this.editableEffectif,
+        ajoutable: this.editableEffectif && !colonne.ferme && !colonne.horsPeriode,
       };
+    },
+
+    /**
+     * Traduit l'événement élémentaire `ajouter-ici` de `CellulePlanning` (qui
+     * ne connaît qu'une case) en événement **sémantique** `ajouter`, enrichi
+     * du contexte de la case (tournée/date/créneau) — §6.1. Le créneau est
+     * résolu via `tournees/byId` (dénormalisé depuis la tournée, jamais
+     * saisi par l'utilisateur). No-op si la tournée est introuvable.
+     * @param {object} cellule - Descripteur de cellule (voir `celluleDescripteur`).
+     */
+    onAjouterIci(cellule) {
+      const tournee = this.tourneeParId(cellule.ligne.id);
+      if (!tournee) return;
+      this.$emit('ajouter', { tourneeId: cellule.ligne.id, date: cellule.date, creneau: tournee.creneau });
+    },
+
+    /**
+     * Démarrage d'un glisser (feature 011, tâche 5) : mémorise l'affectation
+     * en cours de glisse, remontée par `debut-glisser` de `CellulePlanning`.
+     * @param {{ affectationId: string }} payload
+     */
+    onDebutGlisser({ affectationId }) {
+      this.affectationEnGlissement = affectationId;
+    },
+
+    /**
+     * Fin d'un glisser (déposé ou abandonné) : efface l'état de glisse et le
+     * repère de cible.
+     */
+    onFinGlisser() {
+      this.affectationEnGlissement = null;
+      this.celluleCible = null;
+    },
+
+    /**
+     * `true` si `cellule` est la case actuellement survolée comme cible de
+     * dépôt valide (repère visuel §6.3, bordure + fond léger, jamais la
+     * seule couleur).
+     * @param {object} cellule - Descripteur de cellule (voir `celluleDescripteur`).
+     * @returns {boolean}
+     */
+    estCibleDepot(cellule) {
+      return (
+        !!this.celluleCible &&
+        this.celluleCible.tourneeId === cellule.ligne.id &&
+        this.celluleCible.date === cellule.date
+      );
+    },
+
+    /**
+     * Survol d'une case pendant un glisser-déposer : autorise le dépôt
+     * (`preventDefault`) et met à jour le repère de cible, **uniquement**
+     * si la case est éditable (orientation Tournées, ni fermée ni hors
+     * période — même condition que `cellule.ajoutable`). Les cases non
+     * éligibles restent refusées par le comportement HTML5 par défaut
+     * (curseur « interdit »), sans qu'il soit nécessaire de le vérifier
+     * ailleurs.
+     * @param {object} cellule
+     * @param {DragEvent} event
+     */
+    onSurvolCellule(cellule, event) {
+      if (!cellule.ajoutable) return;
+      event.preventDefault();
+      this.celluleCible = { tourneeId: cellule.ligne.id, date: cellule.date };
+    },
+
+    /**
+     * Dépôt d'une affectation glissée sur une case : traduit l'événement
+     * élémentaire en événement **sémantique** `deplacer`, enrichi du
+     * contexte de la case cible (créneau résolu via `tournees/byId`, jamais
+     * saisi). Ignore le dépôt : hors glisse, sur une case non éligible
+     * (`!cellule.ajoutable` — fermée, hors période, ou hors mode édition),
+     * ou sur la case source (même tournée + date que l'affectation glissée).
+     * @param {object} cellule
+     * @param {DragEvent} event
+     */
+    onDeposer(cellule, event) {
+      event.preventDefault();
+      this.celluleCible = null;
+
+      const affectationId = this.affectationEnGlissement;
+      if (!affectationId || !cellule.ajoutable) return;
+
+      const source = this.planning.affectations.find((a) => a.id === affectationId);
+      if (source && source.tourneeId === cellule.ligne.id && source.date === cellule.date) return;
+
+      const tournee = this.tourneeParId(cellule.ligne.id);
+      if (!tournee) return;
+
+      this.$emit('deplacer', {
+        affectationId,
+        versTourneeId: cellule.ligne.id,
+        versDate: cellule.date,
+        versCreneau: tournee.creneau,
+      });
     },
   },
 };
@@ -543,5 +733,15 @@ export default {
   vertical-align: top;
   border-bottom: 1px solid t.$couleur-bordure;
   border-right: 1px solid t.$couleur-bordure;
+}
+
+// Repère visuel de la case survolée comme cible de dépôt pendant un
+// glisser-déposer (feature 011, tâche 5) : bordure marquée + fond léger
+// (jamais la seule couleur), retiré à la fin de la glisse. `outline` (plutôt
+// que `border`) pour ne pas perturber la géométrie de la grille.
+.grille-planning-cellule--cible-depot {
+  background-color: rgba(t.$couleur-primaire, 0.12);
+  outline: 3px dashed t.$couleur-primaire-foncee;
+  outline-offset: -3px;
 }
 </style>
