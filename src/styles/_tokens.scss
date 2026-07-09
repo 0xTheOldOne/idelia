@@ -15,6 +15,10 @@ $couleur-primaire-foncee: #123a3f;
 $couleur-succes: #2e7d4f;
 $couleur-erreur: #c62828;
 $couleur-avertissement: #b8860b;
+// Réservé au **texte** d'avertissement (contraste ≈ 5,8:1 sur blanc, WCAG AA) :
+// `$couleur-avertissement` (≈ 3,3:1) reste utilisé pour les bordures/icônes/
+// fonds, insuffisant comme couleur de texte.
+$couleur-avertissement-texte: #806000;
 
 // ---------------------------------------------------------------------------
 // Couleurs — neutres

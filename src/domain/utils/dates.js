@@ -122,6 +122,73 @@ function formatDateFr(iso) {
   return `${jour}/${mois}/${annee}`;
 }
 
+/**
+ * Calcule le premier jour de la semaine contenant `dateStr`, aligné sur
+ * `premierJourIso` (1 = lundi … 7 = dimanche). Construit au-dessus de
+ * {@link weekdayISO} et {@link addDays}, par simple arithmétique — aucun
+ * nouvel objet `Date` exposé.
+ *
+ * @param {string} dateStr - Date `"YYYY-MM-DD"` de référence.
+ * @param {number} premierJourIso - Premier jour de semaine, ISO 1-7.
+ * @returns {string} Date `"YYYY-MM-DD"` du premier jour de la semaine.
+ */
+function debutSemaine(dateStr, premierJourIso) {
+  const delta = (weekdayISO(dateStr) - premierJourIso + 7) % 7;
+  return addDays(dateStr, -delta);
+}
+
+/**
+ * Calcule le premier jour du mois contenant `dateStr`, par simple
+ * arithmétique de chaîne (aucun objet `Date`).
+ *
+ * @param {string} dateStr - Date `"YYYY-MM-DD"` de référence.
+ * @returns {string} Date `"YYYY-MM-DD"` du premier jour du mois.
+ */
+function debutMois(dateStr) {
+  return `${dateStr.slice(0, 8)}01`;
+}
+
+/**
+ * Calcule le premier jour du mois suivant celui de `dateStr`, par
+ * arithmétique de chaîne sur `"YYYY-MM"` (report décembre → janvier géré).
+ *
+ * @param {string} dateStr - Date `"YYYY-MM-DD"` de référence.
+ * @returns {string} Date `"YYYY-MM-DD"` du premier jour du mois suivant.
+ */
+function moisSuivant(dateStr) {
+  const annee = Number(dateStr.slice(0, 4));
+  const mois = Number(dateStr.slice(5, 7));
+  const anneeCible = mois === 12 ? annee + 1 : annee;
+  const moisCible = mois === 12 ? 1 : mois + 1;
+  return `${anneeCible}-${String(moisCible).padStart(2, '0')}-01`;
+}
+
+/**
+ * Calcule le premier jour du mois précédent celui de `dateStr`, par
+ * arithmétique de chaîne sur `"YYYY-MM"` (report janvier → décembre géré).
+ *
+ * @param {string} dateStr - Date `"YYYY-MM-DD"` de référence.
+ * @returns {string} Date `"YYYY-MM-DD"` du premier jour du mois précédent.
+ */
+function moisPrecedent(dateStr) {
+  const annee = Number(dateStr.slice(0, 4));
+  const mois = Number(dateStr.slice(5, 7));
+  const anneeCible = mois === 1 ? annee - 1 : annee;
+  const moisCible = mois === 1 ? 12 : mois - 1;
+  return `${anneeCible}-${String(moisCible).padStart(2, '0')}-01`;
+}
+
+/**
+ * Calcule le dernier jour du mois contenant `dateStr`, construit au-dessus
+ * de {@link moisSuivant}, {@link debutMois} et {@link addDays}.
+ *
+ * @param {string} dateStr - Date `"YYYY-MM-DD"` de référence.
+ * @returns {string} Date `"YYYY-MM-DD"` du dernier jour du mois.
+ */
+function finMois(dateStr) {
+  return addDays(moisSuivant(debutMois(dateStr)), -1);
+}
+
 export const dateUtil = {
   parse,
   format,
@@ -131,4 +198,9 @@ export const dateUtil = {
   rangeInclusive,
   formatHorodatageFr,
   formatDateFr,
+  debutSemaine,
+  debutMois,
+  moisSuivant,
+  moisPrecedent,
+  finMois,
 };

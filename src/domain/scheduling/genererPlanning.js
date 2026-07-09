@@ -18,13 +18,11 @@
 
 import { creerRng } from './utils/rng.js';
 import { creerContraintes } from './contraintes/index.js';
-import { calculerNonCouvertures } from './contraintes/contrainteCouverture.js';
 import { expanserDemandes, joursPeriode } from './modele/demande.js';
 import { indexer } from './modele/planning.js';
 import { constructionGloutonne } from './heuristiques/glouton.js';
 import { ameliorerLocalement } from './heuristiques/rechercheLocale.js';
-import { calculerScore } from './heuristiques/scoring.js';
-import { validerPlanning } from './validerPlanning.js';
+import { diagnostiquer } from './diagnostiquer.js';
 
 /**
  * Horodatage courant en millisecondes — seule concession technique tolérée
@@ -66,14 +64,14 @@ export function genererPlanning(entree, options = {}) {
   let affectations = constructionGloutonne(demandes, contraintes, ctx, rng);
   affectations = ameliorerLocalement(affectations, contraintes, ctx, rng, options.budgetMs ?? 200);
 
-  const violations = validerPlanning(affectations, entree); // MÊME validateur que §5.10, aucune règle dupliquée
-  const nonCouvertes = calculerNonCouvertures(demandes, indexer(affectations));
+  // MÊME diagnostic que celui recalculé au rechargement (010 §4.3), aucune règle dupliquée.
+  const { violations, tourneesNonCouvertes, score } = diagnostiquer(affectations, entree);
 
   return {
     affectations,
     violations,
-    score: calculerScore(violations),
-    tourneesNonCouvertes: nonCouvertes,
+    score,
+    tourneesNonCouvertes,
     meta: {
       seed,
       variante: options.variante ?? 0,
