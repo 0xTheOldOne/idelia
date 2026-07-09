@@ -32,8 +32,8 @@ Légende statut : ⬜ à faire · 🟡 en cours · ✅ fait.
 
 | N°  | Feature                      | Résumé                                                                                                                                     | Dépend de          | Statut |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ | ------ |
-| 010 | Génération de planning (UI)  | Choix de période, lancement de la génération, affichage de la proposition + conflits résiduels.                                            | 005, 006, 007, 009 | ⬜     |
-| 011 | Éditeur de planning          | Grille, **glisser-déposer**, validation **temps réel** des conflits, verrouillage d'affectations, regénération (reproductible / variante). | 010                | ⬜     |
+| 010 | Génération de planning (UI)  | Choix de période, lancement de la génération, affichage de la proposition + conflits résiduels.                                            | 005, 006, 007, 009 | ✅     |
+| 011 | Éditeur de planning          | Grille, **glisser-déposer**, validation **temps réel** des conflits, verrouillage d'affectations, regénération (reproductible / variante). | 010                | 🟡     |
 | 012 | Diffusion / impression / PDF | Vue lecture imprimable/exportable pour l'équipe ([ADR 0009](../docs/adr/0009-workflow-referent-diffusion-lecture.md)), `@media print`.     | 011                | ⬜     |
 
 ## Finition
