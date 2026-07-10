@@ -186,6 +186,12 @@
       <h2>Sauvegarde</h2>
       <BlocSauvegarde @donnees-remplacees="onDonneesRemplacees" />
     </section>
+
+    <!-- Sauvegarde automatique (feature 0019) : préférence d'UI, hors formulaire/Vuelidate -->
+    <section class="parametres-section">
+      <h2>Sauvegarde automatique</h2>
+      <BlocSauvegardeAutomatique />
+    </section>
   </div>
 </template>
 
@@ -196,6 +202,7 @@ import { required, between, integer, helpers } from '@vuelidate/validators';
 import { PhWarning } from '@phosphor-icons/vue';
 
 import BlocSauvegarde from '@/components/parametres/BlocSauvegarde.vue';
+import BlocSauvegardeAutomatique from '@/components/parametres/BlocSauvegardeAutomatique.vue';
 import { JOURS_SEMAINE, libelleCreneau } from '@/domain/libelles.js';
 import { coherenceParametres } from '@/domain/cabinet.js';
 import { CRENEAUX } from '@/domain/schema.js';
@@ -212,7 +219,7 @@ import { CRENEAUX } from '@/domain/schema.js';
  */
 export default {
   name: 'ParametresView',
-  components: { BlocSauvegarde, PhWarning },
+  components: { BlocSauvegarde, BlocSauvegardeAutomatique, PhWarning },
   setup() {
     // Seul usage de la Composition API : pont requis par Vuelidate 2 en
     // Options API (ADR 0011). Le reste du composant reste en Options API.

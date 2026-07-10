@@ -28,12 +28,70 @@ import { storageRepository } from '@/storage/storageRepository.js';
  * (clé `idelia:prefs-ui`, distincte du `SaveDocument`) afin de survivre au
  * rechargement sans jamais entrer dans la sauvegarde métier (§4.2 de la
  * feature 0015).
+ *
+ * `sauvegardeAutoActive`/`sauvegardeAutoIntervalleMinutes` (feature 0019) :
+ * préférence « sauvegarde automatique », sur le même modèle que
+ * `menuReplie` — état volatil en mémoire, reflété sur son propre canal
+ * `storageRepository` (clé `idelia:prefs-sauvegarde-auto`, distincte à la
+ * fois du `SaveDocument` et de `idelia:prefs-ui`).
+ *
+ * `fichierSauvegardeActif`/`nomFichierSauvegarde`/`dernierFichierEnregistreLe`
+ * (feature 0019, ADR 0018) : reflètent l'état du « fichier de sauvegarde
+ * actif » (File System Access API, Chrome/Edge uniquement), dont le handle
+ * réel (non sérialisable) vit en variable de module dans
+ * `src/store/index.js`. **Volatils, jamais persistés** : après un
+ * rechargement de page, `fichierSauvegardeActif` redevient `false` (le
+ * handle ne survit pas à la session, choix assumé de l'ADR 0018).
+ *
+ * Le minuteur de sauvegarde automatique dispatche désormais l'action racine
+ * `declencherSauvegardeAutomatique` (`src/store/index.js`) à chaque tick :
+ * elle écrit silencieusement dans le fichier actif s'il y en a un, sinon se
+ * contente du rappel (toast d'avertissement).
  */
+
+/**
+ * Identifiant du minuteur de rappel/sauvegarde automatique en cours, variable
+ * **de module** (comme `timer` dans `src/store/index.js`) : un `setInterval`
+ * n'est pas une donnée sérialisable, il ne doit donc jamais vivre dans
+ * `state`.
+ * @type {ReturnType<typeof setInterval>|null}
+ */
+let minuteur = null;
+
+/**
+ * (Ré)arme le minuteur de sauvegarde automatique : annule le précédent s'il y
+ * en a un, puis programme un nouveau tick toutes les `intervalleMinutes`
+ * minutes. Chaque tick dispatche l'action racine
+ * `declencherSauvegardeAutomatique` (`src/store/index.js`), qui décide
+ * elle-même s'il faut écrire silencieusement dans le fichier actif ou se
+ * contenter d'un rappel (toast) — ce module ne connaît pas ce détail.
+ *
+ * @param {import('vuex').ActionContext} context
+ * @param {number} intervalleMinutes
+ */
+function armerMinuteur({ dispatch }, intervalleMinutes) {
+  clearInterval(minuteur);
+  minuteur = setInterval(() => {
+    dispatch('declencherSauvegardeAutomatique', null, { root: true });
+  }, intervalleMinutes * 60000);
+}
+
+/** Désarme le minuteur de sauvegarde automatique, s'il est actif. */
+function desarmerMinuteur() {
+  clearInterval(minuteur);
+  minuteur = null;
+}
+
 export default {
   namespaced: true,
   state: () => ({
     dernierExportLe: null,
     menuReplie: false,
+    sauvegardeAutoActive: false,
+    sauvegardeAutoIntervalleMinutes: 15,
+    fichierSauvegardeActif: false,
+    nomFichierSauvegarde: null,
+    dernierFichierEnregistreLe: null,
   }),
   getters: {
     menuReplie: (state) => state.menuReplie,
@@ -44,6 +102,17 @@ export default {
     },
     SET_MENU_REPLIE(state, valeur) {
       state.menuReplie = valeur;
+    },
+    SET_SAUVEGARDE_AUTO(state, { active, intervalleMinutes }) {
+      state.sauvegardeAutoActive = active;
+      state.sauvegardeAutoIntervalleMinutes = intervalleMinutes;
+    },
+    SET_FICHIER_SAUVEGARDE_ACTIF(state, { actif, nom }) {
+      state.fichierSauvegardeActif = actif;
+      state.nomFichierSauvegarde = nom;
+    },
+    SET_DERNIER_FICHIER_ENREGISTRE(state, iso) {
+      state.dernierFichierEnregistreLe = iso;
     },
   },
   actions: {
@@ -76,6 +145,38 @@ export default {
      */
     initialiserMenu({ commit }) {
       commit('SET_MENU_REPLIE', storageRepository.lirePreferenceMenuReplie());
+    },
+
+    /**
+     * Restitue la préférence de sauvegarde automatique mémorisée
+     * précédemment et arme le minuteur si elle est active. Appelée au
+     * démarrage (`src/main.js`), comme `initialiserMenu`.
+     * @param {import('vuex').ActionContext} context
+     */
+    initialiserSauvegardeAuto({ commit, dispatch }) {
+      const preference = storageRepository.lirePreferenceSauvegardeAuto();
+      commit('SET_SAUVEGARDE_AUTO', preference);
+      if (preference.active) {
+        armerMinuteur({ dispatch }, preference.intervalleMinutes);
+      }
+    },
+
+    /**
+     * Change le réglage de sauvegarde automatique (activation et/ou
+     * fréquence) : mémorise le nouveau choix via `storageRepository` (canal
+     * dédié, hors `SaveDocument`), puis réarme ou désarme le minuteur en
+     * conséquence.
+     * @param {import('vuex').ActionContext} context
+     * @param {{ active: boolean, intervalleMinutes: number }} payload
+     */
+    configurerSauvegardeAuto({ commit, dispatch }, { active, intervalleMinutes }) {
+      commit('SET_SAUVEGARDE_AUTO', { active, intervalleMinutes });
+      storageRepository.enregistrerPreferenceSauvegardeAuto({ active, intervalleMinutes });
+      if (active) {
+        armerMinuteur({ dispatch }, intervalleMinutes);
+      } else {
+        desarmerMinuteur();
+      }
     },
   },
 };

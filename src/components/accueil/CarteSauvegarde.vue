@@ -67,9 +67,9 @@ export default {
   computed: {
     texteRappel() {
       if (!this.dernierExportLe) {
-        return 'Pensez à exporter régulièrement une copie de vos données.';
+        return "Aucun fichier téléchargé depuis l'ouverture de l'application. Pensez à en télécharger un régulièrement.";
       }
-      return `Dernière sauvegarde enregistrée le ${dateUtil.formatHorodatageFr(this.dernierExportLe)}.`;
+      return `Dernier téléchargement lancé le ${dateUtil.formatHorodatageFr(this.dernierExportLe)}.`;
     },
   },
 };

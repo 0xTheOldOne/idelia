@@ -12,7 +12,7 @@
     </div>
 
     <p class="bloc-sauvegarde__rappel" role="status" aria-live="polite">
-      <PhWarning v-if="!dernierExportLe" :size="20" weight="fill" aria-hidden="true" />
+      <PhWarning v-if="!rappelAJour" :size="20" weight="fill" aria-hidden="true" />
       <PhCheckCircle v-else :size="20" weight="fill" aria-hidden="true" />
       <span>{{ texteRappel }}</span>
     </p>
@@ -157,10 +157,12 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * fichier de sauvegarde, en restaurer un, ou tout effacer.
  *
  * Composant **conteneur** : il dispatche les actions racines déjà en place
- * (`exporter`/`importer`/`reinitialiser`, feature 0002) et l'action volatile
- * `ui/enregistrerExport`, puis affiche leurs résultats. Aucune
- * (dé)sérialisation, migration ou validation ici — tout vit dans le store/
- * domaine/storage ; ce composant se contente d'orchestrer l'UI.
+ * (`exporter`/`importer`/`reinitialiser`, feature 0002), l'action racine
+ * `ecrireSauvegardeFichier` (feature 0019, ADR 0018 — utilisée à la place du
+ * téléchargement classique quand un fichier de sauvegarde actif existe) et
+ * l'action volatile `ui/enregistrerExport`, puis affiche leurs résultats.
+ * Aucune (dé)sérialisation, migration ou validation ici — tout vit dans le
+ * store/domaine/storage ; ce composant se contente d'orchestrer l'UI.
  *
  * Émet `donnees-remplacees` après une restauration ou un effacement réussis,
  * pour que `ParametresView` réhydrate son brouillon de réglages.
@@ -194,18 +196,39 @@ export default {
     };
   },
   computed: {
-    ...mapState('ui', ['dernierExportLe']),
+    ...mapState('ui', [
+      'dernierExportLe',
+      'fichierSauvegardeActif',
+      'nomFichierSauvegarde',
+      'dernierFichierEnregistreLe',
+    ]),
 
     /** Un traitement (import ou effacement) est en cours : boutons neutralisés. */
     traitementEnCours() {
       return this.importEnCours || this.effacementEnCours;
     },
 
+    /**
+     * `true` si le rappel est à jour (fichier actif déjà écrit une fois, ou
+     * téléchargement classique déjà lancé) : pilote l'icône (succès/alerte)
+     * en cohérence avec `texteRappel`.
+     */
+    rappelAJour() {
+      if (this.fichierSauvegardeActif) return !!this.dernierFichierEnregistreLe;
+      return !!this.dernierExportLe;
+    },
+
     texteRappel() {
-      if (!this.dernierExportLe) {
-        return "Aucune sauvegarde enregistrée depuis l'ouverture de l'application. Pensez à en enregistrer une régulièrement.";
+      if (this.fichierSauvegardeActif) {
+        if (!this.dernierFichierEnregistreLe) {
+          return 'Fichier de sauvegarde actif, pas encore écrit.';
+        }
+        return `Fichier de sauvegarde à jour le ${dateUtil.formatHorodatageFr(this.dernierFichierEnregistreLe)}.`;
       }
-      return `Dernière sauvegarde enregistrée le ${dateUtil.formatHorodatageFr(this.dernierExportLe)}.`;
+      if (!this.dernierExportLe) {
+        return "Aucun fichier téléchargé depuis l'ouverture de l'application. Pensez à en télécharger un régulièrement.";
+      }
+      return `Dernier téléchargement lancé le ${dateUtil.formatHorodatageFr(this.dernierExportLe)}.`;
     },
 
     messageConfirmationImport() {
@@ -218,11 +241,28 @@ export default {
     },
   },
   methods: {
-    ...mapActions(['exporter', 'importer', 'reinitialiser']),
+    ...mapActions(['exporter', 'importer', 'reinitialiser', 'ecrireSauvegardeFichier']),
     ...mapActions('ui', ['enregistrerExport']),
+    ...mapActions('notifications', ['notifier']),
 
-    /** Télécharge le fichier de sauvegarde, puis met à jour le rappel. */
-    onEnregistrer() {
+    /**
+     * Enregistre une sauvegarde : réécrit silencieusement dans le fichier de
+     * sauvegarde actif s'il y en a un (feature 0019, ADR 0018), sinon
+     * télécharge un fichier classique comme avant.
+     */
+    async onEnregistrer() {
+      if (this.fichierSauvegardeActif) {
+        const resultat = await this.ecrireSauvegardeFichier();
+        if (resultat.ok) {
+          this.notifier({
+            type: 'succes',
+            message: `Sauvegarde enregistrée dans « ${this.nomFichierSauvegarde} ».`,
+          });
+        } else {
+          this.notifier({ type: 'avertissement', message: resultat.message });
+        }
+        return;
+      }
       this.exporter();
       this.enregistrerExport();
     },

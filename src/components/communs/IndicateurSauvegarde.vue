@@ -23,17 +23,26 @@
     </template>
     <template v-else-if="statut === 'ENREGISTRE' && apresEdition">
       <PhCheckCircle :size="20" weight="fill" aria-hidden="true" />
-      <span>Modifications enregistrées<template v-if="texteDate">{{ texteDate }}</template></span>
+      <span>Modifications enregistrées dans ce navigateur<template v-if="texteDate">{{ texteDate }}</template></span>
     </template>
     <template v-else-if="statut === 'ENREGISTRE'">
       <PhCheckCircle :size="20" aria-hidden="true" />
-      <span>Vos réglages sont enregistrés<template v-if="texteDate">{{ texteDate }}</template></span>
+      <span>Vos réglages sont enregistrés dans ce navigateur<template v-if="texteDate">{{ texteDate }}</template></span>
     </template>
     <template v-else-if="statut === 'ERREUR'">
       <PhWarning :size="20" weight="fill" aria-hidden="true" />
       <span>
         L'enregistrement a échoué. Vos données restent affichées à l'écran ; réessayez de modifier
         un réglage.
+      </span>
+    </template>
+    <template v-else-if="statut === 'INACTIF'">
+      <span>Aucune modification enregistrée pour l'instant.</span>
+    </template>
+    <template v-else-if="statut === 'ERREUR_CHARGEMENT'">
+      <PhWarning :size="20" weight="fill" aria-hidden="true" />
+      <span>
+        Vos données n'ont pas pu être relues ; rechargez la page ou réimportez une sauvegarde.
       </span>
     </template>
   </p>
@@ -90,7 +99,9 @@ export default {
   computed: {
     classeStatut() {
       if (this.statut === 'ENREGISTRE' && this.apresEdition) return 'indicateur-sauvegarde--succes';
-      if (this.statut === 'ERREUR') return 'indicateur-sauvegarde--erreur';
+      if (this.statut === 'ERREUR' || this.statut === 'ERREUR_CHARGEMENT') {
+        return 'indicateur-sauvegarde--erreur';
+      }
       return 'indicateur-sauvegarde--neutre';
     },
     texteDate() {
@@ -133,7 +144,9 @@ export default {
       if (this.statut === 'ERREUR' || this.statut === 'ERREUR_CHARGEMENT') {
         return 'Échec de sauvegarde';
       }
-      return this.heureCompacte ? `Sauvegardé à ${this.heureCompacte}` : 'Non enregistré';
+      return this.heureCompacte
+        ? `Sauvegardé dans ce navigateur à ${this.heureCompacte}`
+        : 'Non enregistré';
     },
   },
 };

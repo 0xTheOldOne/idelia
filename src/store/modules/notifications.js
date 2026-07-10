@@ -27,6 +27,17 @@ const DUREE_PAR_DEFAUT = {
   erreur: 8000,
 };
 
+/**
+ * Minuteurs de disparition automatique, indexés par id de toast — variable
+ * **de module** (comme `timer`/`handleFichierSauvegarde` dans
+ * `src/store/index.js`) : un `setTimeout` n'est pas sérialisable, il ne doit
+ * donc jamais vivre dans `state`. Permet de suspendre puis relancer le
+ * minuteur d'un toast précis (pause au survol/focus, revue features
+ * 0018/0019 §3) sans perdre sa référence.
+ * @type {Map<string, ReturnType<typeof setTimeout>>}
+ */
+const minuteurs = new Map();
+
 export default {
   namespaced: true,
   state: () => ({ items: [] }),
@@ -36,6 +47,11 @@ export default {
     },
     RETIRER(state, id) {
       state.items = state.items.filter((t) => t.id !== id);
+      const minuteur = minuteurs.get(id);
+      if (minuteur) {
+        clearTimeout(minuteur);
+        minuteurs.delete(id);
+      }
     },
   },
   actions: {
@@ -53,15 +69,44 @@ export default {
       const typeFinal = TYPES_VALIDES.includes(type) ? type : 'info';
       const id = genId();
       const dureeMs = duree ?? DUREE_PAR_DEFAUT[typeFinal];
-      commit('AJOUTER', { id, type: typeFinal, message });
+      // `duree` est mémorisée sur le toast pour pouvoir relancer un minuteur
+      // identique après une pause (`reprendre`).
+      commit('AJOUTER', { id, type: typeFinal, message, duree: dureeMs });
       if (dureeMs > 0) {
-        setTimeout(() => commit('RETIRER', id), dureeMs);
+        minuteurs.set(id, setTimeout(() => commit('RETIRER', id), dureeMs));
       }
       return id;
     },
     /** Ferme un toast manuellement (clic sur la croix). */
     retirer({ commit }, id) {
       commit('RETIRER', id);
+    },
+    /**
+     * Met en pause le minuteur de disparition d'un toast (survol/focus),
+     * sans le retirer de l'affichage : `clearTimeout` seul, le toast reste
+     * dans `state.items` jusqu'à `reprendre` ou une fermeture manuelle.
+     * Tolérant si le toast n'a pas (ou plus) de minuteur en cours.
+     * @param {import('vuex').ActionContext} context
+     * @param {string} id
+     */
+    suspendre({}, id) {
+      const minuteur = minuteurs.get(id);
+      if (!minuteur) return;
+      clearTimeout(minuteur);
+      minuteurs.delete(id);
+    },
+    /**
+     * Relance le minuteur de disparition d'un toast après une pause
+     * (`suspendre`). Tolérant si le toast a déjà disparu entre-temps (fermé
+     * manuellement pendant le survol, par exemple) ou n'a pas de durée
+     * (`duree` à `0`, fermeture manuelle uniquement).
+     * @param {import('vuex').ActionContext} context
+     * @param {string} id
+     */
+    reprendre({ commit, state }, id) {
+      const toast = state.items.find((t) => t.id === id);
+      if (!toast || !(toast.duree > 0)) return;
+      minuteurs.set(id, setTimeout(() => commit('RETIRER', id), toast.duree));
     },
   },
 };

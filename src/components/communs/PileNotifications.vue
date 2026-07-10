@@ -6,6 +6,10 @@
         :key="toast.id"
         class="alert d-flex align-items-start gap-2 pile-notifications__toast"
         :class="classeAlerte(toast.type)"
+        @mouseenter="suspendre(toast.id)"
+        @mouseleave="reprendre(toast.id)"
+        @focusin="suspendre(toast.id)"
+        @focusout="reprendre(toast.id)"
       >
         <component
           :is="icone(toast.type)"
@@ -28,7 +32,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex';
-import { PhCheckCircle, PhInfo, PhWarningCircle, PhXCircle } from '@phosphor-icons/vue';
+import { PhCheckCircle, PhInfo, PhWarning, PhXCircle } from '@phosphor-icons/vue';
 
 /**
  * Pile de notifications (« toasts ») — composant transverse (feature 0018),
@@ -42,15 +46,21 @@ import { PhCheckCircle, PhInfo, PhWarningCircle, PhXCircle } from '@phosphor-ico
  * sa croix de fermeture. Chaque toast porte systématiquement une icône
  * Phosphor **et** un texte complet : jamais la seule couleur ne porte le
  * sens (§8 du plan).
+ *
+ * Accessibilité : le minuteur de disparition automatique d'un toast est mis
+ * en pause au survol (`mouseenter`/`mouseleave`) et au focus
+ * (`focusin`/`focusout`, déclenché par la croix de fermeture) —
+ * `notifications/suspendre`/`notifications/reprendre` — pour laisser le
+ * temps de lire un message avant qu'il ne disparaisse.
  */
 export default {
   name: 'PileNotifications',
-  components: { PhCheckCircle, PhInfo, PhWarningCircle, PhXCircle },
+  components: { PhCheckCircle, PhInfo, PhWarning, PhXCircle },
   computed: {
     ...mapState('notifications', ['items']),
   },
   methods: {
-    ...mapActions('notifications', ['retirer']),
+    ...mapActions('notifications', ['retirer', 'suspendre', 'reprendre']),
     /**
      * Classe Bootstrap sémantique associée au type de toast.
      * @param {string} type
@@ -76,7 +86,7 @@ export default {
         {
           succes: PhCheckCircle,
           info: PhInfo,
-          avertissement: PhWarningCircle,
+          avertissement: PhWarning,
           erreur: PhXCircle,
         }[type] ?? PhInfo
       );

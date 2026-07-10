@@ -26,6 +26,10 @@ app.directive('debounce', vueDebounce({ lock: true }));
 // déplié→replié au premier rendu.
 store.dispatch('ui/initialiserMenu');
 
+// Restitue la préférence de sauvegarde automatique (feature 0019) et arme
+// son minuteur de rappel si elle est active, avant le montage.
+store.dispatch('ui/initialiserSauvegardeAuto');
+
 async function demarrer() {
   try {
     await store.dispatch('bootstrap');

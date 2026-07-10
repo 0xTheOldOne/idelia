@@ -24,6 +24,13 @@ const CLE_DONNEES_CORROMPUES = 'idelia:data.corrompu';
 const CLE_PREFS_UI = 'idelia:prefs-ui';
 
 /**
+ * Clé dédiée à la préférence de sauvegarde automatique (feature 0019),
+ * **séparée** à la fois de `CLE_DONNEES` (`SaveDocument`) et de
+ * `CLE_PREFS_UI` (`0015`) : un réglage = une clé, jamais exportée/importée.
+ */
+const CLE_PREFS_SAUVEGARDE_AUTO = 'idelia:prefs-sauvegarde-auto';
+
+/**
  * Indique si une erreur correspond à un dépassement de quota de stockage
  * (le nom exact varie selon les navigateurs).
  *
@@ -152,6 +159,48 @@ function enregistrerPreferenceMenuReplie(valeur) {
   }
 }
 
+/**
+ * Lit la préférence de sauvegarde automatique (feature 0019). Lecture
+ * **synchrone** et tolérante, sur le même modèle que
+ * `lirePreferenceMenuReplie` : valeurs par défaut (désactivée, 15 minutes) si
+ * la clé est absente ou illisible.
+ *
+ * @returns {{ active: boolean, intervalleMinutes: number }}
+ */
+function lirePreferenceSauvegardeAuto() {
+  try {
+    const brut = localStorage.getItem(CLE_PREFS_SAUVEGARDE_AUTO);
+    if (!brut) return { active: false, intervalleMinutes: 15 };
+    const valeur = JSON.parse(brut);
+    return {
+      active: valeur.active === true,
+      intervalleMinutes: Number.isInteger(valeur.intervalleMinutes) ? valeur.intervalleMinutes : 15,
+    };
+  } catch {
+    return { active: false, intervalleMinutes: 15 };
+  }
+}
+
+/**
+ * Enregistre la préférence de sauvegarde automatique (feature 0019), sur sa
+ * clé dédiée `idelia:prefs-sauvegarde-auto`, indépendante du document de
+ * sauvegarde métier et des préférences d'UI (`0015`). Écriture
+ * **best-effort** : les échecs sont silencieusement ignorés, comme pour le
+ * reste du repository.
+ *
+ * @param {{ active: boolean, intervalleMinutes: number }} valeur
+ */
+function enregistrerPreferenceSauvegardeAuto({ active, intervalleMinutes }) {
+  try {
+    localStorage.setItem(
+      CLE_PREFS_SAUVEGARDE_AUTO,
+      JSON.stringify({ active, intervalleMinutes })
+    );
+  } catch {
+    // Best-effort : une préférence non mémorisée n'est pas bloquante.
+  }
+}
+
 export const storageRepository = {
   load,
   save,
@@ -159,4 +208,6 @@ export const storageRepository = {
   isAvailable,
   lirePreferenceMenuReplie,
   enregistrerPreferenceMenuReplie,
+  lirePreferenceSauvegardeAuto,
+  enregistrerPreferenceSauvegardeAuto,
 };

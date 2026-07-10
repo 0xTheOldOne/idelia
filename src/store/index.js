@@ -43,6 +43,17 @@ import notifications from './modules/notifications';
 let timer = null;
 
 /**
+ * Handle du « fichier de sauvegarde actif » (File System Access API,
+ * feature 0019, ADR 0018), variable **de module** comme `timer` : un
+ * `FileSystemFileHandle` n'est pas sérialisable, il ne doit donc jamais
+ * vivre dans `state`. Vaut `null` tant qu'aucun fichier n'a été choisi, ou
+ * après un rechargement de page (jamais persisté, ni `localStorage` ni
+ * IndexedDB — le choix ne vaut que pour la session en cours).
+ * @type {FileSystemFileHandle|null}
+ */
+let handleFichierSauvegarde = null;
+
+/**
  * Persiste immédiatement l'état courant via `storageRepository.save`, et met
  * à jour le statut de sauvegarde en conséquence. N'est jamais appelée
  * directement par le code applicatif : toujours via `planifier` (débounce)
@@ -113,6 +124,123 @@ function persistancePlugin(store) {
     }
     planifier(store);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Fichier de sauvegarde actif (feature 0019, ADR 0018 — File System Access
+// API en amélioration progressive, Chrome/Edge uniquement)
+// ---------------------------------------------------------------------------
+
+/**
+ * Active un « fichier de sauvegarde » actif (File System Access API,
+ * disponible sur Chrome/Edge uniquement). Exige un geste utilisateur
+ * (appelée depuis un clic) : `showSaveFilePicker` ne peut pas être invoquée
+ * depuis un minuteur. Détecte fiablement une annulation (`AbortError`) :
+ * dans ce cas, aucun état n'est modifié (correction réelle du bug
+ * d'annulation, ADR 0018).
+ *
+ * @param {import('vuex').ActionContext} context
+ * @returns {Promise<{ ok: boolean, message?: string, annule?: boolean }>}
+ */
+async function activerSauvegardeFichier({ commit, state }) {
+  if (!('showSaveFilePicker' in window)) {
+    return {
+      ok: false,
+      message: 'Votre navigateur ne permet pas cette fonctionnalité (essayez Chrome ou Edge).',
+    };
+  }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'idelia-sauvegarde.json',
+      types: [{ description: 'Sauvegarde Idelia', accept: { 'application/json': ['.json'] } }],
+    });
+    handleFichierSauvegarde = handle;
+    commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: true, nom: handle.name }, { root: true });
+    // Première écriture immédiate : confirme que tout fonctionne de bout en
+    // bout, cohérent avec l'intention explicite de l'utilisateur qui vient
+    // de choisir un emplacement.
+    return await ecrireSauvegardeFichier({ commit, state });
+  } catch (e) {
+    if (e.name === 'AbortError') return { ok: false, annule: true };
+    return { ok: false, message: "Impossible d'activer le fichier de sauvegarde." };
+  }
+}
+
+/**
+ * Réécrit le document courant dans le fichier de sauvegarde actif. Utilisée
+ * à la fois par le bouton manuel (`BlocSauvegarde.vue`, « Enregistrer une
+ * sauvegarde ») et par le minuteur automatique
+ * (`declencherSauvegardeAutomatique`) — d'où son exposition comme action
+ * dispatchable **et** fonction appelable directement en interne.
+ *
+ * @param {import('vuex').ActionContext} context
+ * @returns {Promise<{ ok: boolean, message?: string }>}
+ */
+async function ecrireSauvegardeFichier({ commit, state }) {
+  if (!handleFichierSauvegarde) {
+    return { ok: false, message: 'Aucun fichier de sauvegarde actif.' };
+  }
+  try {
+    const doc = toSaveDocument(state, { schemaVersion: CURRENT_SCHEMA_VERSION });
+    const writable = await handleFichierSauvegarde.createWritable();
+    await writable.write(JSON.stringify(doc, null, 2));
+    await writable.close();
+    commit('ui/SET_DERNIER_FICHIER_ENREGISTRE', new Date().toISOString(), { root: true });
+    return { ok: true };
+  } catch {
+    // Handle révoqué/fichier introuvable : on désactive proprement plutôt
+    // que de laisser un état « actif » qui ne fonctionne plus silencieusement.
+    handleFichierSauvegarde = null;
+    commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: false, nom: null }, { root: true });
+    return { ok: false, message: "L'écriture dans le fichier de sauvegarde a échoué." };
+  }
+}
+
+/**
+ * Désactive le fichier de sauvegarde actif (oublie le handle en mémoire).
+ * N'efface aucune donnée (juste un lien pratique vers un fichier) : geste
+ * réversible, sans confirmation nécessaire.
+ *
+ * @param {import('vuex').ActionContext} context
+ */
+function desactiverSauvegardeFichier({ commit }) {
+  handleFichierSauvegarde = null;
+  commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: false, nom: null }, { root: true });
+}
+
+/**
+ * Point d'entrée du minuteur périodique (`ui.js`) : écrit silencieusement
+ * dans le fichier de sauvegarde actif s'il y en a un ; sinon, se contente
+ * d'un rappel (toast, feature 0018). Aucune requête réseau : uniquement des
+ * API du navigateur local (ADR 0002).
+ *
+ * @param {import('vuex').ActionContext} context
+ */
+async function declencherSauvegardeAutomatique({ state, commit, dispatch }) {
+  if (handleFichierSauvegarde) {
+    const resultat = await ecrireSauvegardeFichier({ commit, state });
+    if (!resultat.ok) {
+      dispatch(
+        'notifications/notifier',
+        {
+          type: 'avertissement',
+          message: 'La sauvegarde automatique du fichier a été interrompue : ' + resultat.message,
+        },
+        { root: true }
+      );
+    }
+    // Succès : silencieux, l'indicateur du bloc suffit (pas de toast à chaque tick).
+  } else {
+    dispatch(
+      'notifications/notifier',
+      {
+        type: 'avertissement',
+        message:
+          "Pensez à enregistrer une sauvegarde : vos données n'ont pas été copiées dans un fichier récemment.",
+      },
+      { root: true }
+    );
+  }
 }
 
 export default createStore({
@@ -283,6 +411,13 @@ export default createStore({
       commit('REPLACE_ALL', etatParDefaut());
       await storageRepository.clear();
     },
+
+    // Fichier de sauvegarde actif (feature 0019, ADR 0018) — voir les
+    // fonctions ci-dessus pour la documentation détaillée de chacune.
+    activerSauvegardeFichier,
+    ecrireSauvegardeFichier,
+    desactiverSauvegardeFichier,
+    declencherSauvegardeAutomatique,
   },
 
   modules: {
