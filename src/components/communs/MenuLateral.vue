@@ -16,7 +16,9 @@
         role="group"
         :aria-labelledby="idTitreGroupe(index)"
       >
-        <p :id="idTitreGroupe(index)" class="menu-groupe__titre">{{ groupe.titre }}</p>
+        <p :id="idTitreGroupe(index)" class="menu-groupe__titre">
+          <span class="menu-groupe__titre-texte">{{ groupe.titre }}</span>
+        </p>
         <router-link
           v-for="item in groupe.items"
           :key="item.nom"
@@ -37,8 +39,13 @@
 
     <div class="menu-espaceur"></div>
 
-    <!-- Emplacement réservé pour l'indicateur de sauvegarde (différé, voir feature 0015 §12.5) -->
-    <div class="menu-pied-reserve"></div>
+    <div class="menu-pied">
+      <IndicateurSauvegarde
+        compact
+        :statut="statutSauvegarde"
+        :derniere-sauvegarde="derniereSauvegarde"
+      />
+    </div>
 
     <button
       type="button"
@@ -54,7 +61,7 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex';
+import { mapActions, mapGetters, mapState } from 'vuex';
 import {
   PhHouse,
   PhUsers,
@@ -64,6 +71,8 @@ import {
   PhGear,
   PhCaretDoubleLeft,
 } from '@phosphor-icons/vue';
+
+import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 
 /**
  * Menu latéral de navigation — coquille de la barre latérale (feature 0015).
@@ -79,6 +88,11 @@ import {
  * comme actif sur `/equipe/:id/souhaits`. `estActif()` reproduit donc la
  * règle « actif = chemin exact ou préfixe » explicitement voulue (feature
  * 0015 §6.4), et pose lui-même `aria-current="page"` sur l'item courant.
+ *
+ * Le pied du menu affiche l'indicateur de sauvegarde en variante compacte
+ * (`IndicateurSauvegarde` avec `compact`), alimenté par `statutSauvegarde`/
+ * `derniereSauvegarde` (état racine, lus ici via `mapState` et passés en
+ * props : l'indicateur reste présentational, sans accès direct au store).
  */
 export default {
   name: 'MenuLateral',
@@ -90,6 +104,7 @@ export default {
     PhCalendarBlank,
     PhGear,
     PhCaretDoubleLeft,
+    IndicateurSauvegarde,
   },
   data() {
     return {
@@ -125,6 +140,7 @@ export default {
   },
   computed: {
     ...mapGetters('ui', ['menuReplie']),
+    ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
     /** Chemin du logo de marque, résolu via la base Vite (compatible sous-répertoire GitHub Pages). */
     cheminLogo() {
       return `${import.meta.env.BASE_URL}favicon.png`;
@@ -265,9 +281,21 @@ $menu-largeur-repliee: 76px;
   gap: t.$espace-1;
 }
 
+// Le titre reste monté (même hauteur) dans les deux modes : replié, le
+// texte est masqué et remplacé par un trait centré (`::before`), pour que
+// le bloc « espace + trait » n'introduise aucun saut vertical par rapport
+// au titre affiché déplié (seul l'intérieur du bloc change, jamais sa boîte
+// : marge/padding/min-height identiques dans les deux modes).
 .menu-groupe__titre {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: t.$espace-4;
   margin: 0 0 t.$espace-1;
   padding: 0 t.$espace-2;
+}
+
+.menu-groupe__titre-texte {
   font-size: t.$taille-texte-petite;
   font-weight: t.$graisse-gras;
   letter-spacing: 0.06em;
@@ -276,7 +304,19 @@ $menu-largeur-repliee: 76px;
 }
 
 .menu-lateral--replie .menu-groupe__titre {
-  display: none;
+  justify-content: center;
+  padding-inline: 0;
+
+  .menu-groupe__titre-texte {
+    display: none;
+  }
+
+  &::before {
+    content: '';
+    width: 28px;
+    height: 1px;
+    background-color: t.$couleur-menu-texte;
+  }
 }
 
 .menu-item {
@@ -372,10 +412,42 @@ $menu-largeur-repliee: 76px;
 }
 
 // -----------------------------------------------------------------------
-// Pied : espaceur + emplacement réservé + bouton de repli
+// Pied : espaceur + indicateur de sauvegarde (compact) + bouton de repli
 // -----------------------------------------------------------------------
 .menu-espaceur {
   flex: 1 1 auto;
+}
+
+.menu-pied {
+  display: flex;
+  padding: 0 t.$espace-3;
+}
+
+// Replié : seule la pastille (ou l'icône d'alerte) reste visible, centrée —
+// le libellé disparaît comme les libellés d'items. `IndicateurSauvegarde`
+// étant un composant enfant, `:deep()` est nécessaire pour atteindre ses
+// éléments internes (seule sa racine hérite du hash de portée du parent).
+.menu-lateral--replie {
+  .menu-pied {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  :deep(.indicateur-sauvegarde__texte) {
+    display: none;
+  }
+
+  // En cas d'échec, l'icône d'alerte remplace la pastille : l'erreur ne
+  // repose jamais sur la seule couleur, même repliée.
+  :deep(.indicateur-sauvegarde--compact-erreur) {
+    .indicateur-sauvegarde__pastille {
+      display: none;
+    }
+
+    .indicateur-sauvegarde__icone-erreur {
+      display: inline-block;
+    }
+  }
 }
 
 .menu-bascule {

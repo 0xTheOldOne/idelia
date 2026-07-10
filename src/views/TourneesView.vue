@@ -1,7 +1,5 @@
 <template>
   <div class="tournees-view">
-    <h1>Tournées</h1>
-
     <div
       v-if="statutSauvegarde === 'ERREUR_CHARGEMENT'"
       class="alert alert-warning d-flex gap-2"
@@ -15,13 +13,8 @@
       </p>
     </div>
 
-    <IndicateurSauvegarde
-      :statut="statutSauvegarde"
-      :derniere-sauvegarde="derniereSauvegarde"
-      :apres-edition="aEdite"
-    />
-
     <div class="tournees-entete">
+      <h1>Tournées</h1>
       <button
         ref="boutonAjout"
         type="button"
@@ -183,7 +176,6 @@ import {
   PhArrowsSplit,
 } from '@phosphor-icons/vue';
 
-import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulaireTournee from '@/components/tournees/FormulaireTournee.vue';
 import { libelleJours } from '@/domain/libelles.js';
@@ -210,7 +202,6 @@ export default {
     PhArrowCounterClockwise,
     PhCaretRight,
     PhArrowsSplit,
-    IndicateurSauvegarde,
     DialogueConfirmation,
     FormulaireTournee,
   },
@@ -226,16 +217,12 @@ export default {
       // Section « Tournées archivées » repliée par défaut (bascule Vue
       // simple, sans JS `collapse` de Bootstrap).
       archivesOuvertes: false,
-      // Distingue une sauvegarde issue d'une vraie action utilisateur d'une
-      // sauvegarde héritée de l'hydratation initiale (même logique
-      // qu'EquipeView/ParametresView) : passé à `IndicateurSauvegarde`.
-      aEdite: false,
     };
   },
   computed: {
     ...mapGetters('tournees', ['actives', 'archivees']),
     ...mapGetters('cabinet', ['parametres']),
-    ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
+    ...mapState(['statutSauvegarde']),
     aucuneTournee() {
       return this.actives.length === 0 && this.archivees.length === 0;
     },
@@ -334,7 +321,6 @@ export default {
       } else {
         this.ajouter(champs);
       }
-      this.aEdite = true;
       this.formulaireVisible = false;
       this.tourneeEnCours = null;
       if (estCreation) {
@@ -359,7 +345,6 @@ export default {
     },
     onConfirmerArchivage() {
       this.archiver(this.tourneeAArchiver.id);
-      this.aEdite = true;
       this.confirmationVisible = false;
       this.tourneeAArchiver = null;
       // Le bouton « Archiver » déclencheur disparaît du DOM (la tournée
@@ -381,7 +366,6 @@ export default {
      */
     onRestaurer(tournee) {
       this.restaurer(tournee.id);
-      this.aEdite = true;
       // Idem qu'à l'archivage : si c'était la dernière tournée archivée,
       // toute la section disparaît (`v-if="archivees.length"`) et le bouton
       // « Restaurer » déclencheur avec elle.
@@ -395,6 +379,11 @@ export default {
 @use '@/styles/tokens' as t;
 
 .tournees-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$espace-3;
   margin-bottom: t.$espace-4;
 }
 

@@ -46,12 +46,6 @@
         </p>
       </div>
 
-      <IndicateurSauvegarde
-        :statut="statutSauvegarde"
-        :derniere-sauvegarde="derniereSauvegarde"
-        :apres-edition="aEdite"
-      />
-
       <div class="souhaits-entete">
         <button
           ref="boutonAjout"
@@ -170,7 +164,6 @@ import {
   PhTrash,
 } from '@phosphor-icons/vue';
 
-import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulairePreference from '@/components/equipe/FormulairePreference.vue';
 import { libelleStatutPersonne, libelleNaturePreference } from '@/domain/libelles.js';
@@ -201,7 +194,6 @@ export default {
     PhStar,
     PhPencilSimple,
     PhTrash,
-    IndicateurSauvegarde,
     DialogueConfirmation,
     FormulairePreference,
   },
@@ -214,10 +206,6 @@ export default {
       // Pilotage de la confirmation de suppression.
       confirmationVisible: false,
       preferenceASupprimer: null,
-      // Distingue une sauvegarde issue d'une vraie action utilisateur d'une
-      // sauvegarde héritée de l'hydratation initiale (même logique que
-      // EquipeView/ParametresView) : passé à `IndicateurSauvegarde`.
-      aEdite: false,
     };
   },
   computed: {
@@ -230,7 +218,7 @@ export default {
     // `state.items`, actives et archivées confondues) pour ne jamais
     // afficher la phrase générique par erreur sur un souhait existant.
     ...mapGetters('tournees', { tourneesActives: 'actives', tourneeParId: 'byId' }),
-    ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
+    ...mapState(['statutSauvegarde']),
     /** Identifiant de la personne, lu depuis la route paramétrée. */
     id() {
       return this.$route.params.id;
@@ -309,7 +297,6 @@ export default {
       } else {
         this.ajouterPreference({ personneId: this.id, ...champs });
       }
-      this.aEdite = true;
       this.formulaireVisible = false;
       this.preferenceEnCours = null;
 
@@ -336,7 +323,6 @@ export default {
     },
     onConfirmerSuppression() {
       this.supprimerPreference({ personneId: this.id, preferenceId: this.preferenceASupprimer.id });
-      this.aEdite = true;
       this.confirmationVisible = false;
       this.preferenceASupprimer = null;
       // Le bouton « Supprimer » déclencheur disparaît du DOM (la ligne quitte
@@ -351,7 +337,6 @@ export default {
 
     basculer(preference) {
       this.basculerPreference({ personneId: this.id, preferenceId: preference.id });
-      this.aEdite = true;
     },
   },
 };

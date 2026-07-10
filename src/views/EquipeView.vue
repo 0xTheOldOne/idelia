@@ -1,7 +1,5 @@
 <template>
   <div class="equipe-view">
-    <h1>Équipe</h1>
-
     <div
       v-if="statutSauvegarde === 'ERREUR_CHARGEMENT'"
       class="alert alert-warning d-flex gap-2"
@@ -15,13 +13,8 @@
       </p>
     </div>
 
-    <IndicateurSauvegarde
-      :statut="statutSauvegarde"
-      :derniere-sauvegarde="derniereSauvegarde"
-      :apres-edition="aEdite"
-    />
-
     <div class="equipe-entete">
+      <h1>Équipe</h1>
       <button
         ref="boutonAjout"
         type="button"
@@ -72,10 +65,10 @@
                 <span>Modifier</span>
               </button>
               <router-link
-                class="btn btn-outline-secondary"
+                class="btn btn-outline-secondary equipe-bouton-souhaits"
                 :to="{ name: 'souhaits', params: { id: personne.id } }"
               >
-                <PhSlidersHorizontal :size="18" aria-hidden="true" />
+                <PhShootingStar :size="18" aria-hidden="true" />
                 <span>Souhaits</span>
               </router-link>
               <button
@@ -176,10 +169,9 @@ import {
   PhArchive,
   PhArrowCounterClockwise,
   PhCaretRight,
-  PhSlidersHorizontal,
+  PhShootingStar,
 } from '@phosphor-icons/vue';
 
-import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulairePersonne from '@/components/equipe/FormulairePersonne.vue';
 import { libelleStatutPersonne } from '@/domain/libelles.js';
@@ -203,8 +195,7 @@ export default {
     PhArchive,
     PhArrowCounterClockwise,
     PhCaretRight,
-    PhSlidersHorizontal,
-    IndicateurSauvegarde,
+    PhShootingStar,
     DialogueConfirmation,
     FormulairePersonne,
   },
@@ -220,16 +211,12 @@ export default {
       // Section « Personnes archivées » repliée par défaut (bascule Vue
       // simple, sans JS `collapse` de Bootstrap).
       archivesOuvertes: false,
-      // Distingue une sauvegarde issue d'une vraie action utilisateur d'une
-      // sauvegarde héritée de l'hydratation initiale (même logique que
-      // ParametresView) : passé à `IndicateurSauvegarde`.
-      aEdite: false,
     };
   },
   computed: {
     ...mapGetters('personnes', ['actifs', 'inactifs']),
     ...mapGetters('cabinet', ['parametres']),
-    ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
+    ...mapState(['statutSauvegarde']),
     aucunePersonne() {
       return this.actifs.length === 0 && this.inactifs.length === 0;
     },
@@ -299,7 +286,6 @@ export default {
       } else {
         this.ajouter(champs);
       }
-      this.aEdite = true;
       this.formulaireVisible = false;
       this.personneEnCours = null;
       if (estCreation) {
@@ -324,7 +310,6 @@ export default {
     },
     onConfirmerArchivage() {
       this.desactiver(this.personneAArchiver.id);
-      this.aEdite = true;
       this.confirmationVisible = false;
       this.personneAArchiver = null;
       // Le bouton « Archiver » déclencheur disparaît du DOM (la personne
@@ -339,7 +324,6 @@ export default {
 
     restaurer(personne) {
       this.reactiver(personne.id);
-      this.aEdite = true;
       // Idem : si c'était la dernière personne archivée, toute la section
       // disparaît (`v-if="inactifs.length"`) et le bouton « Restaurer »
       // déclencheur avec elle.
@@ -353,6 +337,11 @@ export default {
 @use '@/styles/tokens' as t;
 
 .equipe-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$espace-3;
   margin-bottom: t.$espace-4;
 }
 
@@ -360,6 +349,16 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: t.$espace-2;
+}
+
+// Correctif ergonomie : icône + libellé mal centrés verticalement dans le
+// bouton « Souhaits » (routeur-link, sans le `display: inline-flex` des
+// boutons `<button>` classiques de cette liste).
+.equipe-bouton-souhaits {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$espace-2;
+  line-height: 1;
 }
 
 .equipe-etat-vide {

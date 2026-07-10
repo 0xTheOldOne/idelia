@@ -15,41 +15,7 @@
       </p>
     </div>
 
-    <IndicateurSauvegarde
-      :statut="statutSauvegarde"
-      :derniere-sauvegarde="derniereSauvegarde"
-      :apres-edition="aEdite"
-    />
-
     <form novalidate @submit.prevent>
-      <!-- Identité -->
-      <section class="parametres-section">
-        <h2>Identité</h2>
-
-        <div class="mb-2">
-          <label for="nom-cabinet" class="form-label">Nom du cabinet (facultatif)</label>
-          <input
-            id="nom-cabinet"
-            v-model="brouillon.nomCabinet"
-            v-debounce:500ms="onNomCabinetChange"
-            type="text"
-            class="form-control"
-            placeholder="Cabinet des Tilleuls"
-            :class="{ 'is-invalid': v$.brouillon.nomCabinet.$error }"
-            :aria-describedby="v$.brouillon.nomCabinet.$error ? 'nom-cabinet-erreur' : null"
-            @blur="v$.brouillon.nomCabinet.$touch()"
-          >
-          <p
-            v-if="v$.brouillon.nomCabinet.$error"
-            id="nom-cabinet-erreur"
-            class="parametres-erreur"
-          >
-            <PhWarning :size="14" weight="bold" aria-hidden="true" />
-            <span>{{ v$.brouillon.nomCabinet.$errors[0].$message }}</span>
-          </p>
-        </div>
-      </section>
-
       <!-- Jours d'ouverture -->
       <section class="parametres-section">
         <fieldset
@@ -226,10 +192,9 @@
 <script>
 import { mapGetters, mapActions, mapState } from 'vuex';
 import { useVuelidate } from '@vuelidate/core';
-import { required, maxLength, between, integer, helpers } from '@vuelidate/validators';
+import { required, between, integer, helpers } from '@vuelidate/validators';
 import { PhWarning } from '@phosphor-icons/vue';
 
-import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import BlocSauvegarde from '@/components/parametres/BlocSauvegarde.vue';
 import { JOURS_SEMAINE, libelleCreneau } from '@/domain/libelles.js';
 import { coherenceParametres } from '@/domain/cabinet.js';
@@ -247,7 +212,7 @@ import { CRENEAUX } from '@/domain/schema.js';
  */
 export default {
   name: 'ParametresView',
-  components: { IndicateurSauvegarde, BlocSauvegarde, PhWarning },
+  components: { BlocSauvegarde, PhWarning },
   setup() {
     // Seul usage de la Composition API : pont requis par Vuelidate 2 en
     // Options API (ADR 0011). Le reste du composant reste en Options API.
@@ -258,24 +223,17 @@ export default {
       JOURS_SEMAINE,
       CRENEAUX,
       brouillon: {
-        nomCabinet: '',
         joursOuverture: [],
         creneauxActifs: [],
         reposHebdoMin: 2,
         maxJoursConsecutifs: 6,
         premierJourSemaine: 1,
       },
-      // Distingue une sauvegarde issue d'une vraie action utilisateur (« vous
-      // venez de modifier un réglage ») de celle, silencieuse, faite au
-      // chargement de l'écran (hydratation depuis le store) : passé à
-      // `IndicateurSauvegarde` pour ne jamais annoncer une « modification »
-      // que l'utilisateur n'a pas faite.
-      aEdite: false,
     };
   },
   computed: {
     ...mapGetters('cabinet', ['parametres']),
-    ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
+    ...mapState(['statutSauvegarde']),
     avertissementsCoherence() {
       return coherenceParametres(this.brouillon).avertissements;
     },
@@ -288,12 +246,6 @@ export default {
   validations() {
     return {
       brouillon: {
-        nomCabinet: {
-          maxLength: helpers.withMessage(
-            'Le nom du cabinet ne doit pas dépasser 80 caractères.',
-            maxLength(80)
-          ),
-        },
         joursOuverture: {
           required: helpers.withMessage("Cochez au moins un jour d'ouverture.", required),
         },
@@ -347,43 +299,31 @@ export default {
       return valides.length ? valides.join(' ') : null;
     },
 
-    onNomCabinetChange(valeur) {
-      this.aEdite = true;
-      this.v$.brouillon.nomCabinet.$touch();
-      if (!this.v$.brouillon.nomCabinet.$invalid) {
-        this.majParametres({ nomCabinet: valeur });
-      }
-    },
     onJoursOuvertureChange() {
-      this.aEdite = true;
       this.v$.brouillon.joursOuverture.$touch();
       if (!this.v$.brouillon.joursOuverture.$invalid) {
         this.majParametres({ joursOuverture: [...this.brouillon.joursOuverture] });
       }
     },
     onCreneauxActifsChange() {
-      this.aEdite = true;
       this.v$.brouillon.creneauxActifs.$touch();
       if (!this.v$.brouillon.creneauxActifs.$invalid) {
         this.majParametres({ creneauxActifs: [...this.brouillon.creneauxActifs] });
       }
     },
     onReposHebdoMinChange() {
-      this.aEdite = true;
       this.v$.brouillon.reposHebdoMin.$touch();
       if (!this.v$.brouillon.reposHebdoMin.$invalid) {
         this.majParametres({ reposHebdoMin: this.brouillon.reposHebdoMin });
       }
     },
     onMaxJoursConsecutifsChange() {
-      this.aEdite = true;
       this.v$.brouillon.maxJoursConsecutifs.$touch();
       if (!this.v$.brouillon.maxJoursConsecutifs.$invalid) {
         this.majParametres({ maxJoursConsecutifs: this.brouillon.maxJoursConsecutifs });
       }
     },
     onPremierJourSemaineChange() {
-      this.aEdite = true;
       // Liste fermée (7 jours ISO) : aucune saisie libre, donc pas de
       // règle Vuelidate à vérifier avant l'enregistrement.
       this.majParametres({ premierJourSemaine: this.brouillon.premierJourSemaine });
@@ -395,13 +335,11 @@ export default {
      * périmé : on le réhydrate depuis le store pour que le formulaire
      * reflète immédiatement les nouvelles valeurs, sans rechargement de
      * page. On réinitialise aussi la validation (les anciennes erreurs ne
-     * correspondent plus aux nouvelles valeurs) et on annonce
-     * l'enregistrement via `IndicateurSauvegarde`.
+     * correspondent plus aux nouvelles valeurs).
      */
     onDonneesRemplacees() {
       this.brouillon = { ...this.parametres };
       this.v$.$reset();
-      this.aEdite = true;
     },
   },
 };

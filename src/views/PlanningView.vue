@@ -2,12 +2,6 @@
   <div class="planning-view">
     <h1>Planning</h1>
 
-    <IndicateurSauvegarde
-      :statut="statutSauvegarde"
-      :derniere-sauvegarde="derniereSauvegarde"
-      :apres-edition="aEdite"
-    />
-
     <div v-if="personnesActives.length === 0" class="alert alert-info planning-etat-vide">
       <PhInfo :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
       <div>
@@ -192,7 +186,6 @@ import {
   PhShuffle,
 } from '@phosphor-icons/vue';
 
-import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulaireGeneration from '@/components/planning/FormulaireGeneration.vue';
 import ControlesGrille from '@/components/planning/ControlesGrille.vue';
@@ -259,7 +252,6 @@ export default {
     PhCheck,
     PhArrowsClockwise,
     PhShuffle,
-    IndicateurSauvegarde,
     DialogueConfirmation,
     FormulaireGeneration,
     ControlesGrille,
@@ -281,10 +273,6 @@ export default {
       orientation: 'TOURNEES',
       echelle: 'SEMAINE',
       dateReference: '',
-      // Distingue une sauvegarde issue d'une vraie action utilisateur d'une
-      // sauvegarde héritée de l'hydratation initiale (même logique
-      // qu'AbsencesView/TourneesView) : passé à `IndicateurSauvegarde`.
-      aEdite: false,
       // Message d'erreur affiché (alerte) si la génération échoue ; vide sinon.
       // Remis à vide au début de chaque nouvelle tentative.
       erreurGeneration: '',
@@ -323,7 +311,6 @@ export default {
     ...mapState('personnes', { totalPersonnes: (state) => state.items.length }),
     ...mapState('tournees', { totalTournees: (state) => state.items.length }),
     ...mapState('plannings', { planningsExistants: (state) => state.items }),
-    ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
     /** Le formulaire de génération n'est utile que si les deux ingrédients indispensables existent. */
     peutGenerer() {
       return this.personnesActives.length > 0 && this.tourneesActives.length > 0;
@@ -601,7 +588,6 @@ export default {
           score: resultat.score,
         };
         this.dateReference = this.planningCourant.dateDebut;
-        this.aEdite = true;
         this.messageAnnonce = this.construireAnnonceSucces();
         await this.$nextTick();
         this.$refs.titrePlanning?.focus();

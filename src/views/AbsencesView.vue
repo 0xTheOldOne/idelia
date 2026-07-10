@@ -1,7 +1,5 @@
 <template>
   <div class="absences-view">
-    <h1>Absences & congés</h1>
-
     <div
       v-if="statutSauvegarde === 'ERREUR_CHARGEMENT'"
       class="alert alert-warning d-flex gap-2"
@@ -15,11 +13,19 @@
       </p>
     </div>
 
-    <IndicateurSauvegarde
-      :statut="statutSauvegarde"
-      :derniere-sauvegarde="derniereSauvegarde"
-      :apres-edition="aEdite"
-    />
+    <div class="absences-entete">
+      <h1>Absences & congés</h1>
+      <button
+        v-if="personnesActives.length > 0"
+        ref="boutonAjout"
+        type="button"
+        class="btn btn-primary absences-bouton-ajout"
+        @click="ouvrirAjout"
+      >
+        <PhCalendarPlus :size="20" weight="bold" aria-hidden="true" />
+        <span>Ajouter une absence</span>
+      </button>
+    </div>
 
     <div v-if="personnesActives.length === 0" class="alert alert-info absences-aucune-personne">
       <PhInfo :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
@@ -36,18 +42,6 @@
           <span>Aller à l'équipe</span>
         </router-link>
       </div>
-    </div>
-
-    <div v-if="personnesActives.length > 0" class="absences-entete">
-      <button
-        ref="boutonAjout"
-        type="button"
-        class="btn btn-primary absences-bouton-ajout"
-        @click="ouvrirAjout"
-      >
-        <PhCalendarPlus :size="20" weight="bold" aria-hidden="true" />
-        <span>Ajouter une absence</span>
-      </button>
     </div>
 
     <div v-if="aucuneAbsence && personnesActives.length > 0" class="absences-etat-vide">
@@ -152,7 +146,6 @@ import {
   PhClockCounterClockwise,
 } from '@phosphor-icons/vue';
 
-import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulaireAbsence from '@/components/absences/FormulaireAbsence.vue';
 import { libelleTypeAbsence, libelleCreneau, libelleEtatTemporelAbsence } from '@/domain/libelles.js';
@@ -183,7 +176,6 @@ export default {
     PhClock,
     PhCalendarCheck,
     PhClockCounterClockwise,
-    IndicateurSauvegarde,
     DialogueConfirmation,
     FormulaireAbsence,
   },
@@ -196,10 +188,6 @@ export default {
       // Pilotage de la confirmation de suppression.
       confirmationVisible: false,
       absenceASupprimer: null,
-      // Distingue une sauvegarde issue d'une vraie action utilisateur d'une
-      // sauvegarde héritée de l'hydratation initiale (même logique
-      // qu'EquipeView/TourneesView) : passé à `IndicateurSauvegarde`.
-      aEdite: false,
     };
   },
   computed: {
@@ -210,7 +198,7 @@ export default {
     // d'absence de personne active (aucun getter dédié n'existe côté store,
     // lecture seule directe de `items`, jamais de mutation).
     ...mapState('personnes', { totalPersonnes: (state) => state.items.length }),
-    ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
+    ...mapState(['statutSauvegarde']),
     aucuneAbsence() {
       return this.items.length === 0;
     },
@@ -324,7 +312,6 @@ export default {
       } else {
         this.ajouter(champs);
       }
-      this.aEdite = true;
       this.formulaireVisible = false;
       this.absenceEnCours = null;
       if (estCreation) {
@@ -347,7 +334,6 @@ export default {
     },
     onConfirmerSuppression() {
       this.supprimer(this.absenceASupprimer.id);
-      this.aEdite = true;
       this.confirmationVisible = false;
       this.absenceASupprimer = null;
       // Le bouton « Supprimer » déclencheur disparaît du DOM (la ligne
@@ -373,7 +359,11 @@ export default {
 }
 
 .absences-entete {
-  margin-top: t.$espace-4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$espace-3;
   margin-bottom: t.$espace-4;
 }
 

@@ -106,6 +106,19 @@ function formatHorodatageFr(iso) {
 }
 
 /**
+ * Formate un horodatage technique ISO UTC en heure courte FR `"HH:mm"` (ex.
+ * « 14:32 »), sans la partie date — utilisé pour les affichages compacts
+ * (ex. indicateur de sauvegarde replié dans le menu latéral).
+ *
+ * @param {string} iso - Horodatage ISO 8601 UTC complet (`new Date().toISOString()`).
+ * @returns {string} Heure au format `"HH:mm"`, ou chaîne vide si `iso` est vide/absent.
+ */
+function formatHeureFr(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/**
  * Formate une date calendaire `"YYYY-MM-DD"` en texte FR courant
  * `"JJ/MM/AAAA"` (ex. « 01/09/2019 »), par simple découpage de chaîne —
  * **aucun objet `Date`** n'est manipulé ici (ADR 0010).
@@ -217,6 +230,7 @@ export const dateUtil = {
   weekdayISO,
   rangeInclusive,
   formatHorodatageFr,
+  formatHeureFr,
   formatDateFr,
   debutSemaine,
   debutMois,

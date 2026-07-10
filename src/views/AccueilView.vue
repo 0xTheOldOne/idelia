@@ -13,14 +13,6 @@
       </p>
     </div>
 
-    <nav class="accueil-fil-ariane" aria-label="Fil d'Ariane">
-      <span v-if="nomCabinet">{{ nomCabinet }}</span>
-      <router-link v-else class="accueil-lien-nommer" :to="{ name: 'parametres' }">
-        <PhPencilSimple :size="16" aria-hidden="true" />
-        <span>Nommer votre cabinet</span>
-      </router-link>
-    </nav>
-
     <div class="accueil-entete">
       <h1>Tableau de bord</h1>
       <router-link class="btn btn-primary accueil-action-principale" :to="{ name: 'planning' }">
@@ -122,7 +114,6 @@
 <script>
 import { mapState, mapGetters, mapActions, mapMutations } from 'vuex';
 import {
-  PhPencilSimple,
   PhMagicWand,
   PhCalendarPlus,
   PhCalendarCheck,
@@ -168,7 +159,6 @@ import { dateUtil } from '@/domain/utils/dates.js';
 export default {
   name: 'AccueilView',
   components: {
-    PhPencilSimple,
     PhMagicWand,
     PhWarning,
     TuileAction,
@@ -191,10 +181,6 @@ export default {
     ...mapState('plannings', { plannings: 'items' }),
     ...mapGetters('personnes', { personnesActives: 'actifs' }),
     ...mapGetters('tournees', { tourneesActives: 'actives' }),
-    ...mapGetters('cabinet', ['parametres']),
-    nomCabinet() {
-      return this.parametres?.nomCabinet ?? '';
-    },
     // Icônes Phosphor passées en props aux composants réutilisables
     // (composants, pas simples chaînes : voir `TuileAction`/`IndicateurCle`).
     // Exposées via des computed (plutôt que `data()`) pour rester de simples
@@ -309,24 +295,6 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
-
-.accueil-fil-ariane {
-  margin-bottom: t.$espace-2;
-  color: t.$couleur-texte-attenue;
-  font-size: t.$taille-texte-petite;
-}
-
-.accueil-lien-nommer {
-  display: inline-flex;
-  align-items: center;
-  gap: t.$espace-1;
-  color: t.$couleur-primaire;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
 
 .accueil-entete {
   display: flex;
