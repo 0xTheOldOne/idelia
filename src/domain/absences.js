@@ -150,3 +150,21 @@ export function etatTemporelAbsence(absence, aujourdhui) {
   if (absence.dateDebut > aujourdhui) return 'A_VENIR';
   return 'EN_COURS';
 }
+
+/**
+ * Filtre les absences « à venir » : celles dont la date de fin n'est pas
+ * encore dépassée (`dateFin >= dateReference`, comparaison lexicographique
+ * de chaînes `"YYYY-MM-DD"`, ADR 0010) **et** dont le statut n'est pas
+ * `'REFUSE'` (une absence refusée n'est jamais « à venir »). Triées par
+ * `dateDebut` croissant. Pure et déterministe : `dateReference` (aujourd'hui)
+ * est fournie par l'appelant, jamais lue via `Date.now()` ici.
+ *
+ * @param {Absence[]} absences
+ * @param {string} dateReference - Date du jour `"YYYY-MM-DD"`, injectée par l'appelant.
+ * @returns {Absence[]} Absences à venir, triées par `dateDebut` croissant.
+ */
+export function absencesAVenir(absences, dateReference) {
+  return absences
+    .filter((absence) => absence.dateFin >= dateReference && absence.statut !== 'REFUSE')
+    .sort((a, b) => (a.dateDebut < b.dateDebut ? -1 : a.dateDebut > b.dateDebut ? 1 : 0));
+}

@@ -189,6 +189,26 @@ function finMois(dateStr) {
   return addDays(moisSuivant(debutMois(dateStr)), -1);
 }
 
+/**
+ * Calcule le numéro de semaine **ISO 8601** (1..53) de `dateStr`, selon la
+ * règle du jeudi : la semaine appartient à l'année de son jeudi, la semaine 1
+ * est celle qui contient le premier jeudi de l'année. Construit au-dessus de
+ * {@link weekdayISO}, {@link addDays} et {@link diffDays} — aucun nouvel
+ * objet `Date` exposé. Déterministe, jamais `Date.now()`.
+ *
+ * @param {string} dateStr - Date `"YYYY-MM-DD"` de référence.
+ * @returns {number} Numéro de semaine ISO 8601 (1 à 53).
+ */
+function numeroSemaineIso(dateStr) {
+  const jourIso = weekdayISO(dateStr);
+  const jeudi = addDays(dateStr, 4 - jourIso);
+  const anneeJeudi = jeudi.slice(0, 4);
+  const premierJanvier = `${anneeJeudi}-01-01`;
+  const jourIsoPremierJanvier = weekdayISO(premierJanvier);
+  const premierJeudiAnnee = addDays(premierJanvier, (4 - jourIsoPremierJanvier + 7) % 7);
+  return diffDays(premierJeudiAnnee, jeudi) / 7 + 1;
+}
+
 export const dateUtil = {
   parse,
   format,
@@ -203,4 +223,5 @@ export const dateUtil = {
   moisSuivant,
   moisPrecedent,
   finMois,
+  numeroSemaineIso,
 };

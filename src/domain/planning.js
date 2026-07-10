@@ -87,3 +87,39 @@ export function creerAffectationManuelle(personneId, tourneeId, date, creneau) {
     updatedAt: maintenant,
   };
 }
+
+/**
+ * Sélectionne le planning « pertinent maintenant » : parmi ceux **non
+ * terminés** (`dateFin >= dateReference`), celui de plus petite `dateDebut`
+ * (le planning en cours ou, à défaut, le prochain à démarrer). Comparaisons
+ * de chaînes uniquement (ADR 0010) ; `dateReference` fournie par l'appelant.
+ * Alimente l'indicateur « Prochain planning », la carte « À traiter » et la
+ * tuile « Ouvrir le planning en cours » (feature 0013).
+ *
+ * @param {Planning[]} plannings
+ * @param {string} dateReference - Date du jour `"YYYY-MM-DD"`, injectée par l'appelant.
+ * @returns {(Planning|null)} Le planning pertinent, ou `null` si aucun n'est en cours/à venir.
+ */
+export function prochainPlanning(plannings, dateReference) {
+  const enCoursOuAVenir = plannings.filter((pl) => pl.dateFin >= dateReference);
+  if (enCoursOuAVenir.length === 0) return null;
+
+  return enCoursOuAVenir.reduce((plusProche, pl) => (pl.dateDebut < plusProche.dateDebut ? pl : plusProche));
+}
+
+/**
+ * Résume un diagnostic moteur (`{ violations, tourneesNonCouvertes }`, forme
+ * renvoyée par `diagnostiquer`/`evaluerCourant`) en comptes simples, prêts à
+ * afficher (feature 0013). Pure synthèse : aucune règle métier nouvelle,
+ * aucune reformulation des messages du moteur.
+ *
+ * @param {{ violations: import('./scheduling/modele/types.js').Violation[], tourneesNonCouvertes: import('./scheduling/modele/types.js').NonCouverture[] }} diagnostic
+ * @returns {{ nbErreurs: number, nbAvertissements: number, nbNonCouvertes: number, aResoudre: number }} Résumé chiffré.
+ */
+export function resumerDiagnostic(diagnostic) {
+  const { violations, tourneesNonCouvertes } = diagnostic;
+  const nbErreurs = violations.filter((v) => v.severite === 'erreur').length;
+  const nbAvertissements = violations.filter((v) => v.severite === 'avertissement').length;
+  const nbNonCouvertes = tourneesNonCouvertes.length;
+  return { nbErreurs, nbAvertissements, nbNonCouvertes, aResoudre: nbErreurs + nbNonCouvertes };
+}

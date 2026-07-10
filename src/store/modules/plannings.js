@@ -38,7 +38,7 @@
  * diagnostics volatils sans second passage moteur.
  */
 import { genererPlanning, diagnostiquer, appliquerChangement } from '@/domain/scheduling';
-import { creerPlanning, creerAffectationManuelle } from '@/domain/planning.js';
+import { creerPlanning, creerAffectationManuelle, resumerDiagnostic } from '@/domain/planning.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -375,6 +375,30 @@ export default {
     annulerDerniereEdition({ commit, getters }) {
       if (!getters.peutAnnuler) return;
       commit('RESTAURER_SNAPSHOT');
+    },
+    /**
+     * Résume les conflits (`{ nbErreurs, nbAvertissements, nbNonCouvertes,
+     * aResoudre }`) de chaque planning fourni, en le ré-évaluant contre les
+     * données courantes (comme `evaluerCourant`). Lecture seule : **aucun**
+     * `commit`, ne modifie ni `selectionId` ni `items`. Réutilise le helper
+     * interne `assemblerEntree` et le moteur pur `diagnostiquer` (ADR 0008) ;
+     * la synthèse est déléguée au domaine (`resumerDiagnostic`). Feature
+     * `0013` (tableau de bord) — seule brique côté store de la feature.
+     *
+     * @param {import('vuex').ActionContext} context
+     * @param {{ plannings: object[] }} payload - `Planning[]` à évaluer
+     *   (liste plafonnée choisie par l'appelant, ex. plannings récents + le
+     *   planning pertinent).
+     * @returns {Object<string, {nbErreurs: number, nbAvertissements: number, nbNonCouvertes: number, aResoudre: number}>} Résumé par id de planning.
+     */
+    resumeConflits({ rootGetters, rootState }, { plannings }) {
+      const resume = {};
+      for (const pl of plannings) {
+        const entree = assemblerEntree(rootGetters, rootState, { debut: pl.dateDebut, fin: pl.dateFin });
+        const diagnostic = diagnostiquer(pl.affectations, entree);
+        resume[pl.id] = resumerDiagnostic(diagnostic);
+      }
+      return resume;
     },
   },
 };

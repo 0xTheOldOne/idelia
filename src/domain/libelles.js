@@ -18,6 +18,7 @@ import {
   TYPES_PREFERENCE,
   TYPES_ABSENCE,
   STATUTS_ABSENCE,
+  STATUTS_PLANNING,
 } from '@/domain/schema.js';
 
 /**
@@ -385,3 +386,44 @@ export const LIBELLES_ETAT_TEMPOREL_ABSENCE = {
 export function libelleEtatTemporelAbsence(code) {
   return LIBELLES_ETAT_TEMPOREL_ABSENCE[code] ?? '';
 }
+
+/**
+ * Table de correspondance code statut de planning (`schema.js` →
+ * `STATUTS_PLANNING`) → libellé FR. « Diffusé » (plutôt que « Publié ») est
+ * le vocabulaire du glossaire pour `PUBLIE` ([ADR 0009], workflow référent).
+ *
+ * @type {{ BROUILLON: string, VALIDE: string, PUBLIE: string }}
+ */
+export const LIBELLES_STATUT_PLANNING = {
+  BROUILLON: 'Brouillon',
+  VALIDE: 'Validé',
+  PUBLIE: 'Diffusé',
+};
+
+/**
+ * Renvoie le libellé FR d'un statut de planning à partir de son code.
+ *
+ * @param {string} code - Code statut (voir `STATUTS_PLANNING`).
+ * @returns {string} Libellé FR (ex. `'PUBLIE' → 'Diffusé'`), ou chaîne vide si inconnu.
+ */
+export function libelleStatutPlanning(code) {
+  return LIBELLES_STATUT_PLANNING[code] ?? '';
+}
+
+/**
+ * @typedef {object} OptionStatutPlanning
+ * @property {string} code - Code statut (voir `STATUTS_PLANNING`).
+ * @property {string} libelle - Libellé FR correspondant.
+ */
+
+/**
+ * Liste des statuts de planning, prête à itérer. Dérivée de
+ * `STATUTS_PLANNING` (schema.js) et de `LIBELLES_STATUT_PLANNING` pour
+ * garantir leur cohérence.
+ *
+ * @type {OptionStatutPlanning[]}
+ */
+export const STATUTS_PLANNING_OPTIONS = STATUTS_PLANNING.map((code) => ({
+  code,
+  libelle: libelleStatutPlanning(code),
+}));
