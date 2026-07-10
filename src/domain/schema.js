@@ -58,8 +58,28 @@ export const ORIGINES_AFFECTATION = Object.freeze(['AUTO', 'MANUEL']);
 /** Statuts d'un Planning. @type {ReadonlyArray<string>} */
 export const STATUTS_PLANNING = Object.freeze(['BROUILLON', 'VALIDE', 'PUBLIE']);
 
-/** Palette de couleurs suggérées par défaut (Personnes/Tournees). @type {ReadonlyArray<string>} */
-export const COULEURS_PAR_DEFAUT = Object.freeze(['#2E86AB', '#E4572E', '#5B8C5A', '#B5179E']);
+/**
+ * Palette de couleurs de repère suggérées (Personnes/Tournees), accordée à
+ * l'identité « Teal & Sable » (feature 0014) : douze teintes bien distinctes,
+ * saturation/luminosité moyennes pour rester lisibles en pastille comme en
+ * fond de cellule de planning. Palette au niveau **application** (non éditable
+ * en v1) : `fromSaveDocument` la ré-applique toujours, elle suit la version.
+ * @type {ReadonlyArray<string>}
+ */
+export const COULEURS_PAR_DEFAUT = Object.freeze([
+  '#0E8A8F', // teal (famille marque)
+  '#2E7CB8', // bleu
+  '#5B5BD6', // indigo
+  '#8E4EC6', // violet
+  '#C43E8E', // magenta
+  '#D14D5A', // rose
+  '#E0713C', // terracotta
+  '#D99A26', // ambre (écho de l'accent)
+  '#8A9A2E', // olive
+  '#2E9E5B', // vert
+  '#96603A', // terre / mocha (chaud, accordé au sable)
+  '#5E7387', // ardoise (neutre bleuté)
+]);
 
 // ---------------------------------------------------------------------------
 // Types (JSDoc)
@@ -183,7 +203,11 @@ export function toSaveDocument(rootState, options) {
  */
 export function fromSaveDocument(doc) {
   return {
-    cabinet: { parametres: doc.cabinet },
+    // `couleursParDefaut` est une palette de suggestion au niveau application
+    // (non éditable en v1) : on ré-applique toujours la palette courante plutôt
+    // que celle figée dans une sauvegarde ancienne, pour qu'elle suive la
+    // version d'Idelia. Les autres réglages du cabinet sont préservés tels quels.
+    cabinet: { parametres: { ...doc.cabinet, couleursParDefaut: COULEURS_PAR_DEFAUT } },
     personnes: { items: doc.personnes ?? [] },
     tournees: { items: doc.tournees ?? [] },
     absences: { items: doc.absences ?? [] },

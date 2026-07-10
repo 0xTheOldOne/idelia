@@ -483,7 +483,7 @@ export default {
         libelle: '',
         segments: [{ heureDebut: '08:00', heureFin: '12:00', nbPersonnesRequises: 1 }],
         joursApplication: [],
-        couleur: this.couleursSuggerees[0] ?? '#2E86AB',
+        couleur: this.couleursSuggerees[0] ?? '#0E8A8F',
         dateDebutValidite: '',
         dateFinValidite: '',
         notes: '',

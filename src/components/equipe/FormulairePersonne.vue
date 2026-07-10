@@ -378,7 +378,7 @@ export default {
         prenom: '',
         nom: '',
         statut: 'TITULAIRE',
-        couleur: this.couleursSuggerees[0] ?? '#2E86AB',
+        couleur: this.couleursSuggerees[0] ?? '#0E8A8F',
         quotite: 100,
         dateEntree: '',
         dateSortie: '',
