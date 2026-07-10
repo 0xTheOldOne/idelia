@@ -7,11 +7,14 @@
  * par le plugin dédié du store racine, jamais ici (aucun accès
  * `localStorage`).
  *
- * CRUD (feature 0007) : les mutations restent **fines** (aucune logique
- * métier ni horodatage) ; la construction/normalisation d'une absence vit
- * dans le domaine (`src/domain/absences.js`, `creerAbsence`), les
- * horodatages techniques (`updatedAt`, `decideLe`) sont posés dans les
- * actions.
+ * Saisie directe, sans workflow (feature 0017) : un seul gestionnaire en
+ * v1, aucune authentification ([ADR 0014]) ⇒ pas de circuit
+ * demande/validation. `creerAbsence` (`src/domain/absences.js`) force le
+ * champ `statut` à `'VALIDE'` dès la création ; ce module ne porte donc
+ * plus que le CRUD (`ajouter`/`modifier`/`supprimer`). Les mutations
+ * restent **fines** (aucune logique métier ni horodatage) ; la
+ * construction/normalisation d'une absence vit dans le domaine, les
+ * horodatages techniques (`updatedAt`) sont posés dans les actions.
  *
  * Contrairement à `personnes`/`tournees` (soft-delete), `Absence` n'est
  * référencée par aucune autre entité (§3 de la feature 0007) : sa
@@ -71,8 +74,8 @@ export default {
     /**
      * Crée une nouvelle absence à partir de champs partiels (formulaire) et
      * l'ajoute à la collection. La construction/normalisation est déléguée
-     * au domaine (`creerAbsence`), qui pose `statut: 'DEMANDE'`,
-     * `demandeLe` et `decideLe: null`.
+     * au domaine (`creerAbsence`), qui pose `statut: 'VALIDE'` (saisie
+     * directe, feature 0017), `demandeLe` et `decideLe: null`.
      * @param {{ commit: Function }} context
      * @param {object} champs - Champs partiels d'une Absence.
      */
@@ -99,42 +102,6 @@ export default {
      */
     supprimer({ commit }, id) {
       commit('REMOVE', id);
-    },
-    /**
-     * Valide une absence en attente : `statut` passe à `'VALIDE'` et
-     * `decideLe` est posé (horodatage ISO UTC de la décision).
-     * @param {{ commit: Function }} context
-     * @param {string} id
-     */
-    valider({ commit }, id) {
-      commit('UPDATE', {
-        id,
-        patch: { statut: 'VALIDE', decideLe: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      });
-    },
-    /**
-     * Refuse une absence en attente : `statut` passe à `'REFUSE'` et
-     * `decideLe` est posé (horodatage ISO UTC de la décision).
-     * @param {{ commit: Function }} context
-     * @param {string} id
-     */
-    refuser({ commit }, id) {
-      commit('UPDATE', {
-        id,
-        patch: { statut: 'REFUSE', decideLe: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      });
-    },
-    /**
-     * Annule une décision : `statut` repasse à `'DEMANDE'` et `decideLe`
-     * est remis à `null`.
-     * @param {{ commit: Function }} context
-     * @param {string} id
-     */
-    remettreEnDemande({ commit }, id) {
-      commit('UPDATE', {
-        id,
-        patch: { statut: 'DEMANDE', decideLe: null, updatedAt: new Date().toISOString() },
-      });
     },
   },
 };

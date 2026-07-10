@@ -10,7 +10,7 @@
  * lexicographique (ADR 0010) : aucun objet `Date` n'est manipulé ici.
  */
 
-import { TYPES_ABSENCE, STATUTS_ABSENCE } from '@/domain/schema.js';
+import { TYPES_ABSENCE } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
 
 /**
@@ -21,7 +21,10 @@ import { genId } from '@/domain/utils/id.js';
  * @property {string} dateDebut - Date de début `"YYYY-MM-DD"`.
  * @property {string} dateFin - Date de fin `"YYYY-MM-DD"`, inclusive, ≥ `dateDebut`.
  * @property {string} creneau - `'MATIN'`, `'APRES_MIDI'` ou `'JOURNEE'`.
- * @property {string} statut - `'DEMANDE'`, `'VALIDE'` ou `'REFUSE'` (voir {@link STATUTS_ABSENCE}).
+ * @property {string} statut - `'DEMANDE'`, `'VALIDE'` ou `'REFUSE'` (voir `STATUTS_ABSENCE`
+ *   dans `schema.js`). En v1, saisie directe sans workflow ([feature 0017]) :
+ *   toujours `'VALIDE'` à la création, champ dormant préservé pour l'import/export
+ *   et le moteur (aucune décision explicite tant que le workflow n'est pas réactivé).
  * @property {string} commentaire - Commentaire libre, facultatif (chaîne vide sinon).
  * @property {string} demandeLe - Horodatage ISO UTC de la demande.
  * @property {(string|null)} decideLe - Horodatage ISO UTC de la décision, `null` tant qu'aucune décision.
@@ -33,6 +36,13 @@ import { genId } from '@/domain/utils/id.js';
  * Construit une `Absence` complète et normalisée à partir d'un objet
  * partiel (typiquement les champs saisis dans le formulaire), en appliquant
  * les valeurs par défaut et en générant les champs techniques.
+ *
+ * Saisie directe (feature 0017) : il n'existe qu'un seul gestionnaire en v1
+ * ([ADR 0014]), donc aucun workflow de demande/validation — une absence
+ * saisie est **effective immédiatement**. Le champ `statut` est forcé à
+ * `'VALIDE'` par défaut (dormant, préservé pour l'import/export et le
+ * moteur) ; un `champs.statut` explicite reste respecté (ex. donnée
+ * importée d'une version antérieure).
  *
  * La cohérence `dateFin ≥ dateDebut` est portée par le formulaire
  * (Vuelidate), pas par cette fabrique : elle ne garantit que la
@@ -51,7 +61,7 @@ export function creerAbsence(champs = {}) {
     dateDebut: champs.dateDebut ?? '',
     dateFin: champs.dateFin ?? '',
     creneau: champs.creneau ?? 'JOURNEE',
-    statut: champs.statut ?? STATUTS_ABSENCE[0],
+    statut: champs.statut ?? 'VALIDE',
     commentaire: String(champs.commentaire ?? '').trim(),
     demandeLe: champs.demandeLe ?? maintenant,
     decideLe: champs.decideLe ?? null,
@@ -117,4 +127,26 @@ export function absencesSeChevauchent(a, b) {
  */
 export function chevauchementsPour(absenceCible, absences) {
   return absences.filter((absence) => absencesSeChevauchent(absenceCible, absence));
+}
+
+/**
+ * Déduit l'état temporel **factuel** d'une absence par rapport à
+ * `aujourdhui` : `'PASSEE'` si sa date de fin est déjà dépassée, `'A_VENIR'`
+ * si sa date de début n'est pas encore atteinte, `'EN_COURS'` sinon
+ * (aujourd'hui est compris dans la période). Comparaison lexicographique de
+ * chaînes `"YYYY-MM-DD"` (ADR 0010) : **aucun objet `Date`** n'est manipulé
+ * ici.
+ *
+ * Ce repère est **purement descriptif** — il ne reflète jamais une décision
+ * ou une approbation ([ADR 0014], feature 0017) : `aujourdhui` est fourni
+ * par l'appelant, jamais lu depuis l'horloge, pour que ce module reste pur.
+ *
+ * @param {{ dateDebut: string, dateFin: string }} absence
+ * @param {string} aujourdhui - Date du jour `"YYYY-MM-DD"`, injectée par l'appelant.
+ * @returns {'PASSEE'|'EN_COURS'|'A_VENIR'} État temporel factuel.
+ */
+export function etatTemporelAbsence(absence, aujourdhui) {
+  if (absence.dateFin < aujourdhui) return 'PASSEE';
+  if (absence.dateDebut > aujourdhui) return 'A_VENIR';
+  return 'EN_COURS';
 }

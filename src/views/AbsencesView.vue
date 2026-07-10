@@ -50,27 +50,6 @@
       </button>
     </div>
 
-    <div
-      v-if="!aucuneAbsence"
-      ref="groupeFiltre"
-      class="absences-filtre"
-      role="group"
-      aria-label="Filtrer les absences par statut"
-      tabindex="-1"
-    >
-      <button
-        v-for="filtre in filtresStatut"
-        :key="filtre.code"
-        type="button"
-        class="btn absences-bouton-filtre"
-        :class="filtreStatut === filtre.code ? 'btn-primary' : 'btn-outline-secondary'"
-        :aria-pressed="filtreStatut === filtre.code ? 'true' : 'false'"
-        @click="filtreStatut = filtre.code"
-      >
-        {{ filtre.libelle }}
-      </button>
-    </div>
-
     <div v-if="aucuneAbsence && personnesActives.length > 0" class="absences-etat-vide">
       <PhCalendarBlank :size="48" aria-hidden="true" />
       <p class="mb-0">
@@ -84,12 +63,8 @@
     </div>
 
     <template v-else-if="!aucuneAbsence">
-      <p v-if="absencesAffichees.length === 0" class="absences-texte-explication">
-        Aucune absence ne correspond à ce filtre.
-      </p>
-
-      <ul v-else class="absences-liste">
-        <li v-for="absence in absencesAffichees" :key="absence.id" class="absences-ligne">
+      <ul class="absences-liste">
+        <li v-for="absence in absencesTriees" :key="absence.id" class="absences-ligne">
           <span
             class="absences-pastille"
             :style="{ backgroundColor: personneAffichage(absence).couleur }"
@@ -104,45 +79,29 @@
               {{ libelleTypeAbsence(absence.type) }} · {{ periodeTexte(absence)
               }}<template v-if="creneauTexte(absence)"> · {{ creneauTexte(absence) }}</template>
             </span>
-            <span class="absences-statut">
-              <PhClock v-if="absence.statut === 'DEMANDE'" :size="16" aria-hidden="true" />
-              <PhCheckCircle
-                v-else-if="absence.statut === 'VALIDE'"
+            <span class="absences-etat">
+              <PhClock
+                v-if="etatTemporelAbsence(absence, aujourdhui) === 'A_VENIR'"
                 :size="16"
                 aria-hidden="true"
               />
-              <PhXCircle v-else-if="absence.statut === 'REFUSE'" :size="16" aria-hidden="true" />
-              <span>{{ libelleStatutAbsence(absence.statut) }}</span>
+              <PhCalendarCheck
+                v-else-if="etatTemporelAbsence(absence, aujourdhui) === 'EN_COURS'"
+                :size="16"
+                aria-hidden="true"
+              />
+              <PhClockCounterClockwise v-else :size="16" aria-hidden="true" />
+              <span>{{ libelleEtatTemporelAbsence(etatTemporelAbsence(absence, aujourdhui)) }}</span>
             </span>
           </div>
           <div class="absences-actions">
             <button
               type="button"
               class="btn btn-outline-secondary"
-              :ref="(el) => setRefModifier(absence.id, el)"
               @click="ouvrirEdition(absence)"
             >
               <PhPencilSimple :size="18" aria-hidden="true" />
               <span>Modifier</span>
-            </button>
-            <template v-if="absence.statut === 'DEMANDE'">
-              <button type="button" class="btn btn-outline-success" @click="onValider(absence)">
-                <PhCheck :size="18" aria-hidden="true" />
-                <span>Valider</span>
-              </button>
-              <button type="button" class="btn btn-outline-secondary" @click="onRefuser(absence)">
-                <PhX :size="18" aria-hidden="true" />
-                <span>Refuser</span>
-              </button>
-            </template>
-            <button
-              v-else
-              type="button"
-              class="btn btn-outline-secondary"
-              @click="onRemettreEnDemande(absence)"
-            >
-              <PhArrowCounterClockwise :size="18" aria-hidden="true" />
-              <span>Remettre en demande</span>
             </button>
             <button
               type="button"
@@ -186,31 +145,30 @@ import {
   PhUsers,
   PhCalendarPlus,
   PhCalendarBlank,
-  PhClock,
-  PhCheckCircle,
-  PhXCircle,
-  PhCheck,
-  PhX,
   PhPencilSimple,
-  PhArrowCounterClockwise,
   PhTrash,
+  PhClock,
+  PhCalendarCheck,
+  PhClockCounterClockwise,
 } from '@phosphor-icons/vue';
 
 import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulaireAbsence from '@/components/absences/FormulaireAbsence.vue';
-import { libelleTypeAbsence, libelleStatutAbsence, libelleCreneau } from '@/domain/libelles.js';
+import { libelleTypeAbsence, libelleCreneau, libelleEtatTemporelAbsence } from '@/domain/libelles.js';
+import { etatTemporelAbsence } from '@/domain/absences.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Écran « Absences & congés » (feature 0007) : liste **toutes** les absences
- * de l'équipe et **orchestre** leur cycle de vie (ajout, édition, décision,
- * suppression) via le store `absences`. Ne contient **aucune logique
- * métier** : la construction/normalisation d'une absence est déléguée au
- * domaine (`creerAbsence`, appelé par l'action `absences/ajouter`), les
- * libellés à `libelles.js`, les dates à `dateUtil` ; le tri et le filtre par
- * statut ne sont que des choix de présentation locaux à l'écran (calqué sur
- * `TourneesView`, feature 0006).
+ * Écran « Absences & congés » (feature 0007, simplifié en 0017) : liste
+ * **toutes** les absences de l'équipe et **orchestre** leur cycle de vie
+ * (ajout, édition, suppression) via le store `absences`. Saisie directe sans
+ * workflow de validation ([ADR 0014], feature 0017) : une absence enregistrée
+ * est effective immédiatement. Ne contient **aucune logique métier** : la
+ * construction/normalisation d'une absence est déléguée au domaine
+ * (`creerAbsence`, appelé par l'action `absences/ajouter`), les libellés à
+ * `libelles.js`, les dates à `dateUtil` ; le tri est un choix de présentation
+ * local à l'écran (calqué sur `TourneesView`, feature 0006).
  */
 export default {
   name: 'AbsencesView',
@@ -220,14 +178,11 @@ export default {
     PhUsers,
     PhCalendarPlus,
     PhCalendarBlank,
-    PhClock,
-    PhCheckCircle,
-    PhXCircle,
-    PhCheck,
-    PhX,
     PhPencilSimple,
-    PhArrowCounterClockwise,
     PhTrash,
+    PhClock,
+    PhCalendarCheck,
+    PhClockCounterClockwise,
     IndicateurSauvegarde,
     DialogueConfirmation,
     FormulaireAbsence,
@@ -241,30 +196,10 @@ export default {
       // Pilotage de la confirmation de suppression.
       confirmationVisible: false,
       absenceASupprimer: null,
-      // Filtre de présentation par statut (« En attente » aide à retrouver
-      // les demandes à traiter) : purement local à l'écran, aucun getter.
-      filtreStatut: 'TOUS',
       // Distingue une sauvegarde issue d'une vraie action utilisateur d'une
       // sauvegarde héritée de l'hydratation initiale (même logique
       // qu'EquipeView/TourneesView) : passé à `IndicateurSauvegarde`.
       aEdite: false,
-      // Réfs des boutons « Modifier » de chaque ligne, keyées par id
-      // d'absence : permet de retrouver l'élément DOM d'une ligne précise
-      // après une transition de statut pour y replacer le focus (voir
-      // `setRefModifier`/`focaliserApresDecision`), alors que `v-for` ne
-      // permet pas de réf nommée classique. Objet simple (pas besoin de
-      // réactivité, ce sont des éléments DOM).
-      refsModifier: {},
-      // Options du filtre par statut : codées en dur (libellés au pluriel
-      // pour les statuts décidés, cohérents avec le workflow de filtrage)
-      // plutôt que dérivées de `STATUTS_ABSENCE_OPTIONS` (singulier, prévu
-      // pour l'affichage d'une absence isolée).
-      filtresStatut: [
-        { code: 'TOUS', libelle: 'Toutes' },
-        { code: 'DEMANDE', libelle: 'En attente' },
-        { code: 'VALIDE', libelle: 'Validées' },
-        { code: 'REFUSE', libelle: 'Refusées' },
-      ],
     };
   },
   computed: {
@@ -280,6 +215,14 @@ export default {
       return this.items.length === 0;
     },
     /**
+     * Date du jour `"YYYY-MM-DD"`, seul point d'accès à `Date` de cet écran
+     * (ADR 0010), injectée au helper pur `etatTemporelAbsence` pour situer
+     * chaque absence dans le temps (« À venir » / « En cours » / « Passée »).
+     */
+    aujourdhui() {
+      return dateUtil.format(new Date());
+    },
+    /**
      * Tri de présentation : date de début décroissante (les absences les
      * plus récentes/à venir en tête), départagé par date de création
      * décroissante. Comparaison de chaînes uniquement (aucun objet `Date`).
@@ -289,11 +232,6 @@ export default {
       return [...this.items].sort(
         (a, b) => b.dateDebut.localeCompare(a.dateDebut) || b.createdAt.localeCompare(a.createdAt)
       );
-    },
-    /** Absences triées puis restreintes au statut sélectionné par le filtre. */
-    absencesAffichees() {
-      if (this.filtreStatut === 'TOUS') return this.absencesTriees;
-      return this.absencesTriees.filter((absence) => absence.statut === this.filtreStatut);
     },
     /**
      * Personnes proposées au sélecteur du formulaire : les personnes
@@ -321,9 +259,10 @@ export default {
     },
   },
   methods: {
-    ...mapActions('absences', ['ajouter', 'modifier', 'supprimer', 'valider', 'refuser', 'remettreEnDemande']),
+    ...mapActions('absences', ['ajouter', 'modifier', 'supprimer']),
     libelleTypeAbsence,
-    libelleStatutAbsence,
+    libelleEtatTemporelAbsence,
+    etatTemporelAbsence,
 
     /**
      * Créneau en clair, masqué s'il s'agit de la journée entière (§6.3) :
@@ -370,49 +309,6 @@ export default {
       };
     },
 
-    /**
-     * Ref-fonction du bouton « Modifier » d'une ligne, keyée par id
-     * d'absence (voir `refsModifier` en `data`). Appelée par Vue avec
-     * `el = null` au démontage de la ligne (suppression, changement de
-     * filtre) : on retire alors l'entrée pour ne jamais retenir une
-     * référence DOM obsolète.
-     * @param {string} id
-     * @param {HTMLElement|null} el
-     */
-    setRefModifier(id, el) {
-      if (el) {
-        this.refsModifier[id] = el;
-      } else {
-        delete this.refsModifier[id];
-      }
-    },
-
-    /**
-     * Replace le focus après une transition de statut (Valider / Refuser /
-     * Remettre en demande) : sur le bouton « Modifier » de la ligne
-     * actionnée si elle est toujours visible sous le filtre courant (le
-     * traitement des demandes à la chaîne reste fluide), sinon replie sur le
-     * bouton d'ajout d'en-tête s'il est affiché, à défaut sur le groupe de
-     * filtres (toujours présent dès qu'une absence existe). Attend le
-     * prochain tick pour laisser le DOM se mettre à jour (filtre, ligne
-     * potentiellement sortie de la vue).
-     * @param {string} id - Identifiant de l'absence actionnée.
-     */
-    focaliserApresDecision(id) {
-      this.$nextTick(() => {
-        const toujoursVisible = this.absencesAffichees.some((a) => a.id === id);
-        if (toujoursVisible && this.refsModifier[id]) {
-          this.refsModifier[id].focus();
-          return;
-        }
-        if (this.$refs.boutonAjout) {
-          this.$refs.boutonAjout.focus();
-          return;
-        }
-        this.$refs.groupeFiltre?.focus();
-      });
-    },
-
     ouvrirAjout() {
       this.absenceEnCours = null;
       this.formulaireVisible = true;
@@ -443,30 +339,6 @@ export default {
     onAnnulerFormulaire() {
       this.formulaireVisible = false;
       this.absenceEnCours = null;
-    },
-
-    /**
-     * Transitions de statut : directes, sans confirmation (réversibles via
-     * « Remettre en demande »). Les boutons de la ligne changent après
-     * l'action : le focus est replacé sur le bouton « Modifier » de la même
-     * ligne si elle reste visible sous le filtre courant (traitement des
-     * demandes à la chaîne), sinon sur un point stable (voir
-     * `focaliserApresDecision`).
-     */
-    onValider(absence) {
-      this.valider(absence.id);
-      this.aEdite = true;
-      this.focaliserApresDecision(absence.id);
-    },
-    onRefuser(absence) {
-      this.refuser(absence.id);
-      this.aEdite = true;
-      this.focaliserApresDecision(absence.id);
-    },
-    onRemettreEnDemande(absence) {
-      this.remettreEnDemande(absence.id);
-      this.aEdite = true;
-      this.focaliserApresDecision(absence.id);
     },
 
     demanderSuppression(absence) {
@@ -512,17 +384,6 @@ export default {
   gap: t.$espace-2;
 }
 
-.absences-filtre {
-  display: flex;
-  flex-wrap: wrap;
-  gap: t.$espace-2;
-  margin-bottom: t.$espace-4;
-}
-
-.absences-bouton-filtre {
-  min-width: 6rem;
-}
-
 .absences-etat-vide {
   display: flex;
   flex-direction: column;
@@ -534,11 +395,6 @@ export default {
   color: t.$couleur-texte-attenue;
   background-color: t.$couleur-fond-clair;
   border-radius: t.$rayon-lg;
-}
-
-.absences-texte-explication {
-  color: t.$couleur-texte-attenue;
-  font-size: t.$taille-texte-petite;
 }
 
 .absences-liste {
@@ -586,7 +442,7 @@ export default {
   color: t.$couleur-texte-attenue;
 }
 
-.absences-statut {
+.absences-etat {
   display: flex;
   align-items: center;
   gap: t.$espace-1;

@@ -188,8 +188,8 @@ import { genId } from '@/domain/utils/id.js';
  * `null` en création, objet en édition) et **émet** le résultat normalisé
  * (`enregistrer`) ou une annulation (`annuler`) ; c'est l'écran appelant
  * (`AbsencesView`) qui dispatche vers le store. Le **statut** n'est jamais
- * saisi ici : toute nouvelle absence naît « En attente », les décisions
- * (valider/refuser) sont pilotées depuis la liste.
+ * saisi ici : `creerAbsence` le force à `VALIDE` (saisie directe v1, feature
+ * 0017) ; il n'existe plus de décision de validation.
  */
 export default {
   name: 'FormulaireAbsence',

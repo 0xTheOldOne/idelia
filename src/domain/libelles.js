@@ -315,6 +315,11 @@ export const TYPES_ABSENCE_OPTIONS = TYPES_ABSENCE.map((code) => ({
  * `STATUTS_ABSENCE`) → libellé FR. « En attente » (plutôt que « Demande »)
  * est préféré pour un statut affiché sur une carte et dans un filtre.
  *
+ * **Dormant en v1 — voir feature 0017** : le workflow demande/validation
+ * est retiré de l'UI (`creerAbsence` force `statut` à `'VALIDE'`) ;
+ * conservé sans dépendance Vue en vue d'une réactivation post-v1, sans
+ * migration.
+ *
  * @type {{ DEMANDE: string, VALIDE: string, REFUSE: string }}
  */
 export const LIBELLES_STATUT_ABSENCE = {
@@ -325,6 +330,8 @@ export const LIBELLES_STATUT_ABSENCE = {
 
 /**
  * Renvoie le libellé FR d'un statut d'absence à partir de son code.
+ *
+ * Dormant en v1 — voir feature 0017 (voir `LIBELLES_STATUT_ABSENCE`).
  *
  * @param {string} code - Code statut (voir `STATUTS_ABSENCE`).
  * @returns {string} Libellé FR, ou chaîne vide si inconnu.
@@ -344,9 +351,37 @@ export function libelleStatutAbsence(code) {
  * Dérivée de `STATUTS_ABSENCE` (schema.js) et de `LIBELLES_STATUT_ABSENCE`
  * pour garantir leur cohérence.
  *
+ * Dormant en v1 — voir feature 0017 (voir `LIBELLES_STATUT_ABSENCE`).
+ *
  * @type {OptionStatutAbsence[]}
  */
 export const STATUTS_ABSENCE_OPTIONS = STATUTS_ABSENCE.map((code) => ({
   code,
   libelle: libelleStatutAbsence(code),
 }));
+
+/**
+ * Table de correspondance code d'état temporel factuel d'une absence
+ * (voir `etatTemporelAbsence`, `domain/absences.js`) → libellé FR.
+ *
+ * Repère purement déduit des dates par rapport à aujourd'hui — **jamais**
+ * une approbation ni un statut de validation (feature 0017).
+ *
+ * @type {{ PASSEE: string, EN_COURS: string, A_VENIR: string }}
+ */
+export const LIBELLES_ETAT_TEMPOREL_ABSENCE = {
+  PASSEE: 'Passée',
+  EN_COURS: 'En cours',
+  A_VENIR: 'À venir',
+};
+
+/**
+ * Renvoie le libellé FR d'un état temporel factuel d'absence à partir de
+ * son code (voir `etatTemporelAbsence`).
+ *
+ * @param {string} code - Code état (`'PASSEE'`, `'EN_COURS'`, `'A_VENIR'`).
+ * @returns {string} Libellé FR, ou chaîne vide si inconnu.
+ */
+export function libelleEtatTemporelAbsence(code) {
+  return LIBELLES_ETAT_TEMPOREL_ABSENCE[code] ?? '';
+}
