@@ -6,12 +6,14 @@ Le moteur est le **cœur technique** d'Idelia. Il vit dans `src/domain/schedulin
 
 Un **modèle de contraintes unique** alimente **à la fois** la génération (filtrer les contraintes dures, scorer les souples) et la validation temps réel (produire des violations lisibles). Une contrainte = un objet évaluable = **source de vérité unique**. On ne duplique jamais la règle métier.
 
+> **Grain sous-journalier = le segment** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md), [feature 0016](../../features/0016-tournees-coupees-modele.md)). L'unité de demande, la couverture, l'index et les affectations raisonnent par **(tournée, date, `segmentIndex`)**, plus par créneau symbolique. Les **absences** et **préférences de créneau** restent exprimées en buckets (`MATIN`/`APRES_MIDI`/`JOURNEE`) et sont **réconciliées** avec les horaires réels d'un segment par recouvrement horaire (pivot midi ; helpers `heuresSeChevauchent`/`creneauChevaucheHoraires` de `domain/absences.js`).
+
 ## 1. Modèle de contraintes
 
 ```js
 /**
  * @typedef {'dure'|'souple'} Durete
- * @typedef {'cellule'|'creneau'|'personne-periode'|'global'} Granularite
+ * @typedef {'cellule'|'segment'|'personne-periode'|'global'} Granularite
  *
  * @typedef {Object} Contrainte
  * @property {string}       id
@@ -34,9 +36,9 @@ Un **modèle de contraintes unique** alimente **à la fois** la génération (fi
 | granularité | dépend de… | contraintes |
 |---|---|---|
 | `cellule` | une affectation | absence, jour off récurrent, créneau off |
-| `creneau` | toutes les affectations d'un (jour,créneau) | non-chevauchement, couverture |
-| `personne-periode` | la timeline d'une personne | repos légal, min/max jours consécutifs, jour de repos souhaité |
-| `global` | tout le planning | équité, continuité |
+| `segment` | toutes les affectations d'un (tournée, jour, segment) | couverture |
+| `personne-periode` | la timeline d'une personne | repos légal, min/max jours consécutifs, jour de repos souhaité, **non-chevauchement horaire** (paires même-personne/même-jour) |
+| `global` | tout le planning | équité, continuité jour-à-jour, **continuité intra-journée** (2 vacations d'une coupée) |
 
 ### Objet `Violation`
 
@@ -45,7 +47,7 @@ Un **modèle de contraintes unique** alimente **à la fois** la génération (fi
  * @typedef {Object} Violation
  * @property {string}  contrainteId
  * @property {'erreur'|'avertissement'} severite  // dure->erreur ; souple->avertissement
- * @property {Object}  cible        // { personneId?, tourneeId?, jour?, creneau? } pour surligner l'UI
+ * @property {Object}  cible        // { personneId?, tourneeId?, jour?, segmentIndex? } pour surligner l'UI
  * @property {string}  code         // stable (i18n, tests), ex 'ABSENCE_AFFECTEE'
  * @property {string}  message      // FR lisible pour l'UI
  * @property {number}  penalite     // souples : poids * amplitude
@@ -57,9 +59,9 @@ On sépare `code` (stable) de `message` (FR affiché) → prêt pour l'i18n, tes
 
 ### Catalogue
 
-**Dures** (`severite: 'erreur'`) : `absence` (personne absente non affectable), `chevauchement` (1 personne ≤ 1 tournée par créneau), `couverture` (effectif requis), `reposLegal` (≤ `maxJoursConsecutifs`, repos mini).
+**Dures** (`severite: 'erreur'`) : `absence` (personne absente non affectable — recouvrement bucket ↔ horaires du segment), `chevauchement` (une personne ne peut avoir deux affectations aux **horaires qui se chevauchent** le même jour ; les 2 segments **disjoints** d'une coupée ne se chevauchent donc pas), `couverture` (effectif requis **par segment**), `reposLegal` (≤ `maxJoursConsecutifs`, repos mini ; deux segments d'un même jour = **un seul** jour travaillé).
 
-**Souples** (`severite: 'avertissement'`, poids configurable) : `jourOffRecurrent`, `creneauOff`, `joursConsecutifsSouhaites`, `jourReposSouhaite`, `equite` (écart de charge entre personnes), `continuite` (garder la même personne sur une tournée).
+**Souples** (`severite: 'avertissement'`, poids configurable) : `jourOffRecurrent`, `creneauOff`, `joursConsecutifsSouhaites`, `jourReposSouhaite`, `equite` (écart de charge entre personnes ; une coupée pèse ses 2 segments), `continuite` (garder la même personne sur une tournée d'un jour à l'autre), **`continuiteSegments`** (privilégier la **même personne** sur les 2 vacations d'une tournée coupée le même jour — jamais imposé, [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)).
 
 ### Couverture & infaisabilité
 
@@ -89,7 +91,7 @@ La couverture est *dure par intention* mais peut être **physiquement impossible
  * @property {Affectation[]}   affectations           // liste PLATE, JSON-sérialisable
  * @property {Violation[]}     violations             // résiduelles (erreurs + avertissements)
  * @property {number}          score                  // somme pondérée des pénalités souples (bas = mieux)
- * @property {NonCouverture[]} tourneesNonCouvertes   // { jour, creneau, tourneeId, requis, affectes, manque }
+ * @property {NonCouverture[]} tourneesNonCouvertes   // { tourneeId, date, segmentIndex, heureDebut, heureFin, requis, affectes, manque }
  * @property {Object}          meta                   // { seed, iterations, dureeMs, faisable, nbErreursDures }
  */
 ```
@@ -113,15 +115,15 @@ genererPlanning(input, options):
   return assembler(planning, violations, ctx)
 ```
 
-**Préparation** : expansion de la période en jours (date + jour ISO) ; unités de **demande** `D` (un slot par personne requise, par jour/tournée/créneau) ; matrice `dispo[personne][jour][creneau]` (absences) ; compteurs d'équité ; index de continuité (planning précédent + jours voisins).
+**Préparation** : expansion de la période en jours (date + jour ISO) ; unités de **demande** `D` (un slot par personne requise, par **jour / tournée / segment** — chaque segment porte ses `heureDebut`/`heureFin` dénormalisés) ; disponibilité par recouvrement horaire (absence bucket ↔ horaires du segment) ; compteurs d'équité ; index de continuité (planning précédent + jours voisins).
 
 **Construction gloutonne (MRV)** — traiter d'abord les demandes ayant le moins de candidats légaux :
 ```
-pour chaque demande d = (jour, creneau, tournee), triée par nb de candidats croissant:
+pour chaque demande d = (jour, tournee, segment), triée par nb de candidats croissant:
     candidats = personnes P dont TOUTES les dures autorisent (P,d):
-        dispo[P][jour][creneau]              (absence)
-        P pas déjà sur (jour,creneau)        (chevauchement)
-        ajout ne dépasse pas maxJoursConsecutifs (reposLegal)
+        P non absente sur les horaires du segment  (absence, recouvrement horaire)
+        P sans affectation aux horaires chevauchants ce jour  (chevauchement)
+        ajout ne dépasse pas maxJoursConsecutifs   (reposLegal)
     si candidats vide: marquer d NON COUVERTE (warning) ; continuer   // jamais de crash
     cout[P] = coût marginal souple de (P,d)
     meilleur = argmin(cout) ; départage seedé par id via rng
@@ -133,7 +135,7 @@ Les dures dépendant du temps (repos, consécutifs) sont **re-vérifiées dynami
 
 ## 4. Validation temps réel
 
-`Planning` runtime **indexé** (dérivé de `affectations[]`) pour des lookups O(1) : `parCreneau`, `parTournee`, `parPersonne`, `joursTravailles`. Les `Map`/`Set` d'index **ne sont jamais stockés** — recalculés via `indexer(affectations)`. La liste `affectations[]` reste plate et JSON-sérialisable.
+`Planning` runtime **indexé** (dérivé de `affectations[]`) pour des lookups O(1) : `parSlot` (clé `${tourneeId}|${date}|${segmentIndex}`), `parTournee`, `parPersonne`, `joursTravailles`. Les `Map`/`Set` d'index **ne sont jamais stockés** — recalculés via `indexer(affectations)`. La liste `affectations[]` reste plate et JSON-sérialisable.
 
 - `validerPlanning(planning, input)` : évalue **toutes** les contraintes → violations triées (erreurs d'abord, puis avertissements par pénalité décroissante). Pure et déterministe ; directement consommable par l'UI (surlignage via `cible`, `message` FR).
 - `validerIncrementale(planning, input, changement, cache)` : au **drag & drop**, ne recalcule que la portée touchée selon la `granularite` (cellules, créneaux, personnes concernées) ; l'équité se met à jour via les compteurs `joursTravailles` maintenus (−1/+1). Objectif : **< 1 ms** par interaction.
@@ -165,7 +167,7 @@ src/domain/scheduling/
     contrainteAbsence.js  contrainteChevauchement.js  contrainteCouverture.js
     contrainteReposLegal.js  contrainteJourOffRecurrent.js  contrainteCreneauOff.js
     contrainteJoursConsecutifs.js  contrainteJourReposSouhaite.js
-    contrainteEquite.js  contrainteContinuite.js
+    contrainteEquite.js  contrainteContinuite.js  contrainteContinuiteSegments.js
   modele/
     types.js                  // typedefs JSDoc (Input, Planning, Contrainte, Violation…)
     planning.js               // indexer(), appliquerChangement(), helpers

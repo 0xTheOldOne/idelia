@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 1,              // entier, en tête : pilote les migrations
+  "schemaVersion": 2,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -25,7 +25,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -55,9 +55,12 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   ],
   "tournees": [
     {
-      "id": "t-1", "nom": "Tournée Nord", "code": "N", "secteur": "Nord",
-      "creneau": "MATIN", "heureDebut": "06:30", "heureFin": "12:00",
-      "joursApplication": [1, 2, 3, 4, 5, 6], "nbPersonnesRequises": 1,
+      "id": "t-1", "libelle": "Tournée Nord",
+      "segments": [
+        { "heureDebut": "07:00", "heureFin": "13:30", "nbPersonnesRequises": 2 },
+        { "heureDebut": "17:00", "heureFin": "20:00", "nbPersonnesRequises": 1 }
+      ],
+      "joursApplication": [1, 2, 3, 4, 5, 6],
       "couleur": "#5B8C5A", "archivee": false,
       "dateDebutValidite": null, "dateFinValidite": null, "ordreAffichage": 1, "notes": "",
       "createdAt": "2026-07-01T08:00:00.000Z", "updatedAt": "2026-07-01T08:00:00.000Z"
@@ -80,7 +83,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
       "parametresGeneration": { "seed": 1 },
       "affectations": [
         { "id": "af-1", "personneId": "p-3f2a", "tourneeId": "t-1",
-          "date": "2026-07-06", "creneau": "MATIN", "origine": "AUTO",
+          "date": "2026-07-06", "segmentIndex": 0, "origine": "AUTO",
           "verrouillee": false, "commentaire": "",
           "createdAt": "2026-07-05T18:00:00.000Z", "updatedAt": "2026-07-05T18:00:00.000Z" }
       ],
@@ -108,10 +111,11 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **2**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
+- **`MIGRATIONS[1]` (v1 → v2)** — première migration réelle du projet ([feature 0016](../../features/0016-tournees-coupees-modele.md), [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)) : chaque `Tournee` passe de `nom`/`creneau`/`heureDebut`/`heureFin`/`nbPersonnesRequises`/`secteur`/`code` à `libelle` + un unique `segments[0]` reconstruit depuis les anciens horaires (`archivee` recopié tel quel) ; chaque `Affectation` passe de `creneau` à `segmentIndex: 0`. Les `absences` (bucket `creneau`) sont inchangées. Sans perte.
 
 ## Intégrité référentielle
 

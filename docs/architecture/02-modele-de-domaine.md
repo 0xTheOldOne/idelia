@@ -15,11 +15,12 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 |---|---|
 | **Personne** | Personne physique travaillant au cabinet (titulaire ou remplaçant). |
 | **ParametresCabinet** | Réglages globaux du cabinet (singleton). |
-| **Tournee** | Circuit de soins récurrent, avec horaires, créneau, jours d'application, effectif requis. |
-| **Creneau** | Moment de la journée : `MATIN` / `APRES_MIDI` / `JOURNEE`. C'est le grain du planning. |
+| **Tournee** | Circuit de soins récurrent, avec un **libellé**, **1 ou 2 segments horaires** (chacun : horaires + effectif), et des jours d'application. Le type **complète** (1 segment) / **coupée** (2 segments) est **dérivé** de `segments.length` ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)). |
+| **Segment** | Vacation horaire d'une tournée : `{ heureDebut, heureFin, nbPersonnesRequises }`. Objet imbriqué (pas d'`id`), repéré par son **indice** dans `Tournee.segments`. Une tournée coupée = matin + reprise du soir. |
+| **Creneau** | Moment de la journée : `MATIN` / `APRES_MIDI` / `JOURNEE`. Grain **grossier** (bucket) des **absences** et **préférences de créneau** ; réconcilié avec les horaires réels des segments au moment de la planification (recouvrement horaire, [05](05-moteur-de-planification.md)). N'est plus porté par la Tournee ni l'Affectation. |
 | **Preference** | Souhait/contrainte attaché à une Personne, **DURE** (jamais violable) ou **SOUPLE** (à optimiser). |
 | **Absence** | Indisponibilité datée d'une Personne (congé, arrêt, maternité…), avec statut de validation. |
-| **Affectation** | Brique élémentaire du planning : (Personne × Tournee × date × Creneau). |
+| **Affectation** | Brique élémentaire du planning : (Personne × Tournee × date × **segment**). |
 | **Planning** | Période bornée + ensemble d'Affectations + statut. |
 | **Referent** | Personne qui tient le planning et le diffuse ([ADR 0009](../adr/0009-workflow-referent-diffusion-lecture.md)). |
 | **Besoin** | Notion **calculée** (non stockée) : effectif requis d'une tournée un jour/créneau vs affectations réelles. |
@@ -86,24 +87,29 @@ Contraintes hétérogènes modélisées par **polymorphisme** : discriminant `ty
 
 ### Tournee
 
+Modèle **segments** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)). Le type complète/coupée est **dérivé** (`segments.length`), jamais stocké. Plus de `nom`/`code`/`secteur`/`creneau`/horaires-uniques (retirés lors de la migration `schemaVersion` 1 → 2, [03](03-modele-de-donnees.md)).
+
 | champ | type | oblig. | notes |
 |---|---|---|---|
 | id | uuid | oui | |
-| nom | string | oui | |
-| code | string | non | code court d'affichage |
-| secteur | string | non | zone géographique (string libre, KISS) |
-| creneau | enum Creneau | oui | `MATIN`, `APRES_MIDI`, `JOURNEE` |
-| heureDebut | `"HH:mm"` | oui | |
-| heureFin | `"HH:mm"` | oui | doit être > heureDebut (validé) |
+| libelle | string | oui | **remplace `nom`** — texte libre nommé par le gestionnaire |
+| segments | Segment[] (**1 ou 2**) | oui | 1 = tournée complète ; 2 = tournée coupée (matin + reprise du soir) |
 | joursApplication | number[1..7] | oui | jours ISO où la tournée existe |
-| nbPersonnesRequises | integer>=1 | oui | défaut `1` |
 | couleur | string hex | non | |
-| archivee | boolean | oui | défaut `false` (soft-delete) |
+| archivee | boolean | oui | défaut `false` (soft-delete conservé) |
 | dateDebutValidite | `"YYYY-MM-DD"` | non | tournée saisonnière |
 | dateFinValidite | `"YYYY-MM-DD"` \| null | non | |
 | ordreAffichage | integer | non | |
 | notes | string | non | |
 | createdAt / updatedAt | ISO UTC | oui | |
+
+**Segment** (objet imbriqué, pas d'`id`, repéré par son indice dans `segments`) :
+
+| champ | type | oblig. | notes |
+|---|---|---|---|
+| heureDebut | `"HH:mm"` | oui | |
+| heureFin | `"HH:mm"` | oui | doit être > heureDebut (validé au formulaire) |
+| nbPersonnesRequises | integer>=1 | oui | effectif **de ce segment** ; défaut `1` |
 
 ### Absence
 
@@ -131,7 +137,7 @@ Contraintes hétérogènes modélisées par **polymorphisme** : discriminant `ty
 | personneId | uuid → Personne | oui | |
 | tourneeId | uuid → Tournee | oui | |
 | date | `"YYYY-MM-DD"` | oui | |
-| creneau | enum Creneau | oui | dénormalisé depuis la tournée (perf/lookup) |
+| segmentIndex | integer >= 0 | oui | **remplace `creneau`** : indice du segment couvert dans `tournee.segments`. Les horaires se résolvent via `tournee.segments[segmentIndex]` (jamais dénormalisés). |
 | origine | `AUTO` \| `MANUEL` | oui | AUTO = posée par le moteur |
 | verrouillee | boolean | oui | défaut `false` ; le moteur ne la retouche pas |
 | commentaire | string | non | |
@@ -180,5 +186,5 @@ Personne 1─* Affectation (par id)        Tournee  1─* Affectation (par id)
 1. **Ne jamais supprimer physiquement** une Personne ou une Tournee référencée : **soft-delete** (`actif=false` / `archivee=true`). Les plannings historiques gardent la référence.
 2. À la **publication** d'un planning, figer un **snapshot d'affichage** (nom, couleur) dans chaque affectation → les exports/PDF restent stables même si la personne est désactivée plus tard.
 3. **À l'import**, valider l'intégrité référentielle (`personneId`/`tourneeId`/`referentId` résolvent bien) avant de remplacer l'état ([03](03-modele-de-donnees.md)).
-4. **Demi-journées** : le champ `creneau` sur Absence gère les arrêts partiels, cohérent avec le grain des affectations.
-5. **Chevauchements** (calculés) : affectation vs absence `VALIDE` (bloquant) ; double affectation même personne/date/créneau (interdit) ; sous-effectif (avertissement, non bloquant).
+4. **Demi-journées** : le champ `creneau` sur Absence (bucket `MATIN`/`APRES_MIDI`/`JOURNEE`) gère les arrêts partiels ; il est **réconcilié avec les horaires réels** des segments par le moteur (recouvrement horaire autour d'un pivot midi, [05](05-moteur-de-planification.md)) — les absences restent volontairement à la granularité demi-journée.
+5. **Chevauchements** (calculés) : affectation vs absence `VALIDE` recouvrant les **horaires du segment** (bloquant) ; double affectation d'une même personne le même jour sur des **horaires qui se chevauchent** (interdit) ; sous-effectif **par segment** (avertissement, non bloquant). Les deux segments **disjoints** d'une tournée coupée ne se chevauchent pas → une même personne peut assurer matin + soir (compté comme **un seul** jour travaillé).
