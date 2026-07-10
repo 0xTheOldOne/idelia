@@ -104,7 +104,7 @@ $z-index-notifications: 2000;
 
 .pile-notifications {
   position: fixed;
-  top: t.$espace-3;
+  bottom: t.$espace-3;
   right: t.$espace-3;
   z-index: $z-index-notifications;
   width: min(24rem, calc(100vw - #{t.$espace-3} * 2));
@@ -147,7 +147,7 @@ $z-index-notifications: 2000;
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(8px);
 }
 
 @media (prefers-reduced-motion: reduce) {
