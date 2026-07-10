@@ -4,11 +4,12 @@
  * affiché **tel quel** par une future UI (`0010`/`0011`) — jamais de code
  * brut ni de jargon technique dans le texte.
  *
- * Réutilise `src/domain/libelles.js` (`libelleCreneau`, `libelleTypeAbsence`)
- * pour rester cohérent avec le vocabulaire déjà vu par l'utilisateur dans les
- * écrans Souhaits/Absences/Tournées (§5.6/§8 du plan). Les contraintes
- * préférence/équité/continuité (tâche 3) ajouteront leurs propres gabarits
- * ici.
+ * Réutilise `src/domain/libelles.js` (`libelleTypeAbsence`) et
+ * `src/domain/tournees.js` (`libelleSegment`, pour formater les horaires
+ * d'un segment — feature 0016, ADR 0017 : les messages affichent des
+ * **horaires réels**, jamais de code créneau) pour rester cohérent avec le
+ * vocabulaire déjà vu par l'utilisateur dans les écrans Souhaits/Absences/
+ * Tournées (§5.6/§8 du plan).
  *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  * `messagePour` ne lève **jamais** : un `code` inconnu renvoie un message
@@ -16,7 +17,8 @@
  */
 
 import { dateUtil } from '@/domain/utils/dates.js';
-import { libelleCreneau, libelleTypeAbsence, libelleJour } from '@/domain/libelles.js';
+import { libelleTypeAbsence, libelleJour } from '@/domain/libelles.js';
+import { libelleSegment } from '@/domain/tournees.js';
 
 /**
  * Libellé FR du jour de semaine d'une date, en minuscules (« mercredi »),
@@ -42,6 +44,21 @@ function arrondi1(valeur) {
 }
 
 /**
+ * Formate les horaires réels d'un segment en clair (ex. `"07:00 – 13:30"`,
+ * via `libelleSegment`), défensif vis-à-vis d'horaires manquants (§7.4 du
+ * plan, « jamais de crash ») — jamais de code créneau affiché (feature 0016,
+ * ADR 0017).
+ *
+ * @param {string} [heureDebut] - Heure de début `"HH:mm"`.
+ * @param {string} [heureFin] - Heure de fin `"HH:mm"`.
+ * @returns {string} Horaires formatés, ou un texte neutre si incomplets.
+ */
+function horairesTexte(heureDebut, heureFin) {
+  if (!heureDebut || !heureFin) return 'horaire non précisé';
+  return libelleSegment({ heureDebut, heureFin });
+}
+
+/**
  * Gabarit commun aux préférences « ne travaille pas / est en repos… mais est
  * affectée » (`JOUR_OFF_RECURRENT`, `CRENEAU_OFF`, `INDISPO_HEBDO`,
  * `JOURS_REPOS_SOUHAITES`) : réutilise `decrirePreference` (fourni en
@@ -51,10 +68,16 @@ function arrondi1(valeur) {
  * @param {Object} params
  * @returns {string}
  */
-function affecteMalgrePreference({ nomPersonne = 'Cette personne', descriptionPreference = '', date, creneau } = {}) {
+function affecteMalgrePreference({
+  nomPersonne = 'Cette personne',
+  descriptionPreference = '',
+  date,
+  heureDebut,
+  heureFin,
+} = {}) {
   return (
     `${nomPersonne} — ${descriptionPreference} — mais est affectée le ${jourFr(date)} ` +
-    `${dateUtil.formatDateFr(date)} (${libelleCreneau(creneau)}).`
+    `${dateUtil.formatDateFr(date)} (${horairesTexte(heureDebut, heureFin)}).`
   );
 }
 
@@ -67,27 +90,30 @@ function affecteMalgrePreference({ nomPersonne = 'Cette personne', descriptionPr
  * @type {Object<string, function(Object=): string>}
  */
 const GABARITS = {
-  ABSENCE_VALIDEE: ({ nomPersonne = 'Cette personne', date, creneau, typeAbsence } = {}) =>
+  ABSENCE_VALIDEE: ({ nomPersonne = 'Cette personne', date, heureDebut, heureFin, typeAbsence } = {}) =>
     `${nomPersonne} a une absence validée${typeAbsence ? ` (${libelleTypeAbsence(typeAbsence)})` : ''} ` +
-    `le ${dateUtil.formatDateFr(date)} (${libelleCreneau(creneau)}) : elle ne peut pas être affectée sur ce créneau.`,
+    `le ${dateUtil.formatDateFr(date)} (${horairesTexte(heureDebut, heureFin)}) : elle ne peut pas être affectée sur cet horaire.`,
 
-  ABSENCE_DEMANDEE: ({ nomPersonne = 'Cette personne', date, creneau, typeAbsence } = {}) =>
+  ABSENCE_DEMANDEE: ({ nomPersonne = 'Cette personne', date, heureDebut, heureFin, typeAbsence } = {}) =>
     `${nomPersonne} a demandé une absence${typeAbsence ? ` (${libelleTypeAbsence(typeAbsence)})` : ''} ` +
-    `le ${dateUtil.formatDateFr(date)} (${libelleCreneau(creneau)}), mais est affectée sur ce créneau.`,
+    `le ${dateUtil.formatDateFr(date)} (${horairesTexte(heureDebut, heureFin)}), mais est affectée sur cet horaire.`,
 
   CHEVAUCHEMENT: ({
     nomPersonne = 'Cette personne',
     date,
     nomTourneeA = 'une tournée',
-    creneauA,
+    heureDebutA,
+    heureFinA,
     nomTourneeB = 'une autre tournée',
-    creneauB,
+    heureDebutB,
+    heureFinB,
   } = {}) =>
-    `${nomPersonne} est affectée deux fois le ${dateUtil.formatDateFr(date)} sur des créneaux qui se ` +
-    `chevauchent : « ${nomTourneeA} » (${libelleCreneau(creneauA)}) et « ${nomTourneeB} » (${libelleCreneau(creneauB)}).`,
+    `${nomPersonne} est affectée deux fois le ${dateUtil.formatDateFr(date)} sur des horaires qui se ` +
+    `chevauchent : « ${nomTourneeA} » (${horairesTexte(heureDebutA, heureFinA)}) et « ${nomTourneeB} » ` +
+    `(${horairesTexte(heureDebutB, heureFinB)}).`,
 
-  SOUS_COUVERTURE: ({ nomTournee = 'Cette tournée', date, creneau, requis = 0, affectes = 0, manque = 0 } = {}) =>
-    `La tournée « ${nomTournee} » du ${dateUtil.formatDateFr(date)} (${libelleCreneau(creneau)}) nécessite ` +
+  SOUS_COUVERTURE: ({ nomTournee = 'Cette tournée', date, heureDebut, heureFin, requis = 0, affectes = 0, manque = 0 } = {}) =>
+    `La tournée « ${nomTournee} » du ${dateUtil.formatDateFr(date)} (${horairesTexte(heureDebut, heureFin)}) nécessite ` +
     `${requis} personne(s) mais n'en a que ${affectes} : il manque ${manque} personne(s).`,
 
   TROP_JOURS_CONSECUTIFS: ({ nomPersonne = 'Cette personne', jours = 0, maxAutorise = 0 } = {}) =>
@@ -141,13 +167,14 @@ const GABARITS = {
     descriptionPreference = '',
     nomTournee = 'cette tournée',
     date,
-    creneau,
+    heureDebut,
+    heureFin,
   } = {}) =>
     `${nomPersonne} — ${descriptionPreference} — mais est affectée à la tournée « ${nomTournee} » ` +
-    `le ${dateUtil.formatDateFr(date)} (${libelleCreneau(creneau)}).`,
+    `le ${dateUtil.formatDateFr(date)} (${horairesTexte(heureDebut, heureFin)}).`,
 
   EQUITE_DESEQUILIBREE: ({ nomPersonne = 'Cette personne', charge = 0, moyenne = 0 } = {}) =>
-    `${nomPersonne} a une charge de travail de ${arrondi1(charge)} créneau(x) sur la période, ` +
+    `${nomPersonne} a une charge de travail de ${arrondi1(charge)} affectation(s) sur la période, ` +
     `contre une moyenne d'équipe de ${arrondi1(moyenne)} : la répartition est déséquilibrée.`,
 
   CONTINUITE_ROMPUE: ({
@@ -158,6 +185,15 @@ const GABARITS = {
   } = {}) =>
     `La tournée « ${nomTournee} » change de personne le ${dateUtil.formatDateFr(dateB)} : ` +
     `${nomPersonneA} laisse la place à ${nomPersonneB}, ce qui peut nuire à la continuité du suivi.`,
+
+  CONTINUITE_SEGMENTS_ROMPUE: ({
+    nomTournee = 'Cette tournée',
+    date,
+    nomPersonneMatin = 'une personne',
+    nomPersonneSoir = 'une autre personne',
+  } = {}) =>
+    `La tournée coupée « ${nomTournee} » du ${dateUtil.formatDateFr(date)} est partagée entre deux personnes : ` +
+    `${nomPersonneMatin} le matin et ${nomPersonneSoir} pour la reprise, ce qui peut nuire à la continuité du suivi.`,
 };
 
 /**

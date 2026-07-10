@@ -14,7 +14,7 @@
  */
 
 import { decrirePreference } from '@/domain/preferences.js';
-import { creneauxSeChevauchent } from '@/domain/absences.js';
+import { creneauChevaucheHoraires } from '@/domain/absences.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { semaineIsoDe } from '../utils/dates.js';
 import { messagePour } from '../modele/messages.js';
@@ -26,7 +26,23 @@ import { messagePour } from '../modele/messages.js';
  */
 function nomTourneeDe(entree, tourneeId) {
   const tournee = entree.tournees.find((t) => t.id === tourneeId);
-  return tournee ? tournee.nom : 'cette tournée';
+  return tournee ? tournee.libelle : 'cette tournée';
+}
+
+/**
+ * Résout les horaires réels `"HH:mm"` d'une `Affectation`, par lookup de
+ * `tournee.segments[affectation.segmentIndex]` (feature 0016, ADR 0017).
+ * `null` si la tournée ou le segment référencé est introuvable : jamais de
+ * crash, l'affectation est alors simplement ignorée par l'appelant.
+ *
+ * @param {import('../modele/affectation.js').Affectation} affectation
+ * @param {import('../modele/types.js').Entree} entree
+ * @returns {({heureDebut: string, heureFin: string}|null)}
+ */
+function horairesDeAffectation(affectation, entree) {
+  const tournee = entree.tournees.find((t) => t.id === affectation.tourneeId);
+  const segment = tournee ? tournee.segments[affectation.segmentIndex] : undefined;
+  return segment ? { heureDebut: segment.heureDebut, heureFin: segment.heureFin } : null;
 }
 
 /**
@@ -40,7 +56,7 @@ function cibleAffectation(affectation) {
     personneId: affectation.personneId,
     tourneeId: affectation.tourneeId,
     date: affectation.date,
-    creneau: affectation.creneau,
+    segmentIndex: affectation.segmentIndex,
   };
 }
 
@@ -116,7 +132,10 @@ const HANDLERS = {
       const affectations = ctx.index.parPersonne.get(personne.id) ?? [];
       return affectations
         .filter((a) => (params.joursSemaine ?? []).includes(dateUtil.weekdayISO(a.date)))
-        .map((a) => ({ cible: cibleAffectation(a), params: { date: a.date, creneau: a.creneau } }));
+        .map((a) => {
+          const horaires = horairesDeAffectation(a, ctx.entree) ?? {};
+          return { cible: cibleAffectation(a), params: { date: a.date, heureDebut: horaires.heureDebut, heureFin: horaires.heureFin } };
+        });
     },
   },
 
@@ -130,7 +149,10 @@ const HANDLERS = {
       const affectations = ctx.index.parPersonne.get(personne.id) ?? [];
       return affectations
         .filter((a) => (params.joursSemaine ?? []).includes(dateUtil.weekdayISO(a.date)))
-        .map((a) => ({ cible: cibleAffectation(a), params: { date: a.date, creneau: a.creneau } }));
+        .map((a) => {
+          const horaires = horairesDeAffectation(a, ctx.entree) ?? {};
+          return { cible: cibleAffectation(a), params: { date: a.date, heureDebut: horaires.heureDebut, heureFin: horaires.heureFin } };
+        });
     },
   },
 
@@ -140,7 +162,10 @@ const HANDLERS = {
     estCandidatViole(params, demande) {
       const jours = params.joursSemaine ?? [];
       const joursConcernes = jours.length === 0 || jours.includes(demande.jourIso);
-      return joursConcernes && (params.creneaux ?? []).some((c) => creneauxSeChevauchent(c, demande.creneau));
+      return (
+        joursConcernes &&
+        (params.creneaux ?? []).some((c) => creneauChevaucheHoraires(c, demande.heureDebut, demande.heureFin))
+      );
     },
     listerCibles(params, ctx, personne) {
       const jours = params.joursSemaine ?? [];
@@ -148,9 +173,15 @@ const HANDLERS = {
       return affectations
         .filter((a) => {
           const joursConcernes = jours.length === 0 || jours.includes(dateUtil.weekdayISO(a.date));
-          return joursConcernes && (params.creneaux ?? []).some((c) => creneauxSeChevauchent(c, a.creneau));
+          if (!joursConcernes) return false;
+          const horaires = horairesDeAffectation(a, ctx.entree);
+          if (!horaires) return false;
+          return (params.creneaux ?? []).some((c) => creneauChevaucheHoraires(c, horaires.heureDebut, horaires.heureFin));
         })
-        .map((a) => ({ cible: cibleAffectation(a), params: { date: a.date, creneau: a.creneau } }));
+        .map((a) => {
+          const horaires = horairesDeAffectation(a, ctx.entree) ?? {};
+          return { cible: cibleAffectation(a), params: { date: a.date, heureDebut: horaires.heureDebut, heureFin: horaires.heureFin } };
+        });
     },
   },
 
@@ -161,7 +192,7 @@ const HANDLERS = {
       if (!(params.joursSemaine ?? []).includes(demande.jourIso)) return false;
       const creneaux = params.creneaux ?? [];
       if (creneaux.length === 0) return true;
-      return creneaux.some((c) => creneauxSeChevauchent(c, demande.creneau));
+      return creneaux.some((c) => creneauChevaucheHoraires(c, demande.heureDebut, demande.heureFin));
     },
     listerCibles(params, ctx, personne) {
       const creneaux = params.creneaux ?? [];
@@ -170,9 +201,14 @@ const HANDLERS = {
         .filter((a) => {
           if (!(params.joursSemaine ?? []).includes(dateUtil.weekdayISO(a.date))) return false;
           if (creneaux.length === 0) return true;
-          return creneaux.some((c) => creneauxSeChevauchent(c, a.creneau));
+          const horaires = horairesDeAffectation(a, ctx.entree);
+          if (!horaires) return false;
+          return creneaux.some((c) => creneauChevaucheHoraires(c, horaires.heureDebut, horaires.heureFin));
         })
-        .map((a) => ({ cible: cibleAffectation(a), params: { date: a.date, creneau: a.creneau } }));
+        .map((a) => {
+          const horaires = horairesDeAffectation(a, ctx.entree) ?? {};
+          return { cible: cibleAffectation(a), params: { date: a.date, heureDebut: horaires.heureDebut, heureFin: horaires.heureFin } };
+        });
     },
   },
 
@@ -279,10 +315,19 @@ const HANDLERS = {
           const dansListe = tourneeIds.includes(a.tourneeId);
           return params.sens === 'EVITE' ? dansListe : !dansListe;
         })
-        .map((a) => ({
-          cible: cibleAffectation(a),
-          params: { date: a.date, creneau: a.creneau, tourneeId: a.tourneeId, nomTournee: nomTourneeDe(ctx.entree, a.tourneeId) },
-        }));
+        .map((a) => {
+          const horaires = horairesDeAffectation(a, ctx.entree) ?? {};
+          return {
+            cible: cibleAffectation(a),
+            params: {
+              date: a.date,
+              heureDebut: horaires.heureDebut,
+              heureFin: horaires.heureFin,
+              tourneeId: a.tourneeId,
+              nomTournee: nomTourneeDe(ctx.entree, a.tourneeId),
+            },
+          };
+        });
     },
   },
 };

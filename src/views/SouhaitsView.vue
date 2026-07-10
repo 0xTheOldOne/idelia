@@ -281,7 +281,7 @@ export default {
      */
     nomTournee(id) {
       const tournee = this.tourneeParId(id);
-      return tournee ? tournee.nom : '';
+      return tournee ? tournee.libelle : '';
     },
 
     ouvrirAjout() {

@@ -8,113 +8,145 @@
   >
     <form :id="idFormulaire" novalidate @submit.prevent="soumettre">
       <!-- Identité -->
-      <div class="mb-3">
-        <label for="tournee-nom" class="form-label">Nom de la tournée</label>
+      <div class="mb-4">
+        <label for="tournee-libelle" class="form-label">Nom de la tournée</label>
         <input
-          id="tournee-nom"
-          ref="champNom"
-          v-model.trim="formulaire.nom"
+          id="tournee-libelle"
+          ref="champLibelle"
+          v-model.trim="formulaire.libelle"
           type="text"
           class="form-control"
-          :class="{ 'is-invalid': v$.formulaire.nom.$error }"
-          :aria-describedby="v$.formulaire.nom.$error ? 'tournee-nom-erreur' : null"
-          @blur="v$.formulaire.nom.$touch()"
+          :class="{ 'is-invalid': v$.formulaire.libelle.$error }"
+          :aria-describedby="v$.formulaire.libelle.$error ? 'tournee-libelle-erreur' : null"
+          @blur="v$.formulaire.libelle.$touch()"
         >
-        <p v-if="v$.formulaire.nom.$error" id="tournee-nom-erreur" class="formulaire-erreur">
+        <p v-if="v$.formulaire.libelle.$error" id="tournee-libelle-erreur" class="formulaire-erreur">
           <PhWarning :size="14" weight="bold" aria-hidden="true" />
-          <span>{{ v$.formulaire.nom.$errors[0].$message }}</span>
+          <span>{{ v$.formulaire.libelle.$errors[0].$message }}</span>
         </p>
       </div>
 
-      <div class="row g-3 mb-4">
-        <div class="col-sm-6">
-          <label for="tournee-code" class="form-label">Code court (facultatif)</label>
-          <input
-            id="tournee-code"
-            v-model.trim="formulaire.code"
-            type="text"
-            class="form-control"
-            placeholder="ex. N ou T1"
-            maxlength="10"
-            :class="{ 'is-invalid': v$.formulaire.code.$error }"
-            :aria-describedby="v$.formulaire.code.$error ? 'tournee-code-erreur' : null"
-            @blur="v$.formulaire.code.$touch()"
-          >
-          <p v-if="v$.formulaire.code.$error" id="tournee-code-erreur" class="formulaire-erreur">
-            <PhWarning :size="14" weight="bold" aria-hidden="true" />
-            <span>{{ v$.formulaire.code.$errors[0].$message }}</span>
-          </p>
-        </div>
-
-        <div class="col-sm-6">
-          <label for="tournee-secteur" class="form-label">Secteur (facultatif)</label>
-          <input
-            id="tournee-secteur"
-            v-model.trim="formulaire.secteur"
-            type="text"
-            class="form-control"
-            placeholder="ex. Centre-ville"
-            maxlength="60"
-            :class="{ 'is-invalid': v$.formulaire.secteur.$error }"
-            :aria-describedby="v$.formulaire.secteur.$error ? 'tournee-secteur-erreur' : null"
-            @blur="v$.formulaire.secteur.$touch()"
-          >
-          <p v-if="v$.formulaire.secteur.$error" id="tournee-secteur-erreur" class="formulaire-erreur">
-            <PhWarning :size="14" weight="bold" aria-hidden="true" />
-            <span>{{ v$.formulaire.secteur.$errors[0].$message }}</span>
-          </p>
-        </div>
+      <!-- Horaires (1 ou 2 vacations : le matin, et éventuellement la reprise du soir) -->
+      <div class="formulaire-segments-entete mb-2">
+        <span class="form-label d-block mb-0">Horaires</span>
+        <span v-if="tourneeCoupee" class="formulaire-badge-coupee">
+          <PhArrowsSplit :size="16" weight="bold" aria-hidden="true" />
+          <span>Tournée coupée</span>
+        </span>
       </div>
 
-      <!-- Créneau -->
-      <div class="mb-4">
-        <label for="tournee-creneau" class="form-label">Créneau</label>
-        <select
-          id="tournee-creneau"
-          v-model="formulaire.creneau"
-          class="form-select formulaire-select"
-          @change="v$.formulaire.creneau.$touch()"
+      <fieldset v-for="(segment, index) in formulaire.segments" :key="index" class="formulaire-segment mb-3">
+        <legend class="formulaire-legende formulaire-segment-titre">{{ titreSegment(index) }}</legend>
+
+        <div class="row g-3">
+          <div class="col-sm-4">
+            <label :for="'tournee-segment-' + index + '-heure-debut'" class="form-label">Heure de début</label>
+            <input
+              :id="'tournee-segment-' + index + '-heure-debut'"
+              v-model="segment.heureDebut"
+              type="time"
+              class="form-control"
+              :class="{ 'is-invalid': v$.formulaire.segments[index].heureDebut.$error }"
+              :aria-describedby="
+                v$.formulaire.segments[index].heureDebut.$error
+                  ? 'tournee-segment-' + index + '-heure-debut-erreur'
+                  : null
+              "
+              @blur="v$.formulaire.segments[index].heureDebut.$touch()"
+            >
+            <p
+              v-if="v$.formulaire.segments[index].heureDebut.$error"
+              :id="'tournee-segment-' + index + '-heure-debut-erreur'"
+              class="formulaire-erreur"
+            >
+              <PhWarning :size="14" weight="bold" aria-hidden="true" />
+              <span>{{ v$.formulaire.segments[index].heureDebut.$errors[0].$message }}</span>
+            </p>
+          </div>
+
+          <div class="col-sm-4">
+            <label :for="'tournee-segment-' + index + '-heure-fin'" class="form-label">Heure de fin</label>
+            <input
+              :id="'tournee-segment-' + index + '-heure-fin'"
+              v-model="segment.heureFin"
+              type="time"
+              class="form-control"
+              :class="{ 'is-invalid': v$.formulaire.segments[index].heureFin.$error }"
+              :aria-describedby="
+                v$.formulaire.segments[index].heureFin.$error
+                  ? 'tournee-segment-' + index + '-heure-fin-erreur'
+                  : null
+              "
+              @blur="v$.formulaire.segments[index].heureFin.$touch()"
+            >
+            <p
+              v-if="v$.formulaire.segments[index].heureFin.$error"
+              :id="'tournee-segment-' + index + '-heure-fin-erreur'"
+              class="formulaire-erreur"
+            >
+              <PhWarning :size="14" weight="bold" aria-hidden="true" />
+              <span>{{ v$.formulaire.segments[index].heureFin.$errors[0].$message }}</span>
+            </p>
+          </div>
+
+          <div class="col-sm-4 formulaire-nombre">
+            <label :for="'tournee-segment-' + index + '-effectif'" class="form-label">
+              Nombre de personnes requises
+            </label>
+            <input
+              :id="'tournee-segment-' + index + '-effectif'"
+              v-model.number="segment.nbPersonnesRequises"
+              type="number"
+              min="1"
+              max="20"
+              step="1"
+              class="form-control"
+              :class="{ 'is-invalid': v$.formulaire.segments[index].nbPersonnesRequises.$error }"
+              :aria-describedby="
+                describedBy(
+                  'tournee-segment-' + index + '-effectif-aide',
+                  v$.formulaire.segments[index].nbPersonnesRequises.$error
+                    ? 'tournee-segment-' + index + '-effectif-erreur'
+                    : null
+                )
+              "
+              @blur="v$.formulaire.segments[index].nbPersonnesRequises.$touch()"
+            >
+            <div :id="'tournee-segment-' + index + '-effectif-aide'" class="form-text">
+              {{ aideEffectif(index) }}
+            </div>
+            <p
+              v-if="v$.formulaire.segments[index].nbPersonnesRequises.$error"
+              :id="'tournee-segment-' + index + '-effectif-erreur'"
+              class="formulaire-erreur"
+            >
+              <PhWarning :size="14" weight="bold" aria-hidden="true" />
+              <span>{{ v$.formulaire.segments[index].nbPersonnesRequises.$errors[0].$message }}</span>
+            </p>
+          </div>
+        </div>
+
+        <button
+          v-if="index === 1"
+          type="button"
+          class="btn btn-outline-secondary formulaire-bouton-segment"
+          @click="retirerReprise"
         >
-          <option v-for="code in CRENEAUX" :key="code" :value="code">{{ libelleCreneau(code) }}</option>
-        </select>
-      </div>
+          <PhMinusCircle :size="18" aria-hidden="true" />
+          <span>Retirer la reprise</span>
+        </button>
+      </fieldset>
 
-      <!-- Horaires -->
-      <div class="row g-3 mb-4">
-        <div class="col-sm-6">
-          <label for="tournee-heure-debut" class="form-label">Heure de début</label>
-          <input
-            id="tournee-heure-debut"
-            v-model="formulaire.heureDebut"
-            type="time"
-            class="form-control"
-            :class="{ 'is-invalid': v$.formulaire.heureDebut.$error }"
-            :aria-describedby="v$.formulaire.heureDebut.$error ? 'tournee-heure-debut-erreur' : null"
-            @blur="v$.formulaire.heureDebut.$touch()"
-          >
-          <p v-if="v$.formulaire.heureDebut.$error" id="tournee-heure-debut-erreur" class="formulaire-erreur">
-            <PhWarning :size="14" weight="bold" aria-hidden="true" />
-            <span>{{ v$.formulaire.heureDebut.$errors[0].$message }}</span>
-          </p>
-        </div>
-
-        <div class="col-sm-6">
-          <label for="tournee-heure-fin" class="form-label">Heure de fin</label>
-          <input
-            id="tournee-heure-fin"
-            v-model="formulaire.heureFin"
-            type="time"
-            class="form-control"
-            :class="{ 'is-invalid': v$.formulaire.heureFin.$error }"
-            :aria-describedby="v$.formulaire.heureFin.$error ? 'tournee-heure-fin-erreur' : null"
-            @blur="v$.formulaire.heureFin.$touch()"
-          >
-          <p v-if="v$.formulaire.heureFin.$error" id="tournee-heure-fin-erreur" class="formulaire-erreur">
-            <PhWarning :size="14" weight="bold" aria-hidden="true" />
-            <span>{{ v$.formulaire.heureFin.$errors[0].$message }}</span>
-          </p>
-        </div>
-      </div>
+      <button
+        v-if="formulaire.segments.length === 1"
+        ref="boutonAjouterReprise"
+        type="button"
+        class="btn btn-outline-secondary formulaire-bouton-segment mb-4"
+        @click="ajouterReprise"
+      >
+        <PhPlus :size="18" weight="bold" aria-hidden="true" />
+        <span>Ajouter une reprise le soir (journée coupée)</span>
+      </button>
 
       <!-- Jours d'application -->
       <fieldset
@@ -146,35 +178,6 @@
           <span>{{ v$.formulaire.joursApplication.$errors[0].$message }}</span>
         </p>
       </fieldset>
-
-      <!-- Effectif requis -->
-      <div class="mb-4 formulaire-nombre">
-        <label for="tournee-effectif" class="form-label">Nombre de personnes requises</label>
-        <input
-          id="tournee-effectif"
-          v-model.number="formulaire.nbPersonnesRequises"
-          type="number"
-          min="1"
-          max="20"
-          step="1"
-          class="form-control"
-          :class="{ 'is-invalid': v$.formulaire.nbPersonnesRequises.$error }"
-          :aria-describedby="
-            describedBy(
-              'tournee-effectif-aide',
-              v$.formulaire.nbPersonnesRequises.$error ? 'tournee-effectif-erreur' : null
-            )
-          "
-          @blur="v$.formulaire.nbPersonnesRequises.$touch()"
-        >
-        <div id="tournee-effectif-aide" class="form-text">
-          Nombre de personnes nécessaires pour assurer cette tournée.
-        </div>
-        <p v-if="v$.formulaire.nbPersonnesRequises.$error" id="tournee-effectif-erreur" class="formulaire-erreur">
-          <PhWarning :size="14" weight="bold" aria-hidden="true" />
-          <span>{{ v$.formulaire.nbPersonnesRequises.$errors[0].$message }}</span>
-        </p>
-      </div>
 
       <!-- Couleur de repère -->
       <div class="mb-4">
@@ -231,7 +234,8 @@
             :style="{ backgroundColor: formulaire.couleur }"
             aria-hidden="true"
           />
-          <span>{{ formulaire.nom || 'Nom de la tournée' }}</span>
+          <span>{{ formulaire.libelle || 'Nom de la tournée' }}</span>
+          <span v-if="apercuHoraires"> · {{ apercuHoraires }}</span>
         </div>
       </div>
 
@@ -306,15 +310,16 @@
 <script>
 import { useVuelidate } from '@vuelidate/core';
 import { required, integer, between, maxLength, helpers } from '@vuelidate/validators';
-import { PhCheck, PhWarning } from '@phosphor-icons/vue';
+import { PhCheck, PhWarning, PhPlus, PhMinusCircle, PhArrowsSplit } from '@phosphor-icons/vue';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
-import { JOURS_SEMAINE, libelleCreneau } from '@/domain/libelles.js';
-import { CRENEAUX } from '@/domain/schema.js';
+import { JOURS_SEMAINE } from '@/domain/libelles.js';
+import { estCoupee, libelleHoraires } from '@/domain/tournees.js';
 import { genId } from '@/domain/utils/id.js';
 
 /**
- * Formulaire présentational d'ajout/édition d'une tournée (feature 0006).
+ * Formulaire présentational d'ajout/édition d'une tournée (feature 0016, ADR
+ * 0017 — modèle à segments horaires).
  *
  * Bâti au-dessus de `ModaleBase`, sur le même patron que `FormulairePersonne`
  * (identité, sélecteur de couleur accessible) et `FormulairePreference`
@@ -324,10 +329,16 @@ import { genId } from '@/domain/utils/id.js';
  * (`annuler`) ; c'est l'écran appelant (`TourneesView`) qui dispatche vers le
  * store. Toute validation se fait avant émission : un formulaire invalide
  * n'émet jamais `enregistrer` et conserve la saisie en cours.
+ *
+ * Une tournée porte **1 ou 2 segments horaires** (le matin, et
+ * éventuellement une reprise le soir) : le premier segment est toujours
+ * présent, le second s'ajoute/se retire via un bouton explicite. Le mot
+ * « segment » ne doit **jamais** apparaître à l'écran (réservé au code) :
+ * l'UI parle de « le matin » / « la reprise du soir ».
  */
 export default {
   name: 'FormulaireTournee',
-  components: { ModaleBase, PhCheck, PhWarning },
+  components: { ModaleBase, PhCheck, PhWarning, PhPlus, PhMinusCircle, PhArrowsSplit },
   props: {
     /** Affiche (`true`) ou masque (`false`) la modale ; piloté par le parent. */
     visible: { type: Boolean, required: true },
@@ -345,7 +356,6 @@ export default {
   data() {
     return {
       JOURS_SEMAINE,
-      CRENEAUX,
       // Identifiant unique du `<form>`, pour relier le bouton « Enregistrer »
       // du pied de modale (hors du `<form>`) via l'attribut HTML `form`.
       idFormulaire: `formulaire-tournee-${genId()}`,
@@ -358,6 +368,14 @@ export default {
   computed: {
     titreModale() {
       return this.tournee ? 'Modifier la tournée' : 'Ajouter une tournée';
+    },
+    /** `true` si le brouillon porte 2 segments (journée coupée), dérivé (jamais stocké). */
+    tourneeCoupee() {
+      return estCoupee({ segments: this.formulaire.segments });
+    },
+    /** Horaires en clair du brouillon courant, pour l'aperçu (« 07:00 – 13:30 puis 17:00 – 20:00 »). */
+    apercuHoraires() {
+      return libelleHoraires({ segments: this.formulaire.segments });
     },
   },
   watch: {
@@ -375,50 +393,12 @@ export default {
   validations() {
     return {
       formulaire: {
-        nom: {
+        libelle: {
           required: helpers.withMessage('Indiquez le nom de la tournée.', required),
         },
-        code: {
-          maxLength: helpers.withMessage(
-            'Le code doit rester court (10 caractères maximum).',
-            maxLength(10)
-          ),
-        },
-        secteur: {
-          maxLength: helpers.withMessage(
-            'Le secteur ne doit pas dépasser 60 caractères.',
-            maxLength(60)
-          ),
-        },
-        creneau: {
-          required,
-        },
-        heureDebut: {
-          required: helpers.withMessage("Indiquez l'heure de début.", required),
-        },
-        heureFin: {
-          required: helpers.withMessage("Indiquez l'heure de fin.", required),
-          coherence: helpers.withMessage(
-            "L'heure de fin doit être après l'heure de début.",
-            (valeur, parent) => !parent.heureDebut || !valeur || valeur > parent.heureDebut
-          ),
-        },
+        segments: this.formulaire.segments.map((_, index) => this.reglesSegment(index)),
         joursApplication: {
           required: helpers.withMessage("Choisissez au moins un jour d'application.", required),
-        },
-        nbPersonnesRequises: {
-          required: helpers.withMessage(
-            'Indiquez le nombre de personnes requises.',
-            required
-          ),
-          integer: helpers.withMessage(
-            'Indiquez un nombre entier de personnes (sans virgule).',
-            integer
-          ),
-          between: helpers.withMessage(
-            'Indiquez un nombre de personnes entre 1 et 20.',
-            between(1, 20)
-          ),
         },
         couleur: {
           required: helpers.withMessage('Choisissez une couleur de repère.', required),
@@ -436,25 +416,62 @@ export default {
     };
   },
   methods: {
-    libelleCreneau,
+    /**
+     * Règles Vuelidate d'un segment, par indice (0 = le matin, 1 = la
+     * reprise du soir). Le segment d'indice `1` porte une règle
+     * supplémentaire sur `heureDebut` : la reprise doit commencer après la
+     * fin du premier segment (comparaison directe via `this.formulaire`,
+     * plutôt que via l'état « parent » de Vuelidate qui ne porte que le
+     * segment courant).
+     * @param {number} index
+     * @returns {Object} Règles Vuelidate du segment.
+     */
+    reglesSegment(index) {
+      const regles = {
+        heureDebut: {
+          required: helpers.withMessage("Indiquez l'heure de début.", required),
+        },
+        heureFin: {
+          required: helpers.withMessage("Indiquez l'heure de fin.", required),
+          coherence: helpers.withMessage(
+            "L'heure de fin doit être après l'heure de début.",
+            (valeur, parent) => !parent.heureDebut || !valeur || valeur > parent.heureDebut
+          ),
+        },
+        nbPersonnesRequises: {
+          required: helpers.withMessage('Indiquez le nombre de personnes requises.', required),
+          integer: helpers.withMessage('Indiquez un nombre entier de personnes (sans virgule).', integer),
+          between: helpers.withMessage('Indiquez un nombre de personnes entre 1 et 20.', between(1, 20)),
+        },
+      };
+
+      if (index === 1) {
+        regles.heureDebut.repriseApresMatin = helpers.withMessage(
+          'La reprise du soir doit commencer après la fin du matin.',
+          (valeur) => {
+            const finDuMatin = this.formulaire.segments[0]?.heureFin;
+            return !valeur || !finDuMatin || valeur >= finDuMatin;
+          }
+        );
+      }
+
+      return regles;
+    },
 
     /**
      * Construit le brouillon local à partir de `tournee` (édition) ou des
      * valeurs par défaut (création). Ne mute jamais la prop `tournee` :
-     * `joursApplication` est toujours recopié dans un nouveau tableau.
+     * `segments` et `joursApplication` sont toujours recopiés dans de
+     * nouveaux tableaux (chaque segment est lui-même recopié dans un nouvel
+     * objet).
      * @returns {Object} Brouillon prêt à être édité localement.
      */
     construireFormulaire() {
       if (this.tournee) {
         return {
-          nom: this.tournee.nom,
-          code: this.tournee.code ?? '',
-          secteur: this.tournee.secteur ?? '',
-          creneau: this.tournee.creneau,
-          heureDebut: this.tournee.heureDebut ?? '',
-          heureFin: this.tournee.heureFin ?? '',
+          libelle: this.tournee.libelle,
+          segments: this.tournee.segments.map((segment) => ({ ...segment })),
           joursApplication: [...(this.tournee.joursApplication ?? [])],
-          nbPersonnesRequises: this.tournee.nbPersonnesRequises,
           couleur: this.tournee.couleur,
           dateDebutValidite: this.tournee.dateDebutValidite ?? '',
           dateFinValidite: this.tournee.dateFinValidite ?? '',
@@ -463,14 +480,9 @@ export default {
       }
 
       return {
-        nom: '',
-        code: '',
-        secteur: '',
-        creneau: 'MATIN',
-        heureDebut: '08:00',
-        heureFin: '12:00',
+        libelle: '',
+        segments: [{ heureDebut: '08:00', heureFin: '12:00', nbPersonnesRequises: 1 }],
         joursApplication: [],
-        nbPersonnesRequises: 1,
         couleur: this.couleursSuggerees[0] ?? '#2E86AB',
         dateDebutValidite: '',
         dateFinValidite: '',
@@ -491,14 +503,14 @@ export default {
     },
 
     /**
-     * Place le focus sur le champ nom une fois que `ModaleBase` a fini
+     * Place le focus sur le champ libellé une fois que `ModaleBase` a fini
      * d'afficher la modale (événement `affichee`, relayé depuis
      * `shown.bs.modal` de Bootstrap). Le focus est ainsi déterministe : posé
      * après la fin réelle de la transition, il ne se fait pas reprendre par
      * le piège à focus de la modale (contrairement à un délai arbitraire).
      */
     onAffichee() {
-      this.$refs.champNom?.focus();
+      this.$refs.champLibelle?.focus();
     },
 
     /**
@@ -557,23 +569,89 @@ export default {
     },
 
     /**
+     * Intitulé d'un segment, adapté au nombre de segments courant : neutre
+     * (« Horaires ») pour une tournée complète, explicite (« Le matin » /
+     * « La reprise du soir ») pour une tournée coupée. Jamais le mot
+     * « segment » à l'écran.
+     * @param {number} index
+     * @returns {string}
+     */
+    titreSegment(index) {
+      if (this.formulaire.segments.length === 1) return 'Horaires';
+      return index === 0 ? 'Le matin' : 'La reprise du soir';
+    },
+
+    /**
+     * Phrase d'aide de l'effectif requis, adaptée au nombre de segments
+     * courant (jamais le mot « segment »/« vacation » à l'écran).
+     * @param {number} index
+     * @returns {string}
+     */
+    aideEffectif(index) {
+      if (this.formulaire.segments.length === 1) {
+        return 'Nombre de personnes nécessaires pour assurer cette tournée.';
+      }
+      return index === 0
+        ? 'Nombre de personnes nécessaires le matin.'
+        : 'Nombre de personnes nécessaires pour la reprise du soir.';
+    },
+
+    /**
+     * Ajoute un second segment (« Ajouter une reprise le soir ») : la
+     * tournée devient coupée. Horaires par défaut raisonnables (`17:00 –
+     * 20:00`), effectif `1`, modifiables aussitôt. Place le focus sur la
+     * nouvelle heure de début (feedback immédiat).
+     */
+    ajouterReprise() {
+      this.formulaire.segments.push({ heureDebut: '17:00', heureFin: '20:00', nbPersonnesRequises: 1 });
+      this.$nextTick(() => {
+        this.$el.querySelector('#tournee-segment-1-heure-debut')?.focus();
+      });
+    },
+
+    /**
+     * Retire le second segment (« Retirer la reprise ») : la tournée
+     * redevient complète. Action réversible et non destructrice (on est
+     * dans un brouillon, rien n'est encore enregistré) : aucune confirmation
+     * demandée. Replace le focus sur le bouton d'ajout, qui réapparaît.
+     */
+    retirerReprise() {
+      this.formulaire.segments.splice(1, 1);
+      this.$nextTick(() => {
+        this.$refs.boutonAjouterReprise?.focus();
+      });
+    },
+
+    /**
      * Ordre visuel des champs du formulaire, utilisé pour focaliser le
      * premier champ en erreur après une tentative de soumission invalide
      * (`soumettre`). Chaque entrée relie une validation Vuelidate à
-     * l'identifiant DOM du champ correspondant.
+     * l'identifiant DOM du champ correspondant. Étend l'ordre à chaque
+     * segment présent (1 ou 2).
      * @returns {Array<{ validation: Object, id: string }>}
      */
     champsEnOrdre() {
-      return [
-        { validation: this.v$.formulaire.nom, id: 'tournee-nom' },
-        { validation: this.v$.formulaire.creneau, id: 'tournee-creneau' },
-        { validation: this.v$.formulaire.heureDebut, id: 'tournee-heure-debut' },
-        { validation: this.v$.formulaire.heureFin, id: 'tournee-heure-fin' },
-        { validation: this.v$.formulaire.joursApplication, id: `tournee-jour-${JOURS_SEMAINE[0].iso}` },
-        { validation: this.v$.formulaire.nbPersonnesRequises, id: 'tournee-effectif' },
-        { validation: this.v$.formulaire.couleur, id: 'tournee-couleur-libre' },
-        { validation: this.v$.formulaire.dateFinValidite, id: 'tournee-date-fin' },
-      ];
+      const ordre = [{ validation: this.v$.formulaire.libelle, id: 'tournee-libelle' }];
+
+      this.formulaire.segments.forEach((_, index) => {
+        ordre.push({
+          validation: this.v$.formulaire.segments[index].heureDebut,
+          id: `tournee-segment-${index}-heure-debut`,
+        });
+        ordre.push({
+          validation: this.v$.formulaire.segments[index].heureFin,
+          id: `tournee-segment-${index}-heure-fin`,
+        });
+        ordre.push({
+          validation: this.v$.formulaire.segments[index].nbPersonnesRequises,
+          id: `tournee-segment-${index}-effectif`,
+        });
+      });
+
+      ordre.push({ validation: this.v$.formulaire.joursApplication, id: `tournee-jour-${JOURS_SEMAINE[0].iso}` });
+      ordre.push({ validation: this.v$.formulaire.couleur, id: 'tournee-couleur-libre' });
+      ordre.push({ validation: this.v$.formulaire.dateFinValidite, id: 'tournee-date-fin' });
+      return ordre;
     },
 
     /**
@@ -598,14 +676,13 @@ export default {
       this.soumissionInvalide = false;
 
       this.$emit('enregistrer', {
-        nom: this.formulaire.nom.trim(),
-        code: this.formulaire.code.trim(),
-        secteur: this.formulaire.secteur.trim(),
-        creneau: this.formulaire.creneau,
-        heureDebut: this.formulaire.heureDebut,
-        heureFin: this.formulaire.heureFin,
+        libelle: this.formulaire.libelle.trim(),
+        segments: this.formulaire.segments.map((segment) => ({
+          heureDebut: segment.heureDebut,
+          heureFin: segment.heureFin,
+          nbPersonnesRequises: segment.nbPersonnesRequises,
+        })),
         joursApplication: [...this.formulaire.joursApplication],
-        nbPersonnesRequises: this.formulaire.nbPersonnesRequises,
         couleur: this.formulaire.couleur,
         dateDebutValidite: this.formulaire.dateDebutValidite || null,
         dateFinValidite: this.formulaire.dateFinValidite || null,
@@ -620,12 +697,8 @@ export default {
 @use '@/styles/tokens' as t;
 @use '@/styles/mixins' as m;
 
-.formulaire-select {
-  max-width: 20rem;
-}
-
 .formulaire-nombre {
-  max-width: 12rem;
+  max-width: 16rem;
 }
 
 // Cible cliquable confortable, cohérente avec le reste de l'application.
@@ -670,6 +743,59 @@ export default {
   padding: 0;
   margin-bottom: t.$espace-2;
   border: 0;
+}
+
+.formulaire-segments-entete {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$espace-2;
+}
+
+// Repère « Tournée coupée » : toujours icône + texte (jamais la seule
+// couleur), volontairement discret (fond neutre, pas d'alerte).
+.formulaire-badge-coupee {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$espace-1;
+  padding: 0.2rem t.$espace-2;
+  color: t.$couleur-texte-attenue;
+  font-size: t.$taille-texte-petite;
+  font-weight: t.$graisse-gras;
+  background-color: t.$couleur-fond-clair;
+  border-radius: t.$rayon-md;
+}
+
+// Bloc de vacation, devenu un <fieldset> (accessibilité, correctif
+// ergonomie post-relecture) : neutralise le style par défaut du navigateur
+// (bordure/marge) pour conserver le rendu visuel de `0016` à l'identique.
+.formulaire-segment {
+  padding: t.$espace-3;
+  background-color: t.$couleur-fond-clair;
+  border-radius: t.$rayon-md;
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.formulaire-segment + .formulaire-segment {
+  margin-top: t.$espace-3;
+}
+
+.formulaire-segment-titre {
+  margin-bottom: t.$espace-2;
+  font-weight: t.$graisse-gras;
+}
+
+// Cible cliquable identique pour les deux gestes réciproques (« Ajouter une
+// reprise le soir » / « Retirer la reprise »), correctif ergonomie
+// post-relecture.
+.formulaire-bouton-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$espace-2;
+  margin-top: t.$espace-2;
+  min-height: t.$cible-cliquable-min;
 }
 
 .formulaire-pastille {

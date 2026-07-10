@@ -74,12 +74,12 @@ function evaluerEtat(affectationsCandidates, contraintes, ctxBase) {
 }
 
 /**
- * Liste les slots (tournée/date/créneau) actuellement non couverts, un
- * élément par personne manquante (`manque` unités par tournée/date/créneau).
+ * Liste les slots (tournée/date/segment) actuellement non couverts, un
+ * élément par personne manquante (`manque` unités par tournée/date/segment).
  *
  * @param {import('../modele/types.js').Demande[]} demandes
  * @param {import('../modele/types.js').PlanningIndexe} indexPlanning
- * @returns {{tourneeId: string, date: string, creneau: string}[]}
+ * @returns {{tourneeId: string, date: string, segmentIndex: number}[]}
  */
 function listerSlotsNonCouverts(demandes, indexPlanning) {
   const slots = [];
@@ -88,7 +88,7 @@ function listerSlotsNonCouverts(demandes, indexPlanning) {
       slots.push({
         tourneeId: nonCouverture.tourneeId,
         date: nonCouverture.date,
-        creneau: nonCouverture.creneau,
+        segmentIndex: nonCouverture.segmentIndex,
       });
     }
   }
@@ -158,7 +158,7 @@ function appliquerEchanger(affectations, modifiables, rng) {
  *
  * @param {import('../modele/affectation.js').Affectation[]} affectations
  * @param {import('../modele/affectation.js').Affectation[]} modifiables - Ordre stable, non vide (garanti par l'appelant).
- * @param {{tourneeId: string, date: string, creneau: string}[]} slotsLibres - Ordre stable, non vide (garanti par l'appelant).
+ * @param {{tourneeId: string, date: string, segmentIndex: number}[]} slotsLibres - Ordre stable, non vide (garanti par l'appelant).
  * @param {function(): number} rng
  * @returns {import('../modele/affectation.js').Affectation[]} Nouveau tableau (immuable).
  */
@@ -171,7 +171,7 @@ function appliquerDeplacer(affectations, modifiables, slotsLibres, rng) {
     affectationChoisie.personneId,
     slotChoisi.tourneeId,
     slotChoisi.date,
-    slotChoisi.creneau
+    slotChoisi.segmentIndex
   );
 
   return [...sansOrigine, nouvelleAffectation];

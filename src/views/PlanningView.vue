@@ -159,7 +159,8 @@
       :tournee-id="slotSelection?.tourneeId"
       :tournee-nom="slotSelection?.tourneeNom"
       :date="slotSelection?.date"
-      :creneau="slotSelection?.creneau"
+      :segment-index="slotSelection?.segmentIndex"
+      :horaires="slotSelection?.horaires"
       :affectations="planningCourant.affectations"
       @choisir="onChoisirPersonne"
       @annuler="onFermerSelecteur"
@@ -198,6 +199,7 @@ import ControlesGrille from '@/components/planning/ControlesGrille.vue';
 import GrillePlanning from '@/components/planning/GrillePlanning.vue';
 import PanneauConflits from '@/components/planning/PanneauConflits.vue';
 import SelecteurPersonne from '@/components/planning/SelecteurPersonne.vue';
+import { libelleSegment, estCoupee } from '@/domain/tournees.js';
 
 /**
  * Écran « Planning » (feature 0010) : orchestre le choix d'une période, le
@@ -295,7 +297,8 @@ export default {
       // Visibilité du sélecteur de personne (modale).
       selecteurVisible: false,
       // Slot mémorisé (case cliquée) en attente d'un choix dans le
-      // sélecteur : `{ tourneeId, tourneeNom, date, creneau } | null`.
+      // sélecteur : `{ tourneeId, tourneeNom, date, segmentIndex, horaires } | null`
+      // (feature 0016, ADR 0017 : `segmentIndex` remplace l'ancien `creneau`).
       slotSelection: null,
       // Visibilité de la confirmation de régénération (tâche 6),
       // demandée uniquement quand un ajustement manuel non verrouillé
@@ -370,18 +373,45 @@ export default {
     },
 
     /**
-     * Réagit au clic sur « Ajouter une personne » d'une case (événement
-     * sémantique `ajouter` de `GrillePlanning`) : mémorise le slot ciblé et
+     * Réagit au clic sur « Ajouter une personne » d'une vacation (événement
+     * sémantique `ajouter` de `GrillePlanning`, enrichi du `segmentIndex`
+     * ciblé — feature 0016, ADR 0017) : mémorise le slot ciblé (horaires du
+     * segment résolus via `libelleSegment`, pour le titre du sélecteur) et
      * ouvre le sélecteur de personne. No-op si la tournée est introuvable
      * (garde-fou, ne devrait pas se produire : `GrillePlanning` résout déjà
      * la tournée pour construire l'événement).
-     * @param {{ tourneeId: string, date: string, creneau: string }} payload
+     * @param {{ tourneeId: string, date: string, segmentIndex: number }} payload
      */
-    onAjouter({ tourneeId, date, creneau }) {
+    onAjouter({ tourneeId, date, segmentIndex }) {
       const tournee = this.tourneeParId(tourneeId);
       if (!tournee) return;
-      this.slotSelection = { tourneeId, tourneeNom: tournee.nom, date, creneau };
+      const segment = tournee.segments[segmentIndex];
+      const horaires = segment ? libelleSegment(segment) : '';
+      this.slotSelection = {
+        tourneeId,
+        tourneeNom: tournee.libelle,
+        date,
+        segmentIndex,
+        horaires: this.horairesQualifies(tournee, segmentIndex, horaires),
+      };
       this.selecteurVisible = true;
+    },
+
+    /**
+     * Horaires du segment ciblé, préfixés d'un qualificatif « le matin » /
+     * « la reprise du soir » pour une tournée **coupée** (correctif
+     * ergonomie post-relecture — le titre du sélecteur de personne ne
+     * montrait que les horaires bruts, ambigus sans le contexte matin/soir).
+     * Horaires seuls pour une tournée **complète** (rien à distinguer).
+     * @param {object} tournee
+     * @param {number} segmentIndex
+     * @param {string} horaires - Horaires déjà formatés (`libelleSegment`).
+     * @returns {string}
+     */
+    horairesQualifies(tournee, segmentIndex, horaires) {
+      if (!estCoupee(tournee)) return horaires;
+      const qualificatif = segmentIndex === 0 ? 'le matin' : 'la reprise du soir';
+      return horaires ? `${qualificatif}, ${horaires}` : qualificatif;
     },
 
     /** Ferme le sélecteur de personne sans affecter personne (Échap, croix, « Annuler »). */
@@ -438,7 +468,7 @@ export default {
      * l'unique moyen). Dispatche `deplacerAffectation`, qui préserve
      * l'identité (`id`) et le verrou de l'affectation (§4.4) ; rafraîchit
      * ensuite les diagnostics et annonce le résultat.
-     * @param {{ affectationId: string, versTourneeId: string, versDate: string, versCreneau: string }} payload
+     * @param {{ affectationId: string, versTourneeId: string, versDate: string, versSegmentIndex: number }} payload
      */
     async onDeplacer(payload) {
       await this.deplacerAffectation(payload);

@@ -3,9 +3,11 @@
  * absence `DEMANDE` (souple, avertissement). Une absence `REFUSE` est
  * **totalement ignorée** dans les deux cas (§7.1/§7.3 du plan).
  *
- * Réutilise les helpers de chevauchement de `src/domain/absences.js`
- * (`periodesSeChevauchent`, `creneauxSeChevauchent`) — seule source de
- * vérité de la règle de chevauchement, jamais réimplémentée ici.
+ * Réutilise les helpers de `src/domain/absences.js` :
+ * `periodesSeChevauchent` (recouvrement de dates) et `creneauChevaucheHoraires`
+ * (feature 0016, ADR 0017 — réconciliation créneau symbolique de l'absence ↔
+ * horaires réels du segment) — seules sources de vérité, jamais
+ * réimplémentées ici.
  *
  * `type: 'ABSENCE'` est commun aux deux contraintes de ce fichier (un type
  * par fichier, §5.9 du plan) ; c'est `durete` qui les distingue.
@@ -13,7 +15,7 @@
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */
 
-import { periodesSeChevauchent, creneauxSeChevauchent } from '@/domain/absences.js';
+import { periodesSeChevauchent, creneauChevaucheHoraires } from '@/domain/absences.js';
 import { messagePour } from '../modele/messages.js';
 
 /** Poids fixe de l'avertissement « absence demandée » — donnée du domaine, non pondérable par le référent. */
@@ -33,18 +35,40 @@ function nomPersonneDe(entree, personneId) {
 }
 
 /**
- * Indique si une `Absence` chevauche une cellule (date, créneau) donnée —
- * une `Demande` ou une `Affectation`, toutes deux réduites à un seul jour.
+ * Résout les horaires réels `"HH:mm"` d'une `Affectation`, par lookup de
+ * `tournee.segments[affectation.segmentIndex]` (feature 0016, ADR 0017) —
+ * jamais dénormalisés sur l'affectation. `null` si la tournée ou le segment
+ * référencé est introuvable : jamais de crash, l'affectation est alors
+ * simplement ignorée par l'appelant.
+ *
+ * @param {import('../modele/affectation.js').Affectation} affectation
+ * @param {import('../modele/types.js').Entree} entree
+ * @returns {({heureDebut: string, heureFin: string}|null)}
+ */
+function horairesDeAffectation(affectation, entree) {
+  const tournee = entree.tournees.find((t) => t.id === affectation.tourneeId);
+  const segment = tournee ? tournee.segments[affectation.segmentIndex] : undefined;
+  return segment ? { heureDebut: segment.heureDebut, heureFin: segment.heureFin } : null;
+}
+
+/**
+ * Indique si une `Absence` chevauche un segment horaire réel donné — une
+ * `Demande` (via `heureDebut`/`heureFin` dénormalisés) ou une `Affectation`
+ * (via {@link horairesDeAffectation}), toutes deux réduites à un seul jour.
+ * L'absence reste à la granularité demi-journée (bucket `MATIN`/
+ * `APRES_MIDI`/`JOURNEE`, hors périmètre 0016) ; le segment est réel
+ * (feature 0016, ADR 0017).
  *
  * @param {import('@/domain/absences.js').Absence} absence
  * @param {string} date - Date `"YYYY-MM-DD"`.
- * @param {string} creneau
+ * @param {string} heureDebut - Heure de début `"HH:mm"` du segment.
+ * @param {string} heureFin - Heure de fin `"HH:mm"` du segment.
  * @returns {boolean}
  */
-function absenceChevaucheCellule(absence, date, creneau) {
+function absenceChevaucheSegment(absence, date, heureDebut, heureFin) {
   return (
     periodesSeChevauchent(absence.dateDebut, absence.dateFin, date, date) &&
-    creneauxSeChevauchent(absence.creneau, creneau)
+    creneauChevaucheHoraires(absence.creneau, heureDebut, heureFin)
   );
 }
 
@@ -66,19 +90,24 @@ export function creerContrainteAbsenceValidee() {
       const absencesValidees = ctx.entree.absences.filter(
         (absence) => absence.personneId === personneId && absence.statut === 'VALIDE'
       );
-      return !absencesValidees.some((absence) => absenceChevaucheCellule(absence, demande.date, demande.creneau));
+      return !absencesValidees.some((absence) =>
+        absenceChevaucheSegment(absence, demande.date, demande.heureDebut, demande.heureFin)
+      );
     },
 
     evaluer(ctx) {
       const violations = [];
 
       for (const affectation of ctx.index.affectations) {
+        const horaires = horairesDeAffectation(affectation, ctx.entree);
+        if (!horaires) continue; // référence tournée/segment introuvable : jamais de crash
+
         const absencesValidees = ctx.entree.absences.filter(
           (absence) => absence.personneId === affectation.personneId && absence.statut === 'VALIDE'
         );
 
         for (const absence of absencesValidees) {
-          if (!absenceChevaucheCellule(absence, affectation.date, affectation.creneau)) continue;
+          if (!absenceChevaucheSegment(absence, affectation.date, horaires.heureDebut, horaires.heureFin)) continue;
 
           violations.push({
             contrainteId: 'absence-validee',
@@ -87,13 +116,14 @@ export function creerContrainteAbsenceValidee() {
               personneId: affectation.personneId,
               tourneeId: affectation.tourneeId,
               date: affectation.date,
-              creneau: affectation.creneau,
+              segmentIndex: affectation.segmentIndex,
             },
             code: 'ABSENCE_VALIDEE',
             message: messagePour('ABSENCE_VALIDEE', {
               nomPersonne: nomPersonneDe(ctx.entree, affectation.personneId),
               date: affectation.date,
-              creneau: affectation.creneau,
+              heureDebut: horaires.heureDebut,
+              heureFin: horaires.heureFin,
               typeAbsence: absence.type,
             }),
             penalite: 0,
@@ -101,7 +131,7 @@ export function creerContrainteAbsenceValidee() {
               personneId: affectation.personneId,
               absenceId: absence.id,
               date: affectation.date,
-              creneau: affectation.creneau,
+              segmentIndex: affectation.segmentIndex,
             },
           });
         }
@@ -133,7 +163,7 @@ export function creerContrainteAbsenceDemandee() {
         (absence) => absence.personneId === personneId && absence.statut === 'DEMANDE'
       );
       const chevauche = absencesDemandees.some((absence) =>
-        absenceChevaucheCellule(absence, demande.date, demande.creneau)
+        absenceChevaucheSegment(absence, demande.date, demande.heureDebut, demande.heureFin)
       );
       return chevauche ? POIDS_ABSENCE_DEMANDEE : 0;
     },
@@ -142,12 +172,15 @@ export function creerContrainteAbsenceDemandee() {
       const violations = [];
 
       for (const affectation of ctx.index.affectations) {
+        const horaires = horairesDeAffectation(affectation, ctx.entree);
+        if (!horaires) continue; // référence tournée/segment introuvable : jamais de crash
+
         const absencesDemandees = ctx.entree.absences.filter(
           (absence) => absence.personneId === affectation.personneId && absence.statut === 'DEMANDE'
         );
 
         for (const absence of absencesDemandees) {
-          if (!absenceChevaucheCellule(absence, affectation.date, affectation.creneau)) continue;
+          if (!absenceChevaucheSegment(absence, affectation.date, horaires.heureDebut, horaires.heureFin)) continue;
 
           violations.push({
             contrainteId: 'absence-demandee',
@@ -156,13 +189,14 @@ export function creerContrainteAbsenceDemandee() {
               personneId: affectation.personneId,
               tourneeId: affectation.tourneeId,
               date: affectation.date,
-              creneau: affectation.creneau,
+              segmentIndex: affectation.segmentIndex,
             },
             code: 'ABSENCE_DEMANDEE',
             message: messagePour('ABSENCE_DEMANDEE', {
               nomPersonne: nomPersonneDe(ctx.entree, affectation.personneId),
               date: affectation.date,
-              creneau: affectation.creneau,
+              heureDebut: horaires.heureDebut,
+              heureFin: horaires.heureFin,
               typeAbsence: absence.type,
             }),
             penalite: POIDS_ABSENCE_DEMANDEE,
@@ -170,7 +204,7 @@ export function creerContrainteAbsenceDemandee() {
               personneId: affectation.personneId,
               absenceId: absence.id,
               date: affectation.date,
-              creneau: affectation.creneau,
+              segmentIndex: affectation.segmentIndex,
             },
           });
         }

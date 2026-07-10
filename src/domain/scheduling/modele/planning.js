@@ -27,13 +27,13 @@ function ajouterDansMap(map, cle, valeur) {
  * @returns {import('./types.js').PlanningIndexe} Index dérivés du planning.
  */
 export function indexer(affectations) {
-  const parCreneau = new Map();
+  const parSlot = new Map();
   const parPersonne = new Map();
   const parTournee = new Map();
   const joursTravaillesParPersonne = new Map();
 
   for (const affectation of affectations) {
-    ajouterDansMap(parCreneau, `${affectation.date}|${affectation.creneau}`, affectation);
+    ajouterDansMap(parSlot, `${affectation.tourneeId}|${affectation.date}|${affectation.segmentIndex}`, affectation);
     ajouterDansMap(parPersonne, affectation.personneId, affectation);
     ajouterDansMap(parTournee, affectation.tourneeId, affectation);
 
@@ -43,7 +43,7 @@ export function indexer(affectations) {
     joursTravaillesParPersonne.get(affectation.personneId).add(affectation.date);
   }
 
-  return { affectations, parCreneau, parPersonne, parTournee, joursTravaillesParPersonne };
+  return { affectations, parSlot, parPersonne, parTournee, joursTravaillesParPersonne };
 }
 
 /**

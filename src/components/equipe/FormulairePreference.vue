@@ -364,6 +364,7 @@ import {
   libelleCreneau,
   SENS_PREFERENCE_OPTIONS,
 } from '@/domain/libelles.js';
+import { libelleHoraires } from '@/domain/tournees.js';
 import { CRENEAUX } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
 
@@ -601,13 +602,15 @@ export default {
 
     /**
      * Libellé d'une case à cocher de tournée active, nommant sans ambiguïté
-     * la tournée (nom + créneau/horaires) : « Tournée Nord — Matin
-     * 08:00 – 12:00 » (tiret cerné d'espaces, cohérent avec `TourneesView`).
-     * @param {{ nom: string, creneau: string, heureDebut: string, heureFin: string }} tournee
+     * la tournée (libellé + horaires) : « Nord — 07:00 – 13:30 » (tiret
+     * cerné d'espaces, cohérent avec `TourneesView`). `libelleHoraires`
+     * couvre aussi bien une tournée complète (« 07:00 – 13:30 ») qu'une
+     * tournée coupée (« 07:00 – 13:30 puis 17:00 – 20:00 »).
+     * @param {import('@/domain/tournees.js').Tournee} tournee
      * @returns {string}
      */
     libelleTourneeOption(tournee) {
-      return `${tournee.nom} — ${libelleCreneau(tournee.creneau)} ${tournee.heureDebut} – ${tournee.heureFin}`;
+      return `${tournee.libelle} — ${libelleHoraires(tournee)}`;
     },
 
     /**
@@ -621,7 +624,7 @@ export default {
      */
     nomTourneeActiveLocale(id) {
       const tournee = this.tourneesActives.find((t) => t.id === id);
-      return tournee ? tournee.nom : '';
+      return tournee ? tournee.libelle : '';
     },
 
     /**

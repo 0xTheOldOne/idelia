@@ -13,7 +13,7 @@
     </div>
 
     <p v-if="personnesMasquees" class="selecteur-personne-aide-masquage">
-      Les personnes déjà présentes sur ce créneau ne sont pas affichées.
+      Les personnes déjà présentes sur ces horaires ne sont pas affichées.
     </p>
 
     <ul v-if="personnesFiltrees.length" class="selecteur-personne-liste">
@@ -39,7 +39,7 @@
     <p v-else class="selecteur-personne-vide">
       {{
         personnesDisponibles.length === 0
-          ? 'Toute l’équipe active est déjà affectée sur ce créneau.'
+          ? 'Toute l’équipe active est déjà affectée sur ces horaires.'
           : 'Aucune personne ne correspond à cette recherche.'
       }}
     </p>
@@ -54,7 +54,7 @@
 import { mapGetters } from 'vuex';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
-import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
+import { libelleJour } from '@/domain/libelles.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -63,9 +63,11 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * Prénom Nom, jamais la couleur seule), avec filtre texte et note discrète
  * « déjà N affectation(s) ce jour-là » (lecture présentationnelle des
  * affectations du planning courant, **aucune règle métier**). Masque les
- * personnes déjà présentes sur le créneau exact ciblé (dé-doublonnage) et
- * affiche alors une ligne d'aide expliquant ce masquage (correctif
- * ergonomie MIN-5, feature 0011).
+ * personnes déjà présentes sur **ce segment exact** ciblé (feature 0016,
+ * ADR 0017 — même tournée, même date, même `segmentIndex` : dé-doublonnage)
+ * et affiche alors une ligne d'aide expliquant ce masquage (correctif
+ * ergonomie MIN-5, feature 0011), sans jamais employer le mot « segment » à
+ * l'écran (on parle d'« horaires »).
  *
  * **Liste de choix, pas un formulaire** ([ADR 0011](../../../docs/adr/0011-validation-vuelidate-vue-debounce.md)) :
  * pas de Vuelidate. Un clic sur un nom émet `choisir(personneId)` ; toute
@@ -82,17 +84,27 @@ export default {
   props: {
     /** Affiche (`true`) ou masque (`false`) le sélecteur ; piloté par le parent. */
     visible: { type: Boolean, required: true },
-    /** Id de la tournée ciblée (sert au dé-doublonnage sur le créneau exact). */
+    /** Id de la tournée ciblée (sert au dé-doublonnage sur le segment exact). */
     tourneeId: { type: String, default: '' },
-    /** Nom de la tournée ciblée, pour le titre contextualisé. */
+    /** Libellé de la tournée ciblée, pour le titre contextualisé. */
     tourneeNom: { type: String, default: '' },
     /** Date ciblée `"YYYY-MM-DD"`, pour le titre et le calcul « déjà N affectation(s) ce jour-là ». */
     date: { type: String, default: '' },
-    /** Créneau ciblé (`'MATIN'`, `'APRES_MIDI'`, `'JOURNEE'`), pour le titre et le dé-doublonnage. */
-    creneau: { type: String, default: '' },
+    /**
+     * Indice (0-based) du segment ciblé dans `tournee.segments` (feature
+     * 0016, ADR 0017 — remplace l'ancien `creneau`), pour le dé-doublonnage.
+     */
+    segmentIndex: { type: Number, default: 0 },
+    /**
+     * Horaires du segment ciblé, en clair (`libelleSegment`), pour le titre.
+     * Pour une tournée coupée, résolu par `PlanningView` avec un
+     * qualificatif devant (« le matin, 07:00 – 13:30 » / « la reprise du
+     * soir, 17:00 – 20:00 ») — ce composant l'affiche tel quel.
+     */
+    horaires: { type: String, default: '' },
     /**
      * `Affectation[]` du planning courant — lecture seule, utilisée
-     * uniquement pour masquer les personnes déjà présentes sur ce créneau
+     * uniquement pour masquer les personnes déjà présentes sur ce segment
      * exact et afficher la note « déjà N affectation(s) ce jour-là ».
      */
     affectations: { type: Array, default: () => [] },
@@ -107,10 +119,10 @@ export default {
   computed: {
     ...mapGetters('personnes', { personnesActives: 'actifs' }),
 
-    /** Titre contextualisé : « Ajouter une personne — {tournée}, {date FR} ({créneau}) ». */
+    /** Titre contextualisé : « Ajouter une personne — {tournée}, {date FR} ({horaires}) ». */
     titre() {
       if (!this.date) return 'Ajouter une personne';
-      return `Ajouter une personne — ${this.tourneeNom}, ${this.libelleDateComplet} (${libelleCreneau(this.creneau)})`;
+      return `Ajouter une personne — ${this.tourneeNom}, ${this.libelleDateComplet} (${this.horaires})`;
     },
 
     /** Date complète lisible, ex. « mercredi 12/08/2026 ». */
@@ -120,20 +132,24 @@ export default {
     },
 
     /**
-     * Ids des personnes déjà présentes sur le créneau exact ciblé
-     * (même tournée, même date, même créneau) — dé-doublonnage (§7).
+     * Ids des personnes déjà présentes sur le segment exact ciblé
+     * (même tournée, même date, même `segmentIndex`, feature 0016) —
+     * dé-doublonnage (§7).
      * @returns {Set<string>}
      */
     personneIdsPresents() {
       return new Set(
         this.affectations
-          .filter((a) => a.tourneeId === this.tourneeId && a.date === this.date && a.creneau === this.creneau)
+          .filter(
+            (a) =>
+              a.tourneeId === this.tourneeId && a.date === this.date && a.segmentIndex === this.segmentIndex
+          )
           .map((a) => a.personneId)
       );
     },
 
     /**
-     * Personnes actives proposables (celles déjà sur le créneau exact sont
+     * Personnes actives proposables (celles déjà sur le segment exact sont
      * masquées), chacune enrichie de son nombre d'affectations ce jour-là
      * (toutes tournées confondues) — note purement informative.
      * @returns {Array<{id: string, nom: string, couleur: string, nbAffectationsCeJour: number}>}
@@ -160,7 +176,7 @@ export default {
 
     /**
      * `true` si au moins une personne active a été masquée de la liste car
-     * déjà présente sur ce créneau exact (§7) — pilote la ligne d'aide
+     * déjà présente sur ce segment exact (§7) — pilote la ligne d'aide
      * discrète expliquant le masquage (correctif ergonomie MIN-5,
      * feature 0011), affichée uniquement quand un masquage a effectivement
      * lieu.
@@ -195,7 +211,7 @@ export default {
 @use '@/styles/tokens' as t;
 
 // Ligne d'aide discrète expliquant le masquage de personnes déjà présentes
-// sur le créneau exact (correctif ergonomie MIN-5, feature 0011) : affichée
+// sur le segment exact (correctif ergonomie MIN-5, feature 0011) : affichée
 // uniquement quand un masquage a effectivement lieu.
 .selecteur-personne-aide-masquage {
   margin: 0 0 t.$espace-3;

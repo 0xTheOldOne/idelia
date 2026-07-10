@@ -31,7 +31,7 @@ function nomPersonneDe(entree, personneId) {
  */
 function nomTourneeDe(entree, tourneeId) {
   const tournee = entree.tournees.find((t) => t.id === tourneeId);
-  return tournee ? tournee.nom : 'Cette tournée';
+  return tournee ? tournee.libelle : 'Cette tournée';
 }
 
 /**

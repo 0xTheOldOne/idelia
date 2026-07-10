@@ -21,7 +21,7 @@ import { genId } from '@/domain/utils/id.js';
  * @property {string} personneId - Référence à une Personne.
  * @property {string} tourneeId - Référence à une Tournee.
  * @property {string} date - Date `"YYYY-MM-DD"`.
- * @property {string} creneau - `'MATIN'`, `'APRES_MIDI'` ou `'JOURNEE'` (voir `CRENEAUX`).
+ * @property {number} segmentIndex - Indice (0-based) du segment couvert dans `tournee.segments` (feature 0016, ADR 0017 — remplace l'ancien `creneau` ; les horaires réels se résolvent par lookup, jamais dénormalisés ici).
  * @property {string} origine - `'AUTO'` (posée par le moteur) ou `'MANUEL'`.
  * @property {boolean} verrouillee - `true` = préservée telle quelle lors d'une régénération.
  * @property {string} commentaire - Commentaire libre, facultatif (chaîne vide par défaut).
@@ -36,10 +36,10 @@ import { genId } from '@/domain/utils/id.js';
  * @param {string} personneId - Identifiant de la Personne affectée.
  * @param {string} tourneeId - Identifiant de la Tournee.
  * @param {string} date - Date `"YYYY-MM-DD"`.
- * @param {string} creneau - Créneau (`CRENEAUX`).
+ * @param {number} segmentIndex - Indice (0-based) du segment couvert dans `tournee.segments`.
  * @returns {Affectation} Affectation complète, prête à être stockée.
  */
-export function creerAffectationAuto(personneId, tourneeId, date, creneau) {
+export function creerAffectationAuto(personneId, tourneeId, date, segmentIndex) {
   const maintenant = new Date().toISOString();
 
   return {
@@ -47,7 +47,7 @@ export function creerAffectationAuto(personneId, tourneeId, date, creneau) {
     personneId,
     tourneeId,
     date,
-    creneau,
+    segmentIndex,
     origine: 'AUTO',
     verrouillee: false,
     commentaire: '',

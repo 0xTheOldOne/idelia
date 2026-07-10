@@ -78,18 +78,18 @@
               class="grille-planning-cellule"
               :class="{ 'grille-planning-cellule--cible-depot': estCibleDepot(cellule) }"
               @dragover="onSurvolCellule(cellule, $event)"
-              @drop="onDeposer(cellule, $event)"
             >
               <slot name="cellule" v-bind="cellule">
                 <CellulePlanning
                   :elements="cellule.elements"
-                  :sous-couverture="cellule.sousCouverture"
+                  :segments="cellule.segments"
                   :concernee="cellule.concernee"
                   :ferme="cellule.ferme"
                   :hors-periode="cellule.horsPeriode"
                   :editable="cellule.editable"
                   :ajoutable="cellule.ajoutable"
-                  @ajouter-ici="onAjouterIci(cellule)"
+                  @ajouter-ici="onAjouterIci(cellule, $event)"
+                  @deposer-ici="onDeposer(cellule, $event)"
                   @retirer="$emit('retirer', $event)"
                   @verrouiller="$emit('verrouiller', $event)"
                   @debut-glisser="onDebutGlisser($event)"
@@ -110,7 +110,8 @@ import { PhLock, PhWarning, PhWarningOctagon } from '@phosphor-icons/vue';
 
 import CellulePlanning from '@/components/planning/CellulePlanning.vue';
 import { dateUtil } from '@/domain/utils/dates.js';
-import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
+import { libelleJour } from '@/domain/libelles.js';
+import { estCoupee, libelleSegment } from '@/domain/tournees.js';
 
 /**
  * @typedef {Object} LigneGrille
@@ -126,7 +127,19 @@ import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
  * @property {string} couleur
  * @property {string} libellePrincipal
  * @property {string} [libelleSecondaire]
+ * @property {number} [segmentIndex] - Indice du segment couvert (orientation TOURNEES uniquement), pour le regroupement par vacation (feature 0016).
  * @property {boolean} verrouillee
+ */
+
+/**
+ * @typedef {Object} SegmentCellule - Descripteur d'une vacation d'une case,
+ *   en orientation TOURNEES (feature 0016, ADR 0017). Une tournée complète
+ *   n'a qu'un seul `SegmentCellule` (groupe implicite, `libelleVacation`
+ *   vide) ; une tournée coupée en a deux (« Matin »/« Soir »).
+ * @property {number} index - Indice (0-based) du segment dans `tournee.segments`.
+ * @property {string} libelleVacation - `'Matin'`/`'Soir'` (tournée coupée) ou `''` (tournée complète, aucun intitulé affiché).
+ * @property {string} horaires - Horaires du segment en clair (`libelleSegment`).
+ * @property {?{manque: number}} sousCouverture - Sous-couverture de ce segment, ou `null`.
  */
 
 /**
@@ -159,13 +172,17 @@ import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
  * clic, API HTML5 native, aucune dépendance ajoutée) : tient l'état volatil
  * `affectationEnGlissement` (mis à jour via `debut-glisser`/`fin-glisser`
  * remontés de `CellulePlanning`) et `celluleCible` (case survolée comme
- * cible de dépôt valide, pour le repère visuel §6.3). Sur les `<td>`
- * éditables (orientation Tournées, case ni fermée ni hors période — même
- * condition que `ajoutable`), `dragover` autorise le dépôt et met à jour le
- * repère ; `drop` traduit l'événement élémentaire en événement **sémantique**
- * `deplacer` enrichi du contexte (créneau résolu via `tournees/byId`),
- * ignoré sur la case source, une case non éligible, ou hors glisse. Reste
- * **présentational** : n'appelle ni store ni moteur.
+ * cible de dépôt valide, pour le repère visuel §6.3, au grain **cellule**).
+ * Sur les `<td>` éditables (orientation Tournées, case ni fermée ni hors
+ * période — même condition que `ajoutable`), `dragover` autorise le dépôt
+ * (le repère visuel reste à la maille cellule) et met à jour le repère. Le
+ * **dépôt effectif** se produit plus finement, au grain **vacation**
+ * (feature 0016, ADR 0017 — une case coupée porte deux zones de dépôt
+ * distinctes) : `CellulePlanning` capte le `drop` sur le sous-groupe ciblé
+ * et remonte `deposer-ici` avec le `segmentIndex` du segment survolé ;
+ * `onDeposer` traduit cet événement élémentaire en événement **sémantique**
+ * `deplacer`, ignoré sur le slot source exact, une case non éligible, ou
+ * hors glisse. Reste **présentational** : n'appelle ni store ni moteur.
  *
  * Expose un **slot scopé `cellule`** (point de greffe `0011`), dont le
  * contenu par défaut est `CellulePlanning`.
@@ -277,7 +294,7 @@ export default {
     lignesTournees() {
       const actives = this.tourneesActives.map((t) => ({
         id: t.id,
-        nom: t.nom,
+        nom: t.libelle,
         couleur: t.couleur,
         archivee: false,
       }));
@@ -287,7 +304,7 @@ export default {
         .filter((id) => !idsActifs.has(id))
         .map((id) => this.tourneeParId(id))
         .filter(Boolean)
-        .map((t) => ({ id: t.id, nom: t.nom, couleur: t.couleur, archivee: true }));
+        .map((t) => ({ id: t.id, nom: t.libelle, couleur: t.couleur, archivee: true }));
       return [...actives, ...archivees].sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
     },
 
@@ -363,10 +380,19 @@ export default {
     },
 
     /**
-     * Résout une `Affectation` en élément d'affichage (pastille + nom, +
-     * créneau en orientation Personnes, masqué si `JOURNEE`). Enrichi de
-     * `verrouillee` (feature 0011, tâche 3), rendu par `CellulePlanning`
-     * (cadenas + libellé « Verrouillée », tâche 4).
+     * Résout une `Affectation` en élément d'affichage (pastille + nom).
+     * Enrichi de `verrouillee` (feature 0011, tâche 3), rendu par
+     * `CellulePlanning` (cadenas + libellé « Verrouillée », tâche 4), et de
+     * `segmentIndex` (feature 0016, ADR 0017 — permet à `CellulePlanning` de
+     * regrouper les éléments par vacation).
+     *
+     * `libelleSecondaire` (horaires du segment, `libelleSegment`) : affiché
+     * **uniquement** en orientation Personnes (remplace l'ancien libellé de
+     * créneau ; cette orientation n'a pas de titre de groupe horaire). En
+     * orientation Tournées, toujours vide : les horaires d'une vacation
+     * sont déjà portés par le titre du groupe (`CellulePlanning`, §6.4) —
+     * les répéter sous chaque nom serait redondant (correctif ergonomie
+     * post-relecture).
      * @param {object} affectation
      * @returns {ElementCellule}
      */
@@ -378,6 +404,8 @@ export default {
             id: affectation.id,
             couleur: 'transparent',
             libellePrincipal: 'Personne inconnue',
+            libelleSecondaire: '',
+            segmentIndex: affectation.segmentIndex,
             verrouillee: affectation.verrouillee,
           };
         }
@@ -385,6 +413,8 @@ export default {
           id: affectation.id,
           couleur: personne.couleur,
           libellePrincipal: `${personne.prenom} ${personne.nom}${personne.actif ? '' : ' (archivée)'}`,
+          libelleSecondaire: '',
+          segmentIndex: affectation.segmentIndex,
           verrouillee: affectation.verrouillee,
         };
       }
@@ -394,30 +424,60 @@ export default {
           id: affectation.id,
           couleur: 'transparent',
           libellePrincipal: 'Tournée inconnue',
+          segmentIndex: affectation.segmentIndex,
           verrouillee: affectation.verrouillee,
         };
       }
+      const segment = tournee.segments[affectation.segmentIndex];
       return {
         id: affectation.id,
         couleur: tournee.couleur,
-        libellePrincipal: `${tournee.nom}${tournee.archivee ? ' (archivée)' : ''}`,
-        libelleSecondaire: affectation.creneau === 'JOURNEE' ? '' : libelleCreneau(affectation.creneau),
+        libellePrincipal: `${tournee.libelle}${tournee.archivee ? ' (archivée)' : ''}`,
+        libelleSecondaire: segment ? libelleSegment(segment) : '',
+        segmentIndex: affectation.segmentIndex,
         verrouillee: affectation.verrouillee,
       };
     },
 
     /**
-     * Sous-couverture d'une cellule, lue **directement** dans
-     * `tourneesNonCouvertes` (jamais dérivée des violations). Uniquement en
-     * orientation Tournées (§6.1).
-     * @param {LigneGrille} ligne
+     * Sous-couverture d'un segment de cellule (tournée, date, segment), lue
+     * **directement** dans `tourneesNonCouvertes` (jamais dérivée des
+     * violations). Uniquement en orientation Tournées (§6.1) — appariement
+     * par `(tourneeId, date, segmentIndex)` (feature 0016, ADR 0017).
+     * @param {string} tourneeId
      * @param {string} date
+     * @param {number} segmentIndex
      * @returns {?{manque: number}}
      */
-    sousCouvertureCellule(ligne, date) {
-      if (this.orientation !== 'TOURNEES') return null;
-      const entree = this.tourneesNonCouvertes.find((nc) => nc.tourneeId === ligne.id && nc.date === date);
+    sousCouvertureSegment(tourneeId, date, segmentIndex) {
+      const entree = this.tourneesNonCouvertes.find(
+        (nc) => nc.tourneeId === tourneeId && nc.date === date && nc.segmentIndex === segmentIndex
+      );
       return entree ? { manque: entree.manque } : null;
+    },
+
+    /**
+     * Descripteurs de vacation d'une case (orientation Tournées uniquement,
+     * feature 0016, ADR 0017) : une entrée par segment de la tournée
+     * (`tournee.segments`), avec son intitulé (« Matin »/« Soir » pour une
+     * tournée coupée, vide pour une complète — groupe implicite), ses
+     * horaires et sa sous-couverture propre. `CellulePlanning` s'appuie sur
+     * cette liste pour regrouper `elements` par `segmentIndex`.
+     * @param {LigneGrille} ligne
+     * @param {string} date
+     * @returns {SegmentCellule[]}
+     */
+    segmentsCellule(ligne, date) {
+      if (this.orientation !== 'TOURNEES') return [];
+      const tournee = this.tourneeParId(ligne.id);
+      if (!tournee) return [];
+      const coupee = estCoupee(tournee);
+      return tournee.segments.map((segment, index) => ({
+        index,
+        libelleVacation: coupee ? (index === 0 ? 'Matin' : 'Soir') : '',
+        horaires: libelleSegment(segment),
+        sousCouverture: this.sousCouvertureSegment(ligne.id, date, index),
+      }));
     },
 
     /**
@@ -479,7 +539,7 @@ export default {
         date: colonne.date,
         jourIso: colonne.jourIso,
         elements,
-        sousCouverture: colonne.ferme ? null : this.sousCouvertureCellule(ligne, colonne.date),
+        segments: colonne.ferme ? [] : this.segmentsCellule(ligne, colonne.date),
         concernee: colonne.ferme ? false : this.concerneeCellule(ligne, colonne.date),
         ferme: colonne.ferme,
         horsPeriode: colonne.horsPeriode,
@@ -490,16 +550,18 @@ export default {
 
     /**
      * Traduit l'événement élémentaire `ajouter-ici` de `CellulePlanning` (qui
-     * ne connaît qu'une case) en événement **sémantique** `ajouter`, enrichi
-     * du contexte de la case (tournée/date/créneau) — §6.1. Le créneau est
-     * résolu via `tournees/byId` (dénormalisé depuis la tournée, jamais
-     * saisi par l'utilisateur). No-op si la tournée est introuvable.
+     * ne connaît que sa propre case) en événement **sémantique** `ajouter`,
+     * enrichi du contexte de la case (tournée/date/segment) — §6.1/§6.4. Le
+     * `segmentIndex` ciblé est celui du sous-groupe (vacation) sur lequel le
+     * bouton a été cliqué, remonté par `CellulePlanning` — jamais saisi par
+     * l'utilisateur. No-op si la tournée est introuvable.
      * @param {object} cellule - Descripteur de cellule (voir `celluleDescripteur`).
+     * @param {{ segmentIndex: number }} payload
      */
-    onAjouterIci(cellule) {
+    onAjouterIci(cellule, { segmentIndex }) {
       const tournee = this.tourneeParId(cellule.ligne.id);
       if (!tournee) return;
-      this.$emit('ajouter', { tourneeId: cellule.ligne.id, date: cellule.date, creneau: tournee.creneau });
+      this.$emit('ajouter', { tourneeId: cellule.ligne.id, date: cellule.date, segmentIndex });
     },
 
     /**
@@ -553,24 +615,32 @@ export default {
     },
 
     /**
-     * Dépôt d'une affectation glissée sur une case : traduit l'événement
-     * élémentaire en événement **sémantique** `deplacer`, enrichi du
-     * contexte de la case cible (créneau résolu via `tournees/byId`, jamais
-     * saisi). Ignore le dépôt : hors glisse, sur une case non éligible
-     * (`!cellule.ajoutable` — fermée, hors période, ou hors mode édition),
-     * ou sur la case source (même tournée + date que l'affectation glissée).
-     * @param {object} cellule
-     * @param {DragEvent} event
+     * Dépôt d'une affectation glissée sur une vacation d'une case (événement
+     * `deposer-ici` remonté par `CellulePlanning`, feature 0016 : la case
+     * elle-même ne suffit plus à cibler une position, il faut le segment du
+     * sous-groupe sur lequel le dépôt a eu lieu) : traduit l'événement
+     * élémentaire en événement **sémantique** `deplacer`. Ignore le dépôt :
+     * hors glisse, sur une case non éligible (`!cellule.ajoutable` — fermée,
+     * hors période, ou hors mode édition), ou sur le **même** slot exact
+     * (tournée + date + segment) que l'affectation glissée.
+     * @param {object} cellule - Descripteur de cellule (voir `celluleDescripteur`).
+     * @param {{ segmentIndex: number }} payload
      */
-    onDeposer(cellule, event) {
-      event.preventDefault();
+    onDeposer(cellule, { segmentIndex }) {
       this.celluleCible = null;
 
       const affectationId = this.affectationEnGlissement;
       if (!affectationId || !cellule.ajoutable) return;
 
       const source = this.planning.affectations.find((a) => a.id === affectationId);
-      if (source && source.tourneeId === cellule.ligne.id && source.date === cellule.date) return;
+      if (
+        source &&
+        source.tourneeId === cellule.ligne.id &&
+        source.date === cellule.date &&
+        source.segmentIndex === segmentIndex
+      ) {
+        return;
+      }
 
       const tournee = this.tourneeParId(cellule.ligne.id);
       if (!tournee) return;
@@ -579,7 +649,7 @@ export default {
         affectationId,
         versTourneeId: cellule.ligne.id,
         versDate: cellule.date,
-        versCreneau: tournee.creneau,
+        versSegmentIndex: segmentIndex,
       });
     },
   },

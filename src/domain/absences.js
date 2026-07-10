@@ -168,3 +168,66 @@ export function absencesAVenir(absences, dateReference) {
     .filter((absence) => absence.dateFin >= dateReference && absence.statut !== 'REFUSE')
     .sort((a, b) => (a.dateDebut < b.dateDebut ? -1 : a.dateDebut > b.dateDebut ? 1 : 0));
 }
+
+// ---------------------------------------------------------------------------
+// Réconciliation horaire créneau ↔ segment (feature 0016, ADR 0017)
+// ---------------------------------------------------------------------------
+//
+// Les absences restent à la granularité demi-journée (`CRENEAUX` :
+// `MATIN`/`APRES_MIDI`/`JOURNEE`, hors périmètre 0016 — public non
+// technique). Les tournées, elles, portent des segments aux horaires réels
+// (`"HH:mm"`). Les helpers ci-dessous réconcilient les deux : ils ne
+// remplacent pas `creneauxSeChevauchent`/`periodesSeChevauchent`/
+// `absencesSeChevauchent`/`chevauchementsPour` ci-dessus, toujours utilisés
+// par le formulaire d'absences (0007) où les deux côtés sont des buckets.
+
+/**
+ * Indique si deux plages horaires `"HH:mm"` se chevauchent **strictement**
+ * (recouvrement horaire réel, ADR 0017), par comparaison lexicographique de
+ * chaînes (ADR 0010) — aucun objet `Date`. Deux plages qui se **touchent**
+ * aux bornes (ex. fin de l'une = début de l'autre, `13:30`/`13:30`) ne se
+ * chevauchent **pas**. Seule source de vérité du recouvrement horaire réel,
+ * réutilisée par le chevauchement segment-vs-segment et par la
+ * réconciliation créneau ↔ segment ({@link creneauChevaucheHoraires}).
+ *
+ * @param {string} debutA - Heure de début `"HH:mm"` de la première plage.
+ * @param {string} finA - Heure de fin `"HH:mm"` de la première plage.
+ * @param {string} debutB - Heure de début `"HH:mm"` de la seconde plage.
+ * @param {string} finB - Heure de fin `"HH:mm"` de la seconde plage.
+ * @returns {boolean} `true` si les deux plages se recouvrent strictement.
+ */
+export function heuresSeChevauchent(debutA, finA, debutB, finB) {
+  return debutA < finB && debutB < finA;
+}
+
+/**
+ * Plage horaire canonique `"HH:mm"` de chaque créneau symbolique (bucket
+ * grossier des absences/préférences), autour d'un **pivot midi**
+ * `"13:00"` (ADR 0017, §12 sous-décision A — convention ajustable). Le
+ * segment du soir d'une tournée coupée (ex. `17:00–20:00`) tombe dans
+ * `APRES_MIDI` ; le segment du matin d'une tournée à horaires larges peut
+ * déborder le pivot et recouper `MATIN` **et** `APRES_MIDI`.
+ *
+ * @type {Object<string, { debut: string, fin: string }>}
+ */
+export const CRENEAU_PLAGES = Object.freeze({
+  MATIN: Object.freeze({ debut: '00:00', fin: '13:00' }),
+  APRES_MIDI: Object.freeze({ debut: '13:00', fin: '23:59' }),
+  JOURNEE: Object.freeze({ debut: '00:00', fin: '23:59' }),
+});
+
+/**
+ * Indique si un créneau symbolique (bucket grossier — absence ou préférence
+ * de créneau) recouvre une plage horaire réelle `"HH:mm"` (typiquement un
+ * segment de tournée), via {@link heuresSeChevauchent} appliqué à la plage
+ * canonique du créneau ({@link CRENEAU_PLAGES}).
+ *
+ * @param {string} creneau - Code créneau (`CRENEAUX`).
+ * @param {string} heureDebut - Heure de début `"HH:mm"` de la plage réelle.
+ * @param {string} heureFin - Heure de fin `"HH:mm"` de la plage réelle.
+ * @returns {boolean} `true` si le créneau recouvre la plage horaire réelle.
+ */
+export function creneauChevaucheHoraires(creneau, heureDebut, heureFin) {
+  const plage = CRENEAU_PLAGES[creneau];
+  return heuresSeChevauchent(plage.debut, plage.fin, heureDebut, heureFin);
+}

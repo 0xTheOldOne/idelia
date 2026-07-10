@@ -22,20 +22,22 @@ import { creerContrainteJourOuverture } from './contrainteJourOuverture.js';
 import { creerContraintePreference } from './contraintePreference.js';
 import { creerContrainteEquite } from './contrainteEquite.js';
 import { creerContrainteContinuite } from './contrainteContinuite.js';
+import { creerContrainteContinuiteSegments } from './contrainteContinuiteSegments.js';
 
 /**
  * Poids par défaut des contraintes souples **globales** (niveau cabinet,
  * §7.3 du plan). `absenceDemandee` documente ici le poids déjà fixé en dur
  * dans `contrainteAbsence.js` (non pondérable par le référent, donnée du
- * domaine) ; `equite`/`continuite` sont réellement surchargeables via
- * `entree.poids`.
+ * domaine) ; `equite`/`continuite`/`continuiteSegments` sont réellement
+ * surchargeables via `entree.poids`.
  *
- * @type {Readonly<{absenceDemandee: number, equite: number, continuite: number}>}
+ * @type {Readonly<{absenceDemandee: number, equite: number, continuite: number, continuiteSegments: number}>}
  */
 export const POIDS_SOUPLES_PAR_DEFAUT = Object.freeze({
   absenceDemandee: 5,
   equite: 4,
   continuite: 2,
+  continuiteSegments: 3,
 });
 
 /**
@@ -52,6 +54,7 @@ export const TYPES_CONTRAINTE = Object.freeze([
   'JOUR_OUVERTURE',
   'EQUITE',
   'CONTINUITE',
+  'CONTINUITE_SEGMENTS',
   'PREFERENCE_JOUR_OFF_RECURRENT',
   'PREFERENCE_CRENEAU_OFF',
   'PREFERENCE_INDISPO_HEBDO',
@@ -82,6 +85,7 @@ export function creerContraintes(entree) {
     creerContrainteJourOuverture(),
     creerContrainteEquite(poids.equite),
     creerContrainteContinuite(poids.continuite),
+    creerContrainteContinuiteSegments(poids.continuiteSegments),
   ];
 
   const personnesActives = (entree.personnes ?? []).filter((personne) => personne.actif !== false);

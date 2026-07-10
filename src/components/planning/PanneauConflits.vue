@@ -9,7 +9,7 @@
       </span>
       <span class="panneau-conflits-compteur">
         <strong>{{ tourneesNonCouvertes.length }}</strong>
-        créneau{{ tourneesNonCouvertes.length > 1 ? 'x' : '' }} non pourvu{{
+        tournée{{ tourneesNonCouvertes.length > 1 ? 's' : '' }} non couverte{{
           tourneesNonCouvertes.length > 1 ? 's' : ''
         }}
       </span>
@@ -77,9 +77,7 @@
                 <strong
                   >{{ detail.nomTournee }}<template v-if="detail.archivee"> (archivée)</template></strong
                 >
-                — {{ detail.dateTexte }}<template v-if="detail.creneauTexte">
-                  ({{ detail.creneauTexte }})</template
-                >
+                — {{ detail.dateTexte }} ({{ detail.horairesTexte }})
               </span>
               <span class="panneau-conflits-couverture-manque">
                 Il manque {{ detail.manque }} personne{{ detail.manque > 1 ? 's' : '' }}
@@ -97,7 +95,6 @@ import { mapGetters } from 'vuex';
 import { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle } from '@phosphor-icons/vue';
 
 import { dateUtil } from '@/domain/utils/dates.js';
-import { libelleCreneau } from '@/domain/libelles.js';
 
 /**
  * Panneau de conflits (feature 0010), **présentational** : affiche les
@@ -137,21 +134,22 @@ export default {
 
     /**
      * Détail affichable de chaque `NonCouverture`, résolu pour l'affichage
-     * (nom + couleur de la tournée, date FR, créneau masqué si `JOURNEE`).
-     * Ne dérive aucune donnée métier : ne fait que résoudre des libellés.
-     * @returns {Array<{id: string, nomTournee: string, couleur: string, archivee: boolean, dateTexte: string, creneauTexte: string, manque: number}>}
+     * (libellé + couleur de la tournée, date FR, horaires réels du segment
+     * sous-couvert — feature 0016, ADR 0017 : remplace le créneau
+     * symbolique). Ne dérive aucune donnée métier : ne fait que résoudre
+     * des libellés.
+     * @returns {Array<{id: string, nomTournee: string, couleur: string, archivee: boolean, dateTexte: string, horairesTexte: string, manque: number}>}
      */
     detailsNonCouvertes() {
       return this.tourneesNonCouvertes.map((nonCouverture, index) => {
         const tournee = this.tourneeParId(nonCouverture.tourneeId);
         return {
-          id: `${nonCouverture.tourneeId}-${nonCouverture.date}-${nonCouverture.creneau}-${index}`,
-          nomTournee: tournee ? tournee.nom : 'Tournée inconnue',
+          id: `${nonCouverture.tourneeId}-${nonCouverture.date}-${nonCouverture.segmentIndex}-${index}`,
+          nomTournee: tournee ? tournee.libelle : 'Tournée inconnue',
           couleur: tournee ? tournee.couleur : 'transparent',
           archivee: tournee ? tournee.archivee : false,
           dateTexte: dateUtil.formatDateFr(nonCouverture.date),
-          creneauTexte:
-            nonCouverture.creneau === 'JOURNEE' ? '' : libelleCreneau(nonCouverture.creneau),
+          horairesTexte: `${nonCouverture.heureDebut} – ${nonCouverture.heureFin}`,
           manque: nonCouverture.manque,
         };
       });

@@ -65,13 +65,18 @@ export function creerPlanning(champs = {}) {
  * `origine`. Mêmes concessions techniques tolérées : `genId()` +
  * `new Date().toISOString()`.
  *
+ * `segmentIndex` (feature 0016, ADR 0017) remplace l'ancien `creneau` : il
+ * référence l'indice du segment couvert dans `tournee.segments` (0-based),
+ * les horaires réels se résolvant par lookup, jamais dénormalisés sur
+ * l'affectation.
+ *
  * @param {string} personneId - Identifiant de la Personne affectée.
  * @param {string} tourneeId - Identifiant de la Tournee.
  * @param {string} date - Date `"YYYY-MM-DD"`.
- * @param {string} creneau - Créneau (`CRENEAUX`).
+ * @param {number} segmentIndex - Indice (0-based) du segment couvert dans `tournee.segments`.
  * @returns {import('./scheduling/modele/affectation.js').Affectation} Affectation complète, prête à être stockée.
  */
-export function creerAffectationManuelle(personneId, tourneeId, date, creneau) {
+export function creerAffectationManuelle(personneId, tourneeId, date, segmentIndex) {
   const maintenant = new Date().toISOString();
 
   return {
@@ -79,7 +84,7 @@ export function creerAffectationManuelle(personneId, tourneeId, date, creneau) {
     personneId,
     tourneeId,
     date,
-    creneau,
+    segmentIndex,
     origine: 'MANUEL',
     verrouillee: false,
     commentaire: '',

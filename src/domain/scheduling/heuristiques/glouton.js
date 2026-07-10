@@ -23,7 +23,7 @@ import { coutMarginalAgrege } from './scoring.js';
 
 /**
  * Retire de `demandes` celles déjà couvertes par une affectation verrouillée
- * (même tournée/date/créneau) — une affectation verrouillée « consomme »
+ * (même tournée/date/segment) — une affectation verrouillée « consomme »
  * exactement une unité de demande de ce slot.
  *
  * @param {import('../modele/types.js').Demande[]} demandes
@@ -33,13 +33,13 @@ import { coutMarginalAgrege } from './scoring.js';
 function retirerDemandesCouvertes(demandes, verrouillees) {
   const disponibles = new Map();
   for (const affectation of verrouillees) {
-    const cle = `${affectation.tourneeId}|${affectation.date}|${affectation.creneau}`;
+    const cle = `${affectation.tourneeId}|${affectation.date}|${affectation.segmentIndex}`;
     disponibles.set(cle, (disponibles.get(cle) ?? 0) + 1);
   }
 
   const demandesRestantes = [];
   for (const demande of demandes) {
-    const cle = `${demande.tourneeId}|${demande.date}|${demande.creneau}`;
+    const cle = `${demande.tourneeId}|${demande.date}|${demande.segmentIndex}`;
     const restant = disponibles.get(cle) ?? 0;
     if (restant > 0) {
       disponibles.set(cle, restant - 1);
@@ -157,7 +157,7 @@ export function constructionGloutonne(demandes, contraintes, ctx, rng) {
     const personneId = choisirMeilleurCandidat(candidats, demande, contraintes, ctxCourant, rng);
     affectations = [
       ...affectations,
-      creerAffectationAuto(personneId, demande.tourneeId, demande.date, demande.creneau),
+      creerAffectationAuto(personneId, demande.tourneeId, demande.date, demande.segmentIndex),
     ];
   }
 

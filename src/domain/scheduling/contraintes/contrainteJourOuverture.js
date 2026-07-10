@@ -28,7 +28,7 @@ function nomPersonneDe(entree, personneId) {
  */
 function nomTourneeDe(entree, tourneeId) {
   const tournee = entree.tournees.find((t) => t.id === tourneeId);
-  return tournee ? tournee.nom : 'cette tournée';
+  return tournee ? tournee.libelle : 'cette tournée';
 }
 
 /**
@@ -59,7 +59,7 @@ export function creerContrainteJourOuverture() {
             personneId: affectation.personneId,
             tourneeId: affectation.tourneeId,
             date: affectation.date,
-            creneau: affectation.creneau,
+            segmentIndex: affectation.segmentIndex,
           },
           code: 'JOUR_FERME',
           message: messagePour('JOUR_FERME', {
@@ -72,7 +72,7 @@ export function creerContrainteJourOuverture() {
             personneId: affectation.personneId,
             tourneeId: affectation.tourneeId,
             date: affectation.date,
-            creneau: affectation.creneau,
+            segmentIndex: affectation.segmentIndex,
           },
         });
       }

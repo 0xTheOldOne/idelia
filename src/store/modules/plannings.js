@@ -229,16 +229,19 @@ export default {
      * moteur pur (`appliquerChangement`, ADR 0008). Ne recalcule pas les
      * diagnostics (recalcul volatil laissé à la vue, `evaluerCourant`).
      *
+     * `segmentIndex` (feature 0016, ADR 0017) remplace l'ancien `creneau` :
+     * indice (0-based) du segment de `tournee.segments` couvert.
+     *
      * @param {import('vuex').ActionContext} context
-     * @param {{ tourneeId: string, personneId: string, date: string, creneau: string }} payload
+     * @param {{ tourneeId: string, personneId: string, date: string, segmentIndex: number }} payload
      */
-    ajouterAffectation({ commit, getters }, { tourneeId, personneId, date, creneau }) {
+    ajouterAffectation({ commit, getters }, { tourneeId, personneId, date, segmentIndex }) {
       const courant = getters.courant;
       if (!courant) return;
 
       commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
 
-      const affectation = creerAffectationManuelle(personneId, tourneeId, date, creneau);
+      const affectation = creerAffectationManuelle(personneId, tourneeId, date, segmentIndex);
       const affectations = appliquerChangement(courant.affectations, { type: 'AJOUTER', affectation });
 
       commit('UPDATE_AFFECTATIONS', { id: courant.id, affectations });
@@ -262,16 +265,21 @@ export default {
     },
     /**
      * Déplace une affectation existante vers une autre case (tournée/date/
-     * créneau), en **préservant son identité** : même `id`, `verrouillee`
+     * segment), en **préservant son identité** : même `id`, `verrouillee`
      * et `commentaire` (le verrou suit l'affectation à destination). Ne
      * fabrique pas d'affectation neuve (pas de `creerAffectationManuelle`) :
      * la destination est construite par spread de la source. Capture un
      * snapshot des affectations d'avant le geste.
      *
+     * `versSegmentIndex` (feature 0016, ADR 0017) remplace l'ancien
+     * `versCreneau` : indice (0-based) du segment ciblé dans
+     * `tournee.segments` (permet de déplacer une affectation d'une vacation
+     * à l'autre d'une même tournée coupée, ou vers une autre tournée).
+     *
      * @param {import('vuex').ActionContext} context
-     * @param {{ affectationId: string, versTourneeId: string, versDate: string, versCreneau: string }} payload
+     * @param {{ affectationId: string, versTourneeId: string, versDate: string, versSegmentIndex: number }} payload
      */
-    deplacerAffectation({ commit, getters }, { affectationId, versTourneeId, versDate, versCreneau }) {
+    deplacerAffectation({ commit, getters }, { affectationId, versTourneeId, versDate, versSegmentIndex }) {
       const courant = getters.courant;
       if (!courant) return;
 
@@ -282,7 +290,7 @@ export default {
         ...source,
         tourneeId: versTourneeId,
         date: versDate,
-        creneau: versCreneau,
+        segmentIndex: versSegmentIndex,
         origine: 'MANUEL',
         updatedAt: new Date().toISOString(),
         // id, verrouillee, commentaire, personneId, createdAt : préservés (spread de la source)

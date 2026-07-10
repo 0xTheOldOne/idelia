@@ -56,15 +56,16 @@
               aria-hidden="true"
             />
             <div class="tournees-identite">
-              <span class="tournees-nom">
-                {{ tournee.nom }}<template v-if="tournee.code"> ({{ tournee.code }})</template>
+              <span class="tournees-nom">{{ tournee.libelle }}</span>
+              <span class="tournees-details">
+                {{ libelleHoraires(tournee) }} · {{ libelleJours(tournee.joursApplication) }}
+              </span>
+              <span v-if="estCoupee(tournee)" class="tournees-badge-coupee">
+                <PhArrowsSplit :size="14" weight="bold" aria-hidden="true" />
+                <span>Coupée</span>
               </span>
               <span class="tournees-details">
-                {{ creneauHoraireTexte(tournee) }} · {{ libelleJours(tournee.joursApplication) }}
-              </span>
-              <span class="tournees-details">
-                {{ effectifTexte(tournee.nbPersonnesRequises) }}
-                <template v-if="tournee.secteur"> · {{ tournee.secteur }}</template>
+                {{ effectifSegmentsTexte(tournee) }}
                 <template v-if="periodeTexte(tournee)"> · {{ periodeTexte(tournee) }}</template>
               </span>
             </div>
@@ -124,11 +125,13 @@
                 aria-hidden="true"
               />
               <div class="tournees-identite">
-                <span class="tournees-nom">
-                  {{ tournee.nom }}<template v-if="tournee.code"> ({{ tournee.code }})</template>
-                </span>
+                <span class="tournees-nom">{{ tournee.libelle }}</span>
                 <span class="tournees-details">
-                  {{ creneauHoraireTexte(tournee) }} · {{ libelleJours(tournee.joursApplication) }}
+                  {{ libelleHoraires(tournee) }} · {{ libelleJours(tournee.joursApplication) }}
+                </span>
+                <span v-if="estCoupee(tournee)" class="tournees-badge-coupee">
+                  <PhArrowsSplit :size="14" weight="bold" aria-hidden="true" />
+                  <span>Coupée</span>
                 </span>
               </div>
               <div class="tournees-actions">
@@ -177,12 +180,14 @@ import {
   PhArchive,
   PhArrowCounterClockwise,
   PhCaretRight,
+  PhArrowsSplit,
 } from '@phosphor-icons/vue';
 
 import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulaireTournee from '@/components/tournees/FormulaireTournee.vue';
-import { libelleCreneau, libelleJours } from '@/domain/libelles.js';
+import { libelleJours } from '@/domain/libelles.js';
+import { estCoupee, libelleHoraires } from '@/domain/tournees.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -204,6 +209,7 @@ export default {
     PhArchive,
     PhArrowCounterClockwise,
     PhCaretRight,
+    PhArrowsSplit,
     IndicateurSauvegarde,
     DialogueConfirmation,
     FormulaireTournee,
@@ -241,11 +247,11 @@ export default {
     },
     titreConfirmationArchivage() {
       const tournee = this.tourneeAArchiver;
-      return tournee ? `Archiver ${tournee.nom} ?` : 'Archiver cette tournée ?';
+      return tournee ? `Archiver ${tournee.libelle} ?` : 'Archiver cette tournée ?';
     },
     messageConfirmationArchivage() {
       const tournee = this.tourneeAArchiver;
-      const nom = tournee ? tournee.nom : 'Cette tournée';
+      const nom = tournee ? tournee.libelle : 'Cette tournée';
       return (
         `${nom} sera retirée de la liste des tournées actives, mais restera conservée : ` +
         'vous pourrez la restaurer à tout moment depuis « Tournées archivées ». ' +
@@ -256,26 +262,18 @@ export default {
   methods: {
     ...mapActions('tournees', ['ajouter', 'modifier', 'archiver', 'restaurer']),
     libelleJours,
+    libelleHoraires,
+    estCoupee,
 
     /**
      * Ordre d'affichage (présentation uniquement, `ordreAffichage` n'est pas
-     * utilisé en 0006) : tri alphabétique du nom, comparaison locale française.
+     * utilisé en 0016) : tri alphabétique du libellé, comparaison locale française.
      * @param {object} a
      * @param {object} b
      * @returns {number}
      */
     comparerTournees(a, b) {
-      return a.nom.localeCompare(b.nom, 'fr');
-    },
-
-    /**
-     * Créneau et horaires en clair (« Matin · 08:00 – 12:00 »), sans
-     * manipulation d'objet `Date` : les heures sont déjà des chaînes `"HH:mm"`.
-     * @param {{ creneau: string, heureDebut: string, heureFin: string }} tournee
-     * @returns {string}
-     */
-    creneauHoraireTexte(tournee) {
-      return `${libelleCreneau(tournee.creneau)} · ${tournee.heureDebut} – ${tournee.heureFin}`;
+      return a.libelle.localeCompare(b.libelle, 'fr');
     },
 
     /**
@@ -287,6 +285,22 @@ export default {
     effectifTexte(nbPersonnesRequises) {
       const pluriel = nbPersonnesRequises > 1 ? 's' : '';
       return `${nbPersonnesRequises} personne${pluriel} requise${pluriel}`;
+    },
+
+    /**
+     * Effectif requis en clair, **par segment** pour une tournée coupée
+     * (« Matin : 2 · Soir : 1 »), ou en toutes lettres pour une tournée
+     * complète (« 2 personnes requises »). Jamais le mot « segment » à
+     * l'écran.
+     * @param {import('@/domain/tournees.js').Tournee} tournee
+     * @returns {string}
+     */
+    effectifSegmentsTexte(tournee) {
+      if (estCoupee(tournee)) {
+        const [matin, soir] = tournee.segments;
+        return `Matin : ${matin.nbPersonnesRequises} · Soir : ${soir.nbPersonnesRequises}`;
+      }
+      return this.effectifTexte(tournee.segments[0].nbPersonnesRequises);
     },
 
     /**
@@ -460,6 +474,23 @@ export default {
 .tournees-details {
   font-size: t.$taille-texte-petite;
   color: t.$couleur-texte-attenue;
+}
+
+// Repère « Coupée » : toujours icône + texte (jamais la seule couleur),
+// discret (cohérent avec `FormulaireTournee`).
+.tournees-badge-coupee {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: t.$espace-1;
+  padding: 0.1rem t.$espace-2;
+  margin-top: t.$espace-1;
+  font-size: t.$taille-texte-petite;
+  font-weight: t.$graisse-gras;
+  color: t.$couleur-texte-attenue;
+  background-color: t.$couleur-fond-clair;
+  border: 1px solid t.$couleur-bordure;
+  border-radius: t.$rayon-md;
 }
 
 .tournees-actions {

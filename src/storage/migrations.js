@@ -8,19 +8,75 @@
  */
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /**
  * Table des migrations séquentielles, indexée par version de départ.
  *
  * Chaque entrée `n` transforme un document de version `n` en un document de
- * version `n + 1` : `{ [n]: (doc) => docVersionNPlus1 }`. Vide en feature
- * `0002` (aucune évolution de schéma pour l'instant) ; à compléter au fil des
- * futures évolutions, ex. `MIGRATIONS[1] = (doc) => ({ ...doc, ... })`.
+ * version `n + 1` : `{ [n]: (doc) => docVersionNPlus1 }`.
  *
  * @type {Object<number, function(object): object>}
  */
 const MIGRATIONS = {};
+
+/**
+ * Migration v1 → v2 (feature 0016, ADR 0017) : le modèle « un créneau
+ * symbolique + une plage horaire unique » de `Tournee` est remplacé par une
+ * liste de segments horaires. **Sans perte** : chaque tournée v1 devient une
+ * tournée v2 à un unique segment (une tournée v1 n'ayant, par construction,
+ * qu'une seule plage horaire).
+ *
+ * - Chaque `Tournee` de `doc.tournees` : `libelle` ← ancien `nom` ;
+ *   `segments` ← `[{ heureDebut, heureFin, nbPersonnesRequises }]`
+ *   (`nbPersonnesRequises` défaut `1` si absent) ; suppression de `nom`,
+ *   `creneau`, `heureDebut`, `heureFin`, `nbPersonnesRequises`, `secteur`,
+ *   `code` ; conservation de `id`, `joursApplication`, `couleur`,
+ *   **`archivee`** (recopié tel quel — une tournée archivée reste
+ *   archivée), `dateDebutValidite`, `dateFinValidite`, `ordreAffichage`,
+ *   `notes`, `createdAt`, `updatedAt`.
+ * - Chaque `Affectation` de `doc.plannings[].affectations` :
+ *   `segmentIndex: 0` (l'unique segment de la tournée migrée, correct
+ *   puisqu'en v1 une tournée = un seul créneau = une seule plage) ;
+ *   suppression de `creneau`.
+ * - `doc.absences` : inchangées (elles gardent leur `creneau` symbolique,
+ *   voir `src/domain/absences.js`).
+ *
+ * @param {object} doc - Document de version 1.
+ * @returns {object} Document équivalent en version 2 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[1] = (doc) => {
+  const tournees = Array.isArray(doc.tournees)
+    ? doc.tournees.map((tournee) => {
+        const { nom, creneau, heureDebut, heureFin, nbPersonnesRequises, secteur, code, ...conserves } = tournee;
+        return {
+          ...conserves,
+          libelle: nom ?? '',
+          segments: [
+            {
+              heureDebut: heureDebut ?? '',
+              heureFin: heureFin ?? '',
+              nbPersonnesRequises: nbPersonnesRequises ?? 1,
+            },
+          ],
+        };
+      })
+    : doc.tournees;
+
+  const plannings = Array.isArray(doc.plannings)
+    ? doc.plannings.map((planning) => {
+        const affectations = Array.isArray(planning.affectations)
+          ? planning.affectations.map((affectation) => {
+              const { creneau, ...conservees } = affectation;
+              return { ...conservees, segmentIndex: 0 };
+            })
+          : planning.affectations;
+        return { ...planning, affectations };
+      })
+    : doc.plannings;
+
+  return { ...doc, tournees, plannings };
+};
 
 /**
  * Amène un document chargé (ou importé) à la version courante du schéma.

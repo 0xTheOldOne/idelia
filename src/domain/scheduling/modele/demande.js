@@ -26,9 +26,13 @@ export function joursPeriode(entree) {
  * Construit la liste plate des unités de `Demande` de la période : pour
  * chaque jour ouvert, pour chaque `Tournee` applicable ce jour-là (jour ISO
  * ∈ `joursApplication`, date dans `[dateDebutValidite, dateFinValidite]`
- * quand ces bornes sont renseignées), crée `nbPersonnesRequises` unités —
- * une par personne requise. Ce découpage par slot garantit structurellement
- * que le moteur n'affecte jamais plus que le requis.
+ * quand ces bornes sont renseignées), pour **chaque segment** de la tournée
+ * (feature 0016, ADR 0017 — 1 segment = tournée complète, 2 = tournée
+ * coupée), crée `segment.nbPersonnesRequises` unités — une par personne
+ * requise sur ce segment. Deux segments d'une même tournée coupée sont donc
+ * deux slots indépendants, couvrables par des personnes différentes. Ce
+ * découpage par slot garantit structurellement que le moteur n'affecte
+ * jamais plus que le requis.
  *
  * @param {import('./types.js').Entree} entree
  * @returns {import('./types.js').Demande[]} Demandes, une par slot à pourvoir.
@@ -43,15 +47,21 @@ export function expanserDemandes(entree) {
       if (!tournee.joursApplication.includes(jourIso)) continue;
       if (!estDansPlage(date, tournee.dateDebutValidite, tournee.dateFinValidite)) continue;
 
-      for (let index = 0; index < tournee.nbPersonnesRequises; index += 1) {
-        demandes.push({
-          id: `${tournee.id}|${date}|${tournee.creneau}|${index}`,
-          date,
-          jourIso,
-          creneau: tournee.creneau,
-          tourneeId: tournee.id,
-          index,
-        });
+      for (let segmentIndex = 0; segmentIndex < tournee.segments.length; segmentIndex += 1) {
+        const segment = tournee.segments[segmentIndex];
+
+        for (let index = 0; index < segment.nbPersonnesRequises; index += 1) {
+          demandes.push({
+            id: `${tournee.id}|${date}|${segmentIndex}|${index}`,
+            date,
+            jourIso,
+            tourneeId: tournee.id,
+            segmentIndex,
+            heureDebut: segment.heureDebut,
+            heureFin: segment.heureFin,
+            index,
+          });
+        }
       }
     }
   }
