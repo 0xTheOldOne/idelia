@@ -40,7 +40,7 @@ Légende statut : ⬜ à faire · 🟡 en cours · ✅ fait.
 
 | N°  | Feature                   | Résumé                                                                            | Dépend de          | Statut |
 | --- | ------------------------- | --------------------------------------------------------------------------------- | ------------------ | ------ |
-| 0013 | Tableau de bord (accueil) | Vue d'ensemble, actions rapides, état de sauvegarde, accès aux plannings récents. | 0004, 0006, 0007, 0011 | ⬜     |
+| 0013 | Tableau de bord (accueil) | Vue d'ensemble, actions rapides, état de sauvegarde, accès aux plannings récents. | 0004, 0006, 0007, 0011 | ✅     |
 
 ## Identité & ergonomie visuelle
 
@@ -48,8 +48,8 @@ Décidées en cours de route (maquette validée) : re-thème global puis refonte
 
 | N°  | Feature                       | Résumé                                                                                                                                                             | Dépend de | Statut |
 | --- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- | ------ |
-| 0014 | Refonte identité visuelle     | Palette « Teal & Sable » + police **Manrope** (`@fontsource`), thémé par les tokens ([ADR 0012](../docs/adr/0012-style-scss.md), [ADR 0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md)). Re-thème global, sans toucher au layout. | 0001       | ⬜     |
-| 0015 | Layout : menu latéral repliable | `App.vue` en grille `sidebar + contenu` + composant `MenuLateral` (déplié / replié avec infobulles, état persisté, accessibilité). Icônes Phosphor.               | 0014       | ⬜     |
+| 0014 | Refonte identité visuelle     | Palette « Teal & Sable » + police **Manrope** (`@fontsource`), thémé par les tokens ([ADR 0012](../docs/adr/0012-style-scss.md), [ADR 0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md)). Re-thème global, sans toucher au layout. | 0001       | ✅     |
+| 0015 | Layout : menu latéral repliable | `App.vue` en grille `sidebar + contenu` + composant `MenuLateral` (déplié / replié avec infobulles, état persisté, accessibilité). Icônes Phosphor.               | 0014       | ✅     |
 
 ## Modèle & ajustements v1 (post-maquette)
 
@@ -57,8 +57,8 @@ Refactors décidés pendant la revue de maquette. **0016 est transverse et à ha
 
 | N°  | Feature                                | Résumé                                                                                                                                                                                    | Dépend de              | Statut |
 | --- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------ |
-| 0016 | Refonte modèle Tournée & tournées coupées | Implémente [ADR 0017](../docs/adr/0017-modelisation-tournees-coupees-segments.md) : `Tournee.segments[]` (complète/coupée), libellé libre, effectif par segment ; moteur (recouvrement horaire, continuité intra-journée), migration. | 0006, 0009, 0010, 0011     | ⬜     |
-| 0017 | Absences v1 (saisie directe)           | Retire le workflow demande/validation (v1 mono-gestionnaire, [ADR 0014](../docs/adr/0014-pas-authentification-v1.md)) ; `statut` dormant = `VALIDE`. Réactivé avec l'auth (post-v1).       | 0007                    | ⬜     |
+| 0016 | Refonte modèle Tournée & tournées coupées | Implémente [ADR 0017](../docs/adr/0017-modelisation-tournees-coupees-segments.md) : `Tournee.segments[]` (complète/coupée), libellé libre, effectif par segment ; moteur (recouvrement horaire, continuité intra-journée), migration. | 0006, 0009, 0010, 0011     | ✅     |
+| 0017 | Absences v1 (saisie directe)           | Retire le workflow demande/validation (v1 mono-gestionnaire, [ADR 0014](../docs/adr/0014-pas-authentification-v1.md)) ; `statut` dormant = `VALIDE`. Réactivé avec l'auth (post-v1).       | 0007                    | ✅     |
 
 ---
 
