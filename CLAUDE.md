@@ -32,8 +32,11 @@ Idelia aide un **cabinet infirmier** à établir ses **plannings** (personnes, s
 ## Flux de travail
 
 1. L'agent **`architecte`** transforme une demande en plan `features/NNNN-*.md` (gabarit : [`features/0000-modele-feature.md`](features/0000-modele-feature.md)).
-2. L'agent **`developpeur-vue`** implémente le plan. **Règle : une tâche = un nouveau sous-agent** lancé via l'outil Agent, **`model: sonnet`**, effort **`medium`**, à qui l'on passe le chemin du fichier de feature, le n° + titre de la tâche, la liste des fichiers à créer/modifier, et le contexte d'architecture déjà chargé. Voir [`docs/instructions/workflow-implementation.md`](docs/instructions/workflow-implementation.md).
-3. L'agent **`relecteur-ergonomie`** relit les écrans sous l'angle utilisateurs non-informaticiens.
+2. L'agent **`dev-front`** implémente le plan. **Règle : une tâche = un nouveau sous-agent** lancé via l'outil Agent, à qui l'on passe le chemin du fichier de feature, le n° + titre de la tâche, la liste des fichiers à créer/modifier, et le contexte d'architecture déjà chargé. Voir [`docs/instructions/workflow-implementation.md`](docs/instructions/workflow-implementation.md).
+3. L'agent **`ui-ux`** relit les écrans sous l'angle utilisateurs non-informaticiens.
+4. L'agent **`security`** audite les changements d'un lot contre OWASP Top 10:2025, OWASP API Security Top 10:2023 et ASVS 5.0.0 (lecture seule, jamais de modification).
+
+> Note : le **modèle et l'effort** de chaque agent sont définis dans le frontmatter de son fichier (`.claude/agents/*.md`) — seule source de vérité. Ces fichiers sont rédigés **en anglais** (économie de tokens) mais chaque agent **répond en français**.
 
 ## Git / commits
 

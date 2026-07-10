@@ -291,7 +291,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie.md](../
 
 ## 9. Étapes d'implémentation
 
-Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre imposé par les dépendances : **T1 → T2 → T3** (domaine + store d'abord ; formulaire ; écran).
+Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre imposé par les dépendances : **T1 → T2 → T3** (domaine + store d'abord ; formulaire ; écran).
 
 ### Tâche 1 — Domaine (fabrique Absence + chevauchements) + libellés (type/statut) & store `absences` (CRUD + transitions)
 

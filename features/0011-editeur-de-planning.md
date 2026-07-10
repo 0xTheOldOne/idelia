@@ -257,7 +257,7 @@ Public non-technique ([08](../docs/architecture/08-principes-ux-ergonomie.md), [
 
 ## 9. Étapes d'implémentation
 
-**6 tâches**, chacune pour **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre imposé par les dépendances : **T1 → T2 → T3 → T4 → T5 → T6**. Découpage **fin** ; **undo (T2) et glisser-déposer (T5) sont chacun isolés**. Pas de suite de tests : chaque critère est vérifiable **à la main** (console pendant `npm run dev`, ou parcours écran).
+**6 tâches**, chacune pour **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre imposé par les dépendances : **T1 → T2 → T3 → T4 → T5 → T6**. Découpage **fin** ; **undo (T2) et glisser-déposer (T5) sont chacun isolés**. Pas de suite de tests : chaque critère est vérifiable **à la main** (console pendant `npm run dev`, ou parcours écran).
 
 ### Tâche 1 — Domaine + store : fabrique manuelle, mutation d'édition, actions d'édition, snapshot
 

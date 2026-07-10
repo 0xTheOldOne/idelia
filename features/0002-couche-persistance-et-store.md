@@ -240,7 +240,7 @@ Peu d'UI directe, mais des **fondations ergonomiques** ([08](../docs/architectur
 
 ## 9. Étapes d'implémentation
 
-Découpage en **5 tâches**, chacune destinée à **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre de dépendances : **T1 & T2 en parallèle**, puis **T3**, puis **T4**, puis **T5**. Chaque tâche liste ses fichiers et ses critères de sortie.
+Découpage en **5 tâches**, chacune destinée à **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre de dépendances : **T1 & T2 en parallèle**, puis **T3**, puis **T4**, puis **T5**. Chaque tâche liste ses fichiers et ses critères de sortie.
 
 ### Tâche 1 — Domaine : `schema.js` (défauts, (dé)sérialisation, intégrité)
 **Fichiers** : `src/domain/schema.js` (modifier — remplacer le placeholder).

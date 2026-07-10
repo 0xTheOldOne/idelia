@@ -336,7 +336,7 @@ Aucun écran ici : l'ergonomie de `0009` est **indirecte**, mais conditionne dir
 
 ## 9. Étapes d'implémentation
 
-Découpage en **5 tâches**, chacune destinée à **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre **strictement imposé** par les dépendances : **T1 → T2 → T3 → T4 → T5**. Le projet n'ayant pas de suite de tests automatisés en v1, chaque critère de sortie est formulé comme un **cas entrée → sortie concret**, vérifiable en import dynamique depuis la console du navigateur pendant `npm run dev` (voir §11) ou par raisonnement d'invariant sur le code relu.
+Découpage en **5 tâches**, chacune destinée à **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre **strictement imposé** par les dépendances : **T1 → T2 → T3 → T4 → T5**. Le projet n'ayant pas de suite de tests automatisés en v1, chaque critère de sortie est formulé comme un **cas entrée → sortie concret**, vérifiable en import dynamique depuis la console du navigateur pendant `npm run dev` (voir §11) ou par raisonnement d'invariant sur le code relu.
 
 ### Tâche 1 — Fondations : types, fabrique d'Affectation, indexation, expansion de la demande, RNG
 

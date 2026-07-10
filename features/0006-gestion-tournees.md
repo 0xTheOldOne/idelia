@@ -266,7 +266,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie.md](../
 
 ## 9. Étapes d'implémentation
 
-Découpage en **3 tâches cœur** + **1 tâche optionnelle**, chacune destinée à **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre imposé par les dépendances : **T1 → T2 → T3** (domaine + store d'abord ; formulaire ; écran). **T4 optionnelle** (réactivation `PREFERENCE_TOURNEE`) se place **après** validation du cœur — voir la décision §12.
+Découpage en **3 tâches cœur** + **1 tâche optionnelle**, chacune destinée à **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre imposé par les dépendances : **T1 → T2 → T3** (domaine + store d'abord ; formulaire ; écran). **T4 optionnelle** (réactivation `PREFERENCE_TOURNEE`) se place **après** validation du cœur — voir la décision §12.
 
 ### Tâche 1 — Domaine (fabrique Tournee + helper de libellé de jours) & store `tournees` (CRUD)
 

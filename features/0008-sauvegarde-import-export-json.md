@@ -174,7 +174,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie](../doc
 
 ## 9. Étapes d'implémentation
 
-Découpage en **2 tâches**, chacune destinée à **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2** (le bloc et son suivi d'export d'abord ; puis son intégration dans l'écran).
+Découpage en **2 tâches**, chacune destinée à **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2** (le bloc et son suivi d'export d'abord ; puis son intégration dans l'écran).
 
 ### Tâche 1 — Suivi d'export volatil (module `ui`) + composant `BlocSauvegarde.vue`
 

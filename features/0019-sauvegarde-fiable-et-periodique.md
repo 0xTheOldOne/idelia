@@ -277,7 +277,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie](../doc
 
 ## 9. Étapes d'implémentation
 
-Découpage en **2 tâches**, chacune pour **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). **La Tâche 1 est indépendante de l'arbitrage §1/§12.1 et peut démarrer immédiatement.** **La Tâche 2 dépend de la confirmation du porteur sur l'arbitrage** (et, idéalement, de la rédaction préalable de l'ADR — voir l'encart en tête de ce document).
+Découpage en **2 tâches**, chacune pour **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). **La Tâche 1 est indépendante de l'arbitrage §1/§12.1 et peut démarrer immédiatement.** **La Tâche 2 dépend de la confirmation du porteur sur l'arbitrage** (et, idéalement, de la rédaction préalable de l'ADR — voir l'encart en tête de ce document).
 
 ### Tâche 1 — Wording honnête (G11 universel + G14) + préférence « sauvegarde automatique » en mode rappel (G13, universel)
 

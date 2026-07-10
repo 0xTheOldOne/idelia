@@ -1,6 +1,6 @@
 # 08 — Principes d'ergonomie
 
-**Idelia s'adresse à des personnes peu à l'aise avec l'informatique.** L'ergonomie n'est pas une finition : c'est une exigence structurante qui prime sur l'élégance technique. Ce document donne les principes ; la checklist opérationnelle de relecture est dans [`../instructions/accessibilite-ergonomie.md`](../instructions/accessibilite-ergonomie.md) (utilisée par l'agent `relecteur-ergonomie`).
+**Idelia s'adresse à des personnes peu à l'aise avec l'informatique.** L'ergonomie n'est pas une finition : c'est une exigence structurante qui prime sur l'élégance technique. Ce document donne les principes ; la checklist opérationnelle de relecture est dans [`../instructions/accessibilite-ergonomie.md`](../instructions/accessibilite-ergonomie.md) (utilisée par l'agent `ui-ux`).
 
 ## Les principes
 

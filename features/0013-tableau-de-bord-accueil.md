@@ -199,7 +199,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie](../doc
 
 ## 9. Étapes d'implémentation
 
-**4 tâches**, chacune pour **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2 → T3 → T4**. Chaque critère est vérifiable **à la main** (console pendant `npm run dev`, ou parcours écran).
+**4 tâches**, chacune pour **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2 → T3 → T4**. Chaque critère est vérifiable **à la main** (console pendant `npm run dev`, ou parcours écran).
 
 ### Tâche 1 — Fondations : libellés + `numeroSemaineIso` + sélecteurs purs + action `resumeConflits`
 

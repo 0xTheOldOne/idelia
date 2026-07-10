@@ -225,7 +225,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie](../doc
 
 ## 9. Étapes d'implémentation
 
-Découpage en **3 tâches**, chacune pour **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2 → T3** (T2/T3 dispatchent vers le module créé en T1).
+Découpage en **3 tâches**, chacune pour **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2 → T3** (T2/T3 dispatchent vers le module créé en T1).
 
 ### Tâche 1 — Fondations : module `notifications` + garde de persistance + composant `PileNotifications`
 

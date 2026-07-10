@@ -179,7 +179,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie.md](../
 
 ## 9. Étapes d'implémentation
 
-Découpage en **2 tâches**, chacune destinée à **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre : **T1 puis T2** (T2 consomme les modules de T1).
+Découpage en **2 tâches**, chacune destinée à **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre : **T1 puis T2** (T2 consomme les modules de T1).
 
 ### Tâche 1 — Domaine (libellés + cohérence) & action store `cabinet/majParametres`
 

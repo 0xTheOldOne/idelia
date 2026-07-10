@@ -1,6 +1,6 @@
 # Instructions de développement — Idelia
 
-Guidelines **opérationnelles par domaine**, destinées à l'agent `developpeur-vue` et à toute personne qui code sur Idelia. Elles complètent le **pourquoi** ([`../adr/`](../adr/)) et le **comment** global ([`../architecture/`](../architecture/)) par le **comment concret, au quotidien**.
+Guidelines **opérationnelles par domaine**, destinées à l'agent `dev-front` et à toute personne qui code sur Idelia. Elles complètent le **pourquoi** ([`../adr/`](../adr/)) et le **comment** global ([`../architecture/`](../architecture/)) par le **comment concret, au quotidien**.
 
 ## Sommaire
 

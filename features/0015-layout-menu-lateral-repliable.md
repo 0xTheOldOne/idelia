@@ -174,7 +174,7 @@ Public **peu à l'aise avec l'informatique** ([architecture 08](../docs/architec
 
 ## 9. Étapes d'implémentation
 
-Découpage en **3 tâches**, chacune pour **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2 → T3** (T2 consomme l'action/le getter de T1 ; T3 monte le composant de T2). **Prérequis** : les tokens « menu latéral » de la feature `0014` doivent être disponibles (sinon coordonner — voir §12.2).
+Découpage en **3 tâches**, chacune pour **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre imposé : **T1 → T2 → T3** (T2 consomme l'action/le getter de T1 ; T3 monte le composant de T2). **Prérequis** : les tokens « menu latéral » de la feature `0014` doivent être disponibles (sinon coordonner — voir §12.2).
 
 ### Tâche 1 — Préférence UI persistée (`storageRepository` + module `ui` + init `main.js`)
 

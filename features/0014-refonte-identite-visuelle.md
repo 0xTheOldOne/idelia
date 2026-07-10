@@ -186,7 +186,7 @@ Les **noms FR existants sont conservés** ; seules leurs **valeurs** changent (c
 
 ## 9. Étapes d'implémentation
 
-Découpage en **2 tâches**, chacune destinée à **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). **Ordre imposé : T1 puis T2** (les deux éditent `_tokens.scss` dans des blocs distincts — couleurs pour T1, typographie pour T2 — les enchaîner évite tout conflit d'édition). Le build doit **rester vert après chaque tâche**.
+Découpage en **2 tâches**, chacune destinée à **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). **Ordre imposé : T1 puis T2** (les deux éditent `_tokens.scss` dans des blocs distincts — couleurs pour T1, typographie pour T2 — les enchaîner évite tout conflit d'édition). Le build doit **rester vert après chaque tâche**.
 
 ### Tâche 1 — Palette « Teal & Sable » : tokens + pont Bootstrap + fond de page
 

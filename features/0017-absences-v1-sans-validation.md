@@ -179,7 +179,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie.md](../
 
 ## 9. Étapes d'implémentation
 
-Découpage en **petites tâches** (c'est une simplification). Ordre : **T1 → T2**, puis **T3 optionnel**. Chaque tâche = un sous-agent `developpeur-vue` (`model: sonnet`, effort `medium`).
+Découpage en **petites tâches** (c'est une simplification). Ordre : **T1 → T2**, puis **T3 optionnel**. Chaque tâche = un sous-agent `dev-front` (`model: sonnet`, effort `medium`).
 
 ### Tâche 1 — Domaine & store : `statut` forcé `VALIDE`, retrait du workflow de décision
 

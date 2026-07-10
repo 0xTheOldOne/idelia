@@ -264,7 +264,7 @@ Public **peu à l'aise avec l'informatique** ([08](../docs/architecture/08-princ
 
 ## 9. Étapes d'implémentation
 
-> **Pré-requis absolu (§12)** : `0011` atterri sur `main`. Repartir de `main` à jour. **4 tâches**, chacune pour **un sous-agent** (`developpeur-vue`, `model: sonnet`, effort `medium`). Ordre **strictement imposé** : **T1 → T2 → T3 → T4**. `npm run build` doit rester vert **à chaque étape** ; la **correction fonctionnelle** complète n'est atteinte qu'après T4 (refactor transverse — un état intermédiaire compile mais l'app n'est pleinement fonctionnelle qu'en fin de T4 ; c'est attendu, on valide de bout en bout à la fin).
+> **Pré-requis absolu (§12)** : `0011` atterri sur `main`. Repartir de `main` à jour. **4 tâches**, chacune pour **un sous-agent** (`dev-front`, `model: sonnet`, effort `medium`). Ordre **strictement imposé** : **T1 → T2 → T3 → T4**. `npm run build` doit rester vert **à chaque étape** ; la **correction fonctionnelle** complète n'est atteinte qu'après T4 (refactor transverse — un état intermédiaire compile mais l'app n'est pleinement fonctionnelle qu'en fin de T4 ; c'est attendu, on valide de bout en bout à la fin).
 
 ### Tâche 1 — Modèle, migration, store, réconciliation horaire (domaine)
 

@@ -4,12 +4,9 @@ Règle d'exécution des features en phase de développement. S'adresse à **l'ag
 
 ## Règle : une tâche = un sous-agent
 
-**Chaque tâche d'une feature est implémentée dans un nouveau sous-agent**, lancé via l'outil **Agent**, avec :
+**Chaque tâche d'une feature est implémentée dans un nouveau sous-agent**, lancé via l'outil **Agent** en `subagent_type: dev-front`.
 
-- **`model: sonnet`**
-- **effort : `medium`**
-
-> Note outillage : l'outil Agent accepte le paramètre `model` (mettre `sonnet`) mais **pas** de paramètre d'effort à l'appel — l'effort `medium` est porté par la **définition de l'agent** [`developpeur-vue`](../../.claude/agents/developpeur-vue.md). Tant que Claude Code n'a pas enregistré les agents de `.claude/agents/`, lancer le sous-agent en `subagent_type: general-purpose` **en lui demandant de suivre `developpeur-vue.md`** ; sinon utiliser directement `subagent_type: developpeur-vue`.
+> Le **modèle et l'effort** (`sonnet` / `medium`) sont définis dans le frontmatter de [`dev-front`](../../.claude/agents/dev-front.md) et s'appliquent automatiquement — inutile (et impossible) de passer l'effort à l'appel de l'outil Agent.
 
 ## Ce qu'on passe à chaque sous-agent
 
@@ -28,6 +25,6 @@ Le prompt du sous-agent doit contenir **au minimum** :
 
 ## Rappels
 
-- Le sous-agent respecte `developpeur-vue.md`, les [instructions](README.md), et les [ADR](../adr/).
-- Après implémentation, la relecture ergonomie est faite par [`relecteur-ergonomie`](../../.claude/agents/relecteur-ergonomie.md).
+- Le sous-agent respecte `dev-front.md`, les [instructions](README.md), et les [ADR](../adr/).
+- Après implémentation, la relecture ergonomie est faite par [`ui-ux`](../../.claude/agents/ui-ux.md), puis l'audit sécurité par [`security`](../../.claude/agents/security.md).
 - Commits : jamais de co-auteur, identité locale du dépôt (voir [`../../CLAUDE.md`](../../CLAUDE.md)).

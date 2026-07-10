@@ -1,6 +1,6 @@
 # Instructions — Checklist accessibilité & ergonomie
 
-Checklist opérationnelle, utilisée notamment par l'agent `relecteur-ergonomie`. Elle décline les principes de [architecture 08](../architecture/08-principes-ux-ergonomie.md). Public cible : **personnes peu à l'aise avec l'informatique**.
+Checklist opérationnelle, utilisée notamment par l'agent `ui-ux`. Elle décline les principes de [architecture 08](../architecture/08-principes-ux-ergonomie.md). Public cible : **personnes peu à l'aise avec l'informatique**.
 
 ## Clarté & langage
 
