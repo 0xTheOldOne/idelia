@@ -20,6 +20,12 @@ const app = createApp(App).use(router).use(store);
 // touche Entrée de déclencher la fonction avant la fin du délai.
 app.directive('debounce', vueDebounce({ lock: true }));
 
+// Restitue la préférence de repli du menu latéral (feature 0015) avant le
+// montage : lecture synchrone (storageRepository), indépendante du
+// `app/bootstrap` métier (asynchrone), pour éviter tout scintillement
+// déplié→replié au premier rendu.
+store.dispatch('ui/initialiserMenu');
+
 async function demarrer() {
   try {
     await store.dispatch('bootstrap');

@@ -1,3 +1,5 @@
+import { storageRepository } from '@/storage/storageRepository.js';
+
 /**
  * Module Vuex — ui.
  *
@@ -18,16 +20,30 @@
  * confondre les deux tromperait l'utilisateur. `null` au démarrage et
  * après chaque rechargement (assumé, voir feature 0008 §12) ; jamais
  * persisté, jamais inclus dans le fichier exporté.
+ *
+ * `menuReplie` (feature 0015) : préférence d'affichage du menu latéral
+ * (déplié/replié). En mémoire c'est de l'état **volatil** comme le reste
+ * de ce module (donc absent de `REPLACE_ALL`/du plugin de persistance),
+ * mais elle est **reflétée** sur un canal dédié de `storageRepository`
+ * (clé `idelia:prefs-ui`, distincte du `SaveDocument`) afin de survivre au
+ * rechargement sans jamais entrer dans la sauvegarde métier (§4.2 de la
+ * feature 0015).
  */
 export default {
   namespaced: true,
   state: () => ({
     dernierExportLe: null,
+    menuReplie: false,
   }),
-  getters: {},
+  getters: {
+    menuReplie: (state) => state.menuReplie,
+  },
   mutations: {
     SET_DERNIER_EXPORT(state, iso) {
       state.dernierExportLe = iso;
+    },
+    SET_MENU_REPLIE(state, valeur) {
+      state.menuReplie = valeur;
     },
   },
   actions: {
@@ -38,6 +54,28 @@ export default {
      */
     enregistrerExport({ commit }) {
       commit('SET_DERNIER_EXPORT', new Date().toISOString());
+    },
+
+    /**
+     * Bascule l'état déplié/replié du menu latéral et mémorise
+     * immédiatement le nouveau choix via `storageRepository` (canal dédié,
+     * hors `SaveDocument`).
+     * @param {import('vuex').ActionContext} context
+     */
+    basculerMenu({ commit, getters }) {
+      const nouvelleValeur = !getters.menuReplie;
+      commit('SET_MENU_REPLIE', nouvelleValeur);
+      storageRepository.enregistrerPreferenceMenuReplie(nouvelleValeur);
+    },
+
+    /**
+     * Restitue la préférence de repli du menu mémorisée précédemment.
+     * Appelée au démarrage (`src/main.js`), **avant** le montage de
+     * l'application, pour appliquer la préférence dès le premier rendu.
+     * @param {import('vuex').ActionContext} context
+     */
+    initialiserMenu({ commit }) {
+      commit('SET_MENU_REPLIE', storageRepository.lirePreferenceMenuReplie());
     },
   },
 };

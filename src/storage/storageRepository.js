@@ -17,6 +17,13 @@ const CLE_DONNEES = 'idelia:data';
 const CLE_DONNEES_CORROMPUES = 'idelia:data.corrompu';
 
 /**
+ * Clé dédiée aux préférences d'interface (feature 0015), **séparée** de la
+ * clé du document de sauvegarde métier `CLE_DONNEES` : ces préférences ne
+ * font jamais partie du `SaveDocument` (ni export, ni import, ni migration).
+ */
+const CLE_PREFS_UI = 'idelia:prefs-ui';
+
+/**
  * Indique si une erreur correspond à un dépassement de quota de stockage
  * (le nom exact varie selon les navigateurs).
  *
@@ -109,9 +116,47 @@ async function isAvailable() {
   }
 }
 
+/**
+ * Lit la préférence « menu latéral replié » (feature 0015).
+ *
+ * Lecture **synchrone** (contrairement au reste du repository) : c'est une
+ * préférence triviale, lue directement au démarrage pour être appliquée
+ * avant le premier rendu (pas de scintillement déplié→replié). Tolérante :
+ * renvoie `false` (déplié, valeur par défaut) si la clé est absente ou
+ * illisible.
+ *
+ * @returns {boolean} `true` si le menu doit être affiché replié.
+ */
+function lirePreferenceMenuReplie() {
+  try {
+    return localStorage.getItem(CLE_PREFS_UI) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Enregistre la préférence « menu latéral replié » (feature 0015), sur sa
+ * clé dédiée `idelia:prefs-ui`, indépendante du document de sauvegarde
+ * métier. Écriture **best-effort** : les échecs (quota, stockage
+ * indisponible…) sont silencieusement ignorés, comme pour le reste du
+ * repository.
+ *
+ * @param {boolean} valeur - `true` pour mémoriser le menu replié.
+ */
+function enregistrerPreferenceMenuReplie(valeur) {
+  try {
+    localStorage.setItem(CLE_PREFS_UI, valeur ? 'true' : 'false');
+  } catch {
+    // Best-effort : une préférence d'UI non mémorisée n'est pas bloquante.
+  }
+}
+
 export const storageRepository = {
   load,
   save,
   clear,
   isAvailable,
+  lirePreferenceMenuReplie,
+  enregistrerPreferenceMenuReplie,
 };
