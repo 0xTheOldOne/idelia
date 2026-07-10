@@ -60,6 +60,15 @@ Refactors décidés pendant la revue de maquette. **0016 est transverse et à ha
 | 0016 | Refonte modèle Tournée & tournées coupées | Implémente [ADR 0017](../docs/adr/0017-modelisation-tournees-coupees-segments.md) : `Tournee.segments[]` (complète/coupée), libellé libre, effectif par segment ; moteur (recouvrement horaire, continuité intra-journée), migration. | 0006, 0009, 0010, 0011     | ✅     |
 | 0017 | Absences v1 (saisie directe)           | Retire le workflow demande/validation (v1 mono-gestionnaire, [ADR 0014](../docs/adr/0014-pas-authentification-v1.md)) ; `statut` dormant = `VALIDE`. Réactivé avec l'auth (post-v1).       | 0007                    | ✅     |
 
+## Retours de revue (feedback utilisateur)
+
+Issus de la revue des écrans re-thémés. Petits ajustements UI appliqués au fil de l'eau (indicateur de sauvegarde dans le menu, en-têtes, nom de cabinet retiré) ; deux features dédiées ci-dessous.
+
+| N°  | Feature                          | Résumé                                                                                                                                                                             | Dépend de     | Statut |
+| --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ------ |
+| 0018 | Système de notifications (toasts) | Module Vuex `notifications` (bus par `dispatch`) + composant `PileNotifications` monté dans `App.vue` ; toasts empilables/fermables/accessibles ; émission centralisée dans les actions de store (personnes, tournées, absences). | 0004, 0015     | ✅     |
+| 0019 | Sauvegarde fiable & périodique   | Wording honnête (fichier vs navigateur), sauvegarde automatique paramétrable, **File System Access API** (Chrome/Edge : écriture réelle/silencieuse + détection d'annulation) avec repli rappel ([ADR 0018](../docs/adr/0018-strategie-sauvegarde-fichier.md)). | 0008, 0013, 0018 | ✅     |
+
 ---
 
 **Hors v1 (idées à acter par ADR si retenues)** : IndexedDB si le volume grandit ; Web Worker pour la génération ; tests unitaires du moteur ; mode sombre ; authentification / multi-postes ; gestion multi-cabinets.
