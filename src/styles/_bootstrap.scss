@@ -18,12 +18,19 @@ $warning: t.$couleur-avertissement;
 // rester cohérent avec la palette teal du projet.
 $info: t.$couleur-primaire-claire;
 $body-color: t.$couleur-texte;
-$body-bg: t.$couleur-fond;
+// Fond de page sable : le sable ne s'applique qu'ici (canvas de l'app) ; les
+// surfaces (champs, modales…) restent blanches via `$couleur-fond` ci-dessous.
+$body-bg: t.$couleur-page;
+$body-secondary-bg: t.$couleur-fond-clair;
+$body-tertiary-bg: t.$couleur-fond-clair;
 $font-family-base: t.$police-base;
 $font-size-base: t.$taille-texte-base;
 $border-radius: t.$rayon-md;
 $border-color: t.$couleur-bordure;
 $spacer: t.$espace-3;
+// Champs et modales blancs (surface), posés sur le fond de page sable.
+$input-bg: t.$couleur-fond;
+$modal-content-bg: t.$couleur-fond;
 
 // 3) Variables + maps + mixins + racine Bootstrap.
 @import 'bootstrap/scss/variables';

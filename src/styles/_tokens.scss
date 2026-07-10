@@ -3,31 +3,59 @@
 // partiel SCSS doit puiser ses couleurs/espacements/typographies ici.
 
 // ---------------------------------------------------------------------------
-// Couleurs — marque
+// Couleurs — marque & primaire (palette « Teal & Sable »)
 // ---------------------------------------------------------------------------
-$couleur-primaire: #1d5c63; // bleu-vert sobre, contraste AA sur blanc
-$couleur-primaire-claire: #4f8a91;
-$couleur-primaire-foncee: #123a3f;
+$couleur-marque: #17868f; // teal vif du logo — décoratif / repères de marque / grands éléments
+// (texte sur blanc ≈ 4.3:1, sous l'AA : réservé aux repères/grands éléments,
+// jamais au texte courant → utiliser `$couleur-primaire` pour le texte).
+$couleur-primaire: #0e6e77; // primaire interactive (boutons, liens, texte) — blanc AA 6.0:1
+$couleur-primaire-foncee: #0b565e; // hover / pressed / focus — blanc AA 8.4:1
+$couleur-primaire-claire: $couleur-marque; // alias historique conservé (consommé par plusieurs
+// écrans et par le mapping Bootstrap `$info`, voir `_bootstrap.scss`).
+
+// ---------------------------------------------------------------------------
+// Couleurs — accent (points d'attention uniquement)
+// ---------------------------------------------------------------------------
+// Ambre : item de menu actif, petites pastilles/repères. Jamais un aplat plein
+// portant du texte blanc (blanc sur accent ≈ 2.4:1, insuffisant).
+$couleur-accent: #dd9a44;
+$couleur-accent-texte: #3a2b0c; // texte sur fond accent — AA 5.7:1
+$couleur-accent-foncee: #8a5a12; // variante foncée pour texte ambre sur fond clair — ≈ 5.9:1 sur blanc
+
+// ---------------------------------------------------------------------------
+// Couleurs — neutres « sable chauds »
+// ---------------------------------------------------------------------------
+// `$couleur-fond` reste blanc (surface des cartes/champs/modales) ; le sable
+// est porté par `$couleur-page`, token dédié au fond de page (appliqué
+// uniquement via `$body-bg` dans `_bootstrap.scss` et `body` dans `_base.scss`).
+$couleur-page: #faf7f1; // fond de page (sable chaud) — texte principal AA 13.6:1
+$couleur-fond: #ffffff; // surface (cartes, champs, modales) — texte principal AA 14.5:1
+$couleur-fond-clair: #f3ecdf; // surface atténuée / secondaire (zones douces, en-têtes de section)
+$couleur-bordure: #e7dece; // bordures / séparateurs
+$couleur-texte: #2b2924; // texte principal
+$couleur-texte-attenue: #6e6656; // texte secondaire / aides — AA 5.3:1 (page) / 5.7:1 (surface)
+$couleur-texte-inverse: #ffffff; // texte sur fonds teal/foncés (menu, boutons) — évite les #fff en dur
 
 // ---------------------------------------------------------------------------
 // Couleurs — sémantiques
 // ---------------------------------------------------------------------------
-$couleur-succes: #2e7d4f;
-$couleur-erreur: #c62828;
-$couleur-avertissement: #b8860b;
-// Réservé au **texte** d'avertissement (contraste ≈ 5,8:1 sur blanc, WCAG AA) :
-// `$couleur-avertissement` (≈ 3,3:1) reste utilisé pour les bordures/icônes/
-// fonds, insuffisant comme couleur de texte.
-$couleur-avertissement-texte: #806000;
+$couleur-succes: #15803d; // blanc AA 5.0:1
+$couleur-erreur: #c0392b; // blanc AA 5.4:1
+$couleur-avertissement: #b45309; // blanc AA 5.0:1 — atteint désormais l'AA en texte
+// Alias conservé : `$couleur-avertissement` atteint désormais l'AA en texte
+// (contraste ≈ 5.0:1 sur blanc), plus besoin d'une valeur de texte distincte.
+$couleur-avertissement-texte: $couleur-avertissement;
 
 // ---------------------------------------------------------------------------
-// Couleurs — neutres
+// Couleurs — menu latéral (consommés par la feature 0015, définis ici)
 // ---------------------------------------------------------------------------
-$couleur-texte: #212529;
-$couleur-texte-attenue: #495057;
-$couleur-fond: #ffffff;
-$couleur-fond-clair: #f5f6f7;
-$couleur-bordure: #ced4da;
+$couleur-menu-fond-haut: #147c84; // haut du dégradé teal foncé
+$couleur-menu-fond-bas: #0b525a; // bas du dégradé
+$degrade-menu: linear-gradient(200deg, $couleur-menu-fond-haut, $couleur-menu-fond-bas);
+$couleur-menu-texte: rgba(255, 255, 255, 0.82); // libellés d'items (état normal)
+$couleur-menu-texte-actif: #ffffff; // libellé de l'item actif (blanc plein, meilleur contraste)
+$couleur-menu-item-actif-fond: rgba(255, 255, 255, 0.16); // fond de l'item actif
+$couleur-menu-item-actif-accent: $couleur-accent; // barre d'accent ambre de l'item actif
 
 // ---------------------------------------------------------------------------
 // Espacements — échelle cohérente
@@ -42,14 +70,17 @@ $espace-6: 48px;
 // ---------------------------------------------------------------------------
 // Typographie
 // ---------------------------------------------------------------------------
-$police-base: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+$police-base: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+  sans-serif;
 $taille-texte-base: 1rem; // 16px, confortable pour un public non-technique
 $taille-texte-petite: 0.875rem;
 $taille-texte-grande: 1.25rem;
 $taille-titre-1: 2rem;
 $taille-titre-2: 1.5rem;
 $graisse-normale: 400;
+$graisse-moyenne: 500; // libellés / emphase légère
 $graisse-gras: 700;
+$graisse-extra-gras: 800; // marque / gros chiffres
 $hauteur-ligne-base: 1.5;
 
 // ---------------------------------------------------------------------------

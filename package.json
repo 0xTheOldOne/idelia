@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/manrope": "^5.2.8",
     "@phosphor-icons/vue": "^2.2.1",
     "@popperjs/core": "^2.11.8",
     "@vuelidate/core": "^2.0.3",
