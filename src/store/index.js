@@ -16,6 +16,7 @@ import tournees from './modules/tournees';
 import absences from './modules/absences';
 import plannings from './modules/plannings';
 import ui from './modules/ui';
+import notifications from './modules/notifications';
 
 /**
  * Store racine de l'application (feature 0002).
@@ -96,16 +97,17 @@ function flushImmediat(store) {
  * une écriture débouncée pour toute mutation qui modifie de la donnée
  * persistée.
  *
- * Garde anti-boucle **critique** : ignore les mutations du module `ui`
- * (jamais persisté) ainsi que les mutations de statut de sauvegarde
- * elles-mêmes (`SET_STATUT_SAUVEGARDE`, `SET_DERNIERE_SAUVEGARDE`), sinon
- * chaque écriture réussie redéclencherait une nouvelle écriture, à l'infini.
+ * Garde anti-boucle **critique** : ignore les mutations des modules `ui` et
+ * `notifications` (tous deux volatils, jamais persistés — voir feature 0018
+ * §4.2) ainsi que les mutations de statut de sauvegarde elles-mêmes
+ * (`SET_STATUT_SAUVEGARDE`, `SET_DERNIERE_SAUVEGARDE`), sinon chaque écriture
+ * réussie redéclencherait une nouvelle écriture, à l'infini.
  *
  * @param {import('vuex').Store} store - Store racine.
  */
 function persistancePlugin(store) {
   store.subscribe((mutation) => {
-    if (mutation.type.startsWith('ui/')) return;
+    if (mutation.type.startsWith('ui/') || mutation.type.startsWith('notifications/')) return;
     if (mutation.type === 'SET_STATUT_SAUVEGARDE' || mutation.type === 'SET_DERNIERE_SAUVEGARDE') {
       return;
     }
@@ -290,6 +292,7 @@ export default createStore({
     absences,
     plannings,
     ui,
+    notifications,
   },
 
   plugins: [persistancePlugin],

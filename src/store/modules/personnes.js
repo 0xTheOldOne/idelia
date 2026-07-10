@@ -22,6 +22,16 @@
 import { creerPersonne } from '@/domain/personnes.js';
 import { creerPreference } from '@/domain/preferences.js';
 
+/**
+ * Nom complet d'une personne pour les messages de notification (feature 0018).
+ * Simple interpolation de présentation, aucune logique métier.
+ * @param {{ prenom: string, nom: string }} personne
+ * @returns {string}
+ */
+function nomComplet(personne) {
+  return `${personne.prenom} ${personne.nom}`;
+}
+
 export default {
   namespaced: true,
   state: () => ({ items: [] }),
@@ -73,49 +83,84 @@ export default {
      * Crée une nouvelle personne à partir de champs partiels (formulaire) et
      * l'ajoute à la collection. La construction/normalisation est déléguée
      * au domaine (`creerPersonne`).
-     * @param {{ commit: Function }} context
+     * @param {{ commit: Function, dispatch: Function }} context
      * @param {object} champs - Champs partiels d'une Personne.
      */
-    ajouter({ commit }, champs) {
-      commit('ADD', creerPersonne(champs));
+    ajouter({ commit, dispatch }, champs) {
+      const personne = creerPersonne(champs);
+      commit('ADD', personne);
+      dispatch(
+        'notifications/notifier',
+        { type: 'succes', message: `${nomComplet(personne)} a été ajouté(e) à l'équipe.` },
+        { root: true }
+      );
     },
     /**
      * Met à jour une personne existante par fusion immuable d'un patch
      * partiel, en rafraîchissant `updatedAt` (horodatage technique ISO UTC,
      * ADR 0010). Ne touche jamais `id`, `createdAt`, `preferences` (absents
      * de `champs`).
-     * @param {{ commit: Function }} context
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {{ id: string }} payload - `{ id, ...champs }`.
      */
-    modifier({ commit }, { id, ...champs }) {
+    modifier({ commit, dispatch, getters }, { id, ...champs }) {
       commit('UPDATE', { id, patch: { ...champs, updatedAt: new Date().toISOString() } });
+      const personne = getters.byId(id);
+      dispatch(
+        'notifications/notifier',
+        {
+          type: 'succes',
+          message: personne
+            ? `Les informations de ${nomComplet(personne)} ont été mises à jour.`
+            : 'Les informations de cette personne ont été mises à jour.',
+        },
+        { root: true }
+      );
     },
     /**
      * Archive une personne (soft-delete) : `actif` passe à `false`. La
      * personne n'est jamais supprimée physiquement (référençable par
      * l'historique des plannings).
-     * @param {{ commit: Function }} context
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {string} id
      */
-    desactiver({ commit }, id) {
+    desactiver({ commit, dispatch, getters }, id) {
       commit('UPDATE', { id, patch: { actif: false, updatedAt: new Date().toISOString() } });
+      const personne = getters.byId(id);
+      dispatch(
+        'notifications/notifier',
+        {
+          type: 'info',
+          message: personne ? `${nomComplet(personne)} a été archivé(e).` : 'Cette personne a été archivée.',
+        },
+        { root: true }
+      );
     },
     /**
      * Restaure une personne archivée : `actif` repasse à `true`.
-     * @param {{ commit: Function }} context
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {string} id
      */
-    reactiver({ commit }, id) {
+    reactiver({ commit, dispatch, getters }, id) {
       commit('UPDATE', { id, patch: { actif: true, updatedAt: new Date().toISOString() } });
+      const personne = getters.byId(id);
+      dispatch(
+        'notifications/notifier',
+        {
+          type: 'succes',
+          message: personne ? `${nomComplet(personne)} a été restauré(e).` : 'Cette personne a été restaurée.',
+        },
+        { root: true }
+      );
     },
     /**
      * Ajoute une préférence à une personne. Ne fait rien si la personne est
      * introuvable. La construction/normalisation est déléguée au domaine
      * (`creerPreference`) ; recomposition immuable de `preferences`.
-     * @param {{ commit: Function, getters: Object }} context
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {{ personneId: string }} payload - `{ personneId, ...champs }` d'une Preference.
      */
-    ajouterPreference({ commit, getters }, { personneId, ...champs }) {
+    ajouterPreference({ commit, dispatch, getters }, { personneId, ...champs }) {
       const personne = getters.byId(personneId);
       if (!personne) return;
       const preference = creerPreference(champs);
@@ -123,16 +168,21 @@ export default {
         id: personneId,
         patch: { preferences: [...personne.preferences, preference], updatedAt: new Date().toISOString() },
       });
+      dispatch(
+        'notifications/notifier',
+        { type: 'succes', message: `Souhait ajouté pour ${nomComplet(personne)}.` },
+        { root: true }
+      );
     },
     /**
      * Modifie une préférence existante d'une personne : recompose
      * `preferences` en remplaçant l'élément ciblé par une version
      * renormalisée (via `creerPreference`), en préservant `id`/`createdAt`.
      * Rafraîchit `updatedAt` de la préférence **et** de la personne.
-     * @param {{ commit: Function, getters: Object }} context
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {{ personneId: string, preferenceId: string }} payload - `{ personneId, preferenceId, ...champs }`.
      */
-    modifierPreference({ commit, getters }, { personneId, preferenceId, ...champs }) {
+    modifierPreference({ commit, dispatch, getters }, { personneId, preferenceId, ...champs }) {
       const personne = getters.byId(personneId);
       if (!personne) return;
       const preferences = personne.preferences.map((ancienne) =>
@@ -141,26 +191,36 @@ export default {
           : ancienne
       );
       commit('UPDATE', { id: personneId, patch: { preferences, updatedAt: new Date().toISOString() } });
+      dispatch(
+        'notifications/notifier',
+        { type: 'succes', message: `Souhait modifié pour ${nomComplet(personne)}.` },
+        { root: true }
+      );
     },
     /**
      * Supprime physiquement une préférence d'une personne (objet-valeur
      * imbriqué, non référencé : pas de soft-delete nécessaire ici).
-     * @param {{ commit: Function, getters: Object }} context
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {{ personneId: string, preferenceId: string }} payload
      */
-    supprimerPreference({ commit, getters }, { personneId, preferenceId }) {
+    supprimerPreference({ commit, dispatch, getters }, { personneId, preferenceId }) {
       const personne = getters.byId(personneId);
       if (!personne) return;
       const preferences = personne.preferences.filter((p) => p.id !== preferenceId);
       commit('UPDATE', { id: personneId, patch: { preferences, updatedAt: new Date().toISOString() } });
+      dispatch(
+        'notifications/notifier',
+        { type: 'info', message: `Souhait supprimé pour ${nomComplet(personne)}.` },
+        { root: true }
+      );
     },
     /**
      * Bascule `actif` d'une préférence (mise en pause / reprise), sans la
      * supprimer. Rafraîchit `updatedAt` de la préférence et de la personne.
-     * @param {{ commit: Function, getters: Object }} context
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {{ personneId: string, preferenceId: string }} payload
      */
-    basculerPreference({ commit, getters }, { personneId, preferenceId }) {
+    basculerPreference({ commit, dispatch, getters }, { personneId, preferenceId }) {
       const personne = getters.byId(personneId);
       if (!personne) return;
       const maintenant = new Date().toISOString();
@@ -168,6 +228,11 @@ export default {
         p.id === preferenceId ? { ...p, actif: !p.actif, updatedAt: maintenant } : p
       );
       commit('UPDATE', { id: personneId, patch: { preferences, updatedAt: maintenant } });
+      const preferenceMaj = preferences.find((p) => p.id === preferenceId);
+      const message = preferenceMaj?.actif
+        ? `Souhait de nouveau pris en compte pour ${nomComplet(personne)}.`
+        : `Souhait mis en pause pour ${nomComplet(personne)}.`;
+      dispatch('notifications/notifier', { type: 'info', message }, { root: true });
     },
   },
 };

@@ -8,11 +8,14 @@
       <router-view />
     </main>
   </div>
+
+  <PileNotifications />
 </template>
 
 <script>
 import { mapGetters } from 'vuex';
 import MenuLateral from '@/components/communs/MenuLateral.vue';
+import PileNotifications from '@/components/communs/PileNotifications.vue';
 
 /**
  * Shell racine de l'application (feature 0015) : une grille CSS
@@ -27,7 +30,7 @@ import MenuLateral from '@/components/communs/MenuLateral.vue';
  */
 export default {
   name: 'App',
-  components: { MenuLateral },
+  components: { MenuLateral, PileNotifications },
   computed: {
     ...mapGetters('ui', ['menuReplie']),
   },

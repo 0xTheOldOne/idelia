@@ -60,40 +60,65 @@ export default {
     /**
      * Crée une nouvelle tournée à partir de champs partiels (formulaire) et
      * l'ajoute à la collection. La construction/normalisation est déléguée
-     * au domaine (`creerTournee`).
-     * @param {{ commit: Function }} context
+     * au domaine (`creerTournee`). Émet un toast de confirmation (feature
+     * 0018) via le module `notifications` (sibling namespaced).
+     * @param {{ commit: Function, dispatch: Function }} context
      * @param {object} champs - Champs partiels d'une Tournee.
      */
-    ajouter({ commit }, champs) {
-      commit('ADD', creerTournee(champs));
+    ajouter({ commit, dispatch }, champs) {
+      const tournee = creerTournee(champs);
+      commit('ADD', tournee);
+      dispatch(
+        'notifications/notifier',
+        { type: 'succes', message: `La tournée « ${tournee.libelle} » a été ajoutée.` },
+        { root: true }
+      );
     },
     /**
      * Met à jour une tournée existante par fusion immuable d'un patch
      * partiel, en rafraîchissant `updatedAt` (horodatage technique ISO UTC,
-     * ADR 0010). Ne touche jamais `id`, `createdAt`.
-     * @param {{ commit: Function }} context
+     * ADR 0010). Ne touche jamais `id`, `createdAt`. Émet un toast de
+     * confirmation (feature 0018).
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {{ id: string }} payload - `{ id, ...champs }`.
      */
-    modifier({ commit }, { id, ...champs }) {
+    modifier({ commit, dispatch, getters }, { id, ...champs }) {
       commit('UPDATE', { id, patch: { ...champs, updatedAt: new Date().toISOString() } });
+      const tournee = getters.byId(id);
+      const message = tournee
+        ? `La tournée « ${tournee.libelle} » a été modifiée.`
+        : 'La tournée a été modifiée.';
+      dispatch('notifications/notifier', { type: 'succes', message }, { root: true });
     },
     /**
      * Archive une tournée (soft-delete) : `archivee` passe à `true`. La
      * tournée n'est jamais supprimée physiquement (référençable par
-     * l'historique des plannings).
-     * @param {{ commit: Function }} context
+     * l'historique des plannings). Émet un toast de confirmation (feature
+     * 0018).
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {string} id
      */
-    archiver({ commit }, id) {
+    archiver({ commit, dispatch, getters }, id) {
       commit('UPDATE', { id, patch: { archivee: true, updatedAt: new Date().toISOString() } });
+      const tournee = getters.byId(id);
+      const message = tournee
+        ? `La tournée « ${tournee.libelle} » a été archivée.`
+        : 'La tournée a été archivée.';
+      dispatch('notifications/notifier', { type: 'info', message }, { root: true });
     },
     /**
-     * Restaure une tournée archivée : `archivee` repasse à `false`.
-     * @param {{ commit: Function }} context
+     * Restaure une tournée archivée : `archivee` repasse à `false`. Émet un
+     * toast de confirmation (feature 0018).
+     * @param {{ commit: Function, dispatch: Function, getters: Object }} context
      * @param {string} id
      */
-    restaurer({ commit }, id) {
+    restaurer({ commit, dispatch, getters }, id) {
       commit('UPDATE', { id, patch: { archivee: false, updatedAt: new Date().toISOString() } });
+      const tournee = getters.byId(id);
+      const message = tournee
+        ? `La tournée « ${tournee.libelle} » a été restaurée.`
+        : 'La tournée a été restaurée.';
+      dispatch('notifications/notifier', { type: 'succes', message }, { root: true });
     },
   },
 };
