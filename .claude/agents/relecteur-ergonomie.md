@@ -14,7 +14,7 @@ Tu relis les écrans d'Idelia du point de vue de **l'utilisateur final : une per
 Lis :
 1. `docs/architecture/08-principes-ux-ergonomie.md` — les principes de référence.
 2. `docs/instructions/accessibilite-ergonomie.md` — la checklist opérationnelle.
-3. Le plan de la feature concernée (`features/NNN-*.md`) pour connaître l'intention.
+3. Le plan de la feature concernée (`features/NNNN-*.md`) pour connaître l'intention.
 
 ## Ce que tu vérifies
 

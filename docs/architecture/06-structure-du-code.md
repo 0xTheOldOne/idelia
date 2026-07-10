@@ -1,6 +1,6 @@
 # 06 — Structure du code
 
-Arborescence cible de l'application Vue (créée à la feature `001`, voir [ROADMAP](../../features/ROADMAP.md)). Elle matérialise la séparation **UI / état / domaine / stockage** ([01](01-vue-ensemble.md)).
+Arborescence cible de l'application Vue (créée à la feature `0001`, voir [ROADMAP](../../features/ROADMAP.md)). Elle matérialise la séparation **UI / état / domaine / stockage** ([01](01-vue-ensemble.md)).
 
 ```
 Idelia/

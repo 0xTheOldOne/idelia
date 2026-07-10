@@ -39,11 +39,11 @@ $spacer: t.$espace-3;
 @import 'bootstrap/scss/forms';
 @import 'bootstrap/scss/nav';
 @import 'bootstrap/scss/navbar';
-// Alertes (feature 003) : avertissement de cohérence des paramètres du cabinet.
+// Alertes (feature 0003) : avertissement de cohérence des paramètres du cabinet.
 @import 'bootstrap/scss/alert';
-// Bouton de fermeture (`btn-close`) des modales (feature 004).
+// Bouton de fermeture (`btn-close`) des modales (feature 0004).
 @import 'bootstrap/scss/close';
-// Composant modale (feature 004) : socle de `ModaleBase`/`DialogueConfirmation`.
+// Composant modale (feature 0004) : socle de `ModaleBase`/`DialogueConfirmation`.
 @import 'bootstrap/scss/modal';
 @import 'bootstrap/scss/utilities';
 

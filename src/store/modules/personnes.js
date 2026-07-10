@@ -1,18 +1,18 @@
 /**
  * Module Vuex — personnes (équipe).
  *
- * State shape (feature 002) : `{ items: [] }`, hydraté par
+ * State shape (feature 0002) : `{ items: [] }`, hydraté par
  * `app/bootstrap` (voir `src/store/index.js`) via la mutation `REPLACE`.
  * Module **persisté** (voir ADR 0005) : la persistance elle-même est gérée
  * par le plugin dédié du store racine, jamais ici (aucun accès
  * `localStorage`).
  *
- * CRUD (feature 004) : les mutations restent **fines** (aucune logique
+ * CRUD (feature 0004) : les mutations restent **fines** (aucune logique
  * métier ni horodatage) ; la construction/normalisation d'une personne vit
  * dans le domaine (`src/domain/personnes.js`, `creerPersonne`), les
  * horodatages techniques (`updatedAt`) sont posés dans les actions.
  *
- * Souhaits & préférences (feature 005) : les `Preference` vivent **dans**
+ * Souhaits & préférences (feature 0005) : les `Preference` vivent **dans**
  * la personne (`personne.preferences`, tableau). Éditer une préférence =
  * mettre à jour la personne (patch `{ preferences: <nouveau tableau>,
  * updatedAt }`) via la mutation `UPDATE` existante — aucune nouvelle

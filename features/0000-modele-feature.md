@@ -1,9 +1,9 @@
-# Feature NNN — Nom de la feature
+# Feature NNNN — Nom de la feature
 
-> Gabarit. Copier ce fichier en `NNN-NomDeLaFeature.md` et remplir chaque section. Supprimer les sections non pertinentes plutôt que de les laisser vides.
+> Gabarit. Copier ce fichier en `NNNN-NomDeLaFeature.md` et remplir chaque section. Supprimer les sections non pertinentes plutôt que de les laisser vides.
 
 - **Statut** : À faire | En cours | Fait
-- **Dépend de** : (features prérequises, ex. `001`, `002`)
+- **Dépend de** : (features prérequises, ex. `0001`, `0002`)
 - **ADR liés** : (ex. [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md))
 
 ## 1. Contexte & objectif

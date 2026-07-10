@@ -105,22 +105,22 @@ import {
 } from '@phosphor-icons/vue';
 
 /**
- * Rendu **présentational** d'une cellule de `GrillePlanning` (feature 010) :
+ * Rendu **présentational** d'une cellule de `GrillePlanning` (feature 0010) :
  * liste d'éléments déjà résolus (pastille couleur + nom, avec libellé
  * secondaire optionnel comme le créneau), marqueur de sous-couverture et
  * drapeau « concernée par un conflit ». Ne calcule rien : `GrillePlanning`
  * lui fournit des données déjà prêtes à afficher (aucune règle métier ici).
  *
  * **Lecture seule par défaut** (`editable`/`ajoutable` à `false`, valeurs par
- * défaut) : rendu **strictement identique** à `010`, aucun bouton, aucune
- * émission — invariant de non-régression de la feature `011`. Quand
- * `editable` (feature 011, tâche 3), chaque élément affiche un bouton
+ * défaut) : rendu **strictement identique** à `0010`, aucun bouton, aucune
+ * émission — invariant de non-régression de la feature `0011`. Quand
+ * `editable` (feature 0011, tâche 3), chaque élément affiche un bouton
  * « Retirer » (icône + `aria-label`, aucun appel store ici : l'émission
  * `retirer` remonte jusqu'à `PlanningView` via `GrillePlanning`, seule à
  * dispatcher). Quand `ajoutable`, un bouton « Ajouter une personne » clôt la
  * case (icône + libellé visible).
  *
- * Verrouillage (feature 011, tâche 4) : un élément `verrouillee` affiche un
+ * Verrouillage (feature 0011, tâche 4) : un élément `verrouillee` affiche un
  * repère **permanent** cadenas (`PhLockSimple`) + libellé « Verrouillée »
  * (jamais la seule couleur) — visible **que la case soit éditable ou non**
  * (utile au référent même en lecture). Quand `editable`, chaque élément
@@ -129,15 +129,15 @@ import {
  * déverrouiller), `aria-label` explicite, qui émet `verrouiller`. Aucun
  * bouton de bascule hors édition.
  *
- * Glisser-déposer natif (feature 011, tâche 5, **surcouche** de confort au
+ * Glisser-déposer natif (feature 0011, tâche 5, **surcouche** de confort au
  * clic — API HTML5 native, aucune dépendance) : quand `editable`, chaque
  * élément devient `draggable`. `dragstart` émet `debut-glisser` (identifie
  * l'affectation glissée) ; `dragend` émet `fin-glisser` (glisse terminée,
  * déposée ou abandonnée). `GrillePlanning` tient l'état de glisse et les
  * zones de dépôt ; ce composant ne connaît que sa propre case. Hors édition,
- * aucun élément n'est `draggable` : rendu strictement identique à `010`.
+ * aucun élément n'est `draggable` : rendu strictement identique à `0010`.
  *
- * Correctifs ergonomie (relecture post-011) : les boutons verrouiller/
+ * Correctifs ergonomie (relecture post-0011) : les boutons verrouiller/
  * retirer portent un `title` (en plus de l'`aria-label`), pour l'infobulle
  * au survol (MAJ-3). Le clic sur « Retirer » (clic/clavier, pas le
  * glisser-déposer) replace ensuite le focus sur le bouton « Ajouter une
@@ -159,7 +159,7 @@ export default {
      * Éléments déjà résolus à afficher (une affectation par élément).
      * `{ id: string, couleur: string, libellePrincipal: string, libelleSecondaire?: string, verrouillee?: boolean }`.
      * `verrouillee` pilote le repère cadenas + libellé « Verrouillée »
-     * (feature 011, tâche 4), affiché que la case soit éditable ou non.
+     * (feature 0011, tâche 4), affiché que la case soit éditable ou non.
      */
     elements: { type: Array, default: () => [] },
     /**
@@ -179,8 +179,8 @@ export default {
     /** `true` si la colonne (jour) est hors `[planning.dateDebut, planning.dateFin]`. */
     horsPeriode: { type: Boolean, default: false },
     /**
-     * `true` en mode édition (feature 011). Affiche un bouton « Retirer »
-     * par élément. Par défaut `false` : rendu `010` inchangé.
+     * `true` en mode édition (feature 0011). Affiche un bouton « Retirer »
+     * par élément. Par défaut `false` : rendu `0010` inchangé.
      */
     editable: { type: Boolean, default: false },
     /**
@@ -193,7 +193,7 @@ export default {
   emits: ['ajouter-ici', 'retirer', 'verrouiller', 'debut-glisser', 'fin-glisser'],
   methods: {
     /**
-     * Démarre le glisser-déposer d'un élément (feature 011, tâche 5) :
+     * Démarre le glisser-déposer d'un élément (feature 0011, tâche 5) :
      * émet `debut-glisser` avec l'identifiant de l'affectation glissée.
      * `dataTransfer` reçoit l'id en texte brut (robustesse inter-navigateurs
      * pour l'initiation du glisser), même si `GrillePlanning` s'appuie sur
@@ -213,7 +213,7 @@ export default {
      * de la même case une fois le DOM mis à jour, quand celui-ci existe
      * (case éditable et ajoutable). Évite que l'utilisateur clavier ne
      * reparte de `<body>` après la disparition du bouton cliqué (correctif
-     * ergonomie MAJ-2, feature 011).
+     * ergonomie MAJ-2, feature 0011).
      * @param {{ id: string }} element
      */
     onRetirer(element) {

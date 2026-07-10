@@ -15,4 +15,4 @@ Nous adoptons un **workflow référent** : une personne (le référent) tient le
 
 - **Positives** : modèle simple, sans conflit de synchronisation ; cohérent avec l'absence de backend ; l'équipe reçoit un support clair (papier/PDF).
 - **Négatives / compromis** : dépendance à une personne ; pas d'édition concurrente ; le transfert entre postes est manuel (fichier). Assumé pour la v1.
-- **Suivi** : soigner les fonctions de **diffusion** (impression/PDF lisibles) — voir la feature `012` de la [roadmap](../../features/ROADMAP.md) ; rappeler clairement l'importance de la sauvegarde/export (ergonomie).
+- **Suivi** : soigner les fonctions de **diffusion** (impression/PDF lisibles) — voir la feature `0012` de la [roadmap](../../features/ROADMAP.md) ; rappeler clairement l'importance de la sauvegarde/export (ergonomie).

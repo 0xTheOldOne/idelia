@@ -10,7 +10,7 @@
  * recherche locale créent une `Affectation` — garantit que toute sortie du
  * moteur est déjà conforme à la forme canonique (voir
  * docs/architecture/02-modele-de-domaine.md §Affectation), sans
- * transformation ultérieure nécessaire côté `010`.
+ * transformation ultérieure nécessaire côté `0010`.
  */
 
 import { genId } from '@/domain/utils/id.js';

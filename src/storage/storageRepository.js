@@ -4,7 +4,7 @@
  * il est **interdit** d'utiliser `localStorage` directement ailleurs dans
  * l'application.
  *
- * Implémentation réelle (feature 002) : LocalStorage, clé unique
+ * Implémentation réelle (feature 0002) : LocalStorage, clé unique
  * `"idelia:data"`. L'interface reste **asynchrone** (Promises) même si
  * l'implémentation sous-jacente est synchrone, pour permettre une bascule
  * ultérieure vers IndexedDB sans changer les appelants.

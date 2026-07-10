@@ -1,29 +1,29 @@
-# Feature 006 — Gestion des tournées
+# Feature 0006 — Gestion des tournées
 
 - **Statut** : Fait
-- **Dépend de** : `002` (store persisté, module `tournees` squelette avec `state {items:[]}` + getters `byId`/`actives` + mutation `REPLACE`, `schema.js` avec l'entité `Tournee` et ses enums, plugin de persistance débouncé). S'appuie sur des briques déjà livrées en `004` (`ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `src/domain/libelles.js`, `dateUtil`, patron Vuelidate + sélecteur de couleur accessible de `FormulairePersonne`). **La tâche optionnelle T4 (réactivation de `PREFERENCE_TOURNEE`)** ajoute une dépendance à `004`/`005` — voir §9 et §12.
+- **Dépend de** : `0002` (store persisté, module `tournees` squelette avec `state {items:[]}` + getters `byId`/`actives` + mutation `REPLACE`, `schema.js` avec l'entité `Tournee` et ses enums, plugin de persistance débouncé). S'appuie sur des briques déjà livrées en `0004` (`ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `src/domain/libelles.js`, `dateUtil`, patron Vuelidate + sélecteur de couleur accessible de `FormulairePersonne`). **La tâche optionnelle T4 (réactivation de `PREFERENCE_TOURNEE`)** ajoute une dépendance à `0004`/`0005` — voir §9 et §12.
 - **ADR liés** : [0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md) (Options API + Vuex), [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance derrière repository), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (domaine = module pur), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (jours ISO 1-7, dates `"YYYY-MM-DD"`, **heures `"HH:mm"`**, horodatages ISO UTC), [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) (Vuelidate), [0012](../docs/adr/0012-style-scss.md) / [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) (SCSS + Bootstrap thémé, dont le composant modale), [0013](../docs/adr/0013-icones-phosphor.md) (icônes Phosphor).
 
 ## 1. Contexte & objectif
 
-Après l'équipe (`004`) et ses souhaits (`005`), le cabinet a besoin de décrire ses **tournées** : les circuits de soins récurrents, chacun avec ses **horaires**, son **créneau** (matin / après-midi / journée), les **jours de la semaine** où il s'applique et le **nombre de personnes requises**. Ces données sont, avec l'équipe et les absences, le troisième pilier de données de référence qui alimentera le **moteur de planification** (`009`) et la **génération** (`010`) : une affectation, c'est une personne sur une **tournée**, à une date, sur un créneau.
+Après l'équipe (`0004`) et ses souhaits (`0005`), le cabinet a besoin de décrire ses **tournées** : les circuits de soins récurrents, chacun avec ses **horaires**, son **créneau** (matin / après-midi / journée), les **jours de la semaine** où il s'applique et le **nombre de personnes requises**. Ces données sont, avec l'équipe et les absences, le troisième pilier de données de référence qui alimentera le **moteur de planification** (`0009`) et la **génération** (`0010`) : une affectation, c'est une personne sur une **tournée**, à une date, sur un créneau.
 
-À l'issue de `002`, la collection `tournees` existe dans l'état (vide, persistée automatiquement) et son module Vuex expose déjà `byId`/`actives`/`REPLACE`, mais **aucun écran ne permet de la consulter ni de la modifier** : `TourneesView.vue` est un simple placeholder.
+À l'issue de `0002`, la collection `tournees` existe dans l'état (vide, persistée automatiquement) et son module Vuex expose déjà `byId`/`actives`/`REPLACE`, mais **aucun écran ne permet de la consulter ni de la modifier** : `TourneesView.vue` est un simple placeholder.
 
-La feature `006` rend l'écran **Tournées** opérationnel pour le référent (public **peu à l'aise avec l'informatique**) : **lister, ajouter, modifier, archiver et restaurer** les tournées. Le CRUD est **quasi analogue** à celui des personnes (`004`) : liste de cartes, ajout/édition en modale, archivage réversible confirmé, sélecteur de couleur accessible. Chaque enregistrement valide est **persisté automatiquement** (plugin débouncé de `002`) avec un **retour visuel clair** réutilisant `IndicateurSauvegarde` (`003`/`004`). Les tournées archivées ne sont **jamais supprimées physiquement** (règle d'intégrité [02 §Intégrité](../docs/architecture/02-modele-de-domaine.md)) : elles restent référençables par les plannings historiques (features `010`+).
+La feature `0006` rend l'écran **Tournées** opérationnel pour le référent (public **peu à l'aise avec l'informatique**) : **lister, ajouter, modifier, archiver et restaurer** les tournées. Le CRUD est **quasi analogue** à celui des personnes (`0004`) : liste de cartes, ajout/édition en modale, archivage réversible confirmé, sélecteur de couleur accessible. Chaque enregistrement valide est **persisté automatiquement** (plugin débouncé de `0002`) avec un **retour visuel clair** réutilisant `IndicateurSauvegarde` (`0003`/`0004`). Les tournées archivées ne sont **jamais supprimées physiquement** (règle d'intégrité [02 §Intégrité](../docs/architecture/02-modele-de-domaine.md)) : elles restent référençables par les plannings historiques (features `0010`+).
 
-**Hors périmètre `006`** (à ne pas implémenter ici) :
+**Hors périmètre `0006`** (à ne pas implémenter ici) :
 
-- **Réordonnancement manuel** (`ordreAffichage`) par glisser-déposer — différé (le champ est initialisé mais non édité ; le tri d'affichage est alphabétique, voir §6). Même choix qu'en `004`.
+- **Réordonnancement manuel** (`ordreAffichage`) par glisser-déposer — différé (le champ est initialisé mais non édité ; le tri d'affichage est alphabétique, voir §6). Même choix qu'en `0004`.
 - **Suppression définitive** d'une tournée — **interdite** par principe (soft-delete only via `archivee`, [02](../docs/architecture/02-modele-de-domaine.md)). Seul l'archivage (réversible) est proposé.
-- **Affectations, planning, besoins calculés** (effectif requis vs affectations réelles) — features `009`/`010`+.
-- Le type de souhait **`PREFERENCE_TOURNEE`** (préférer/éviter une tournée), différé par `005` faute de tournées : sa réactivation est **possible maintenant** mais **isolée dans une tâche optionnelle T4** clairement séparée du cœur du CRUD — voir §9 et la décision tranchée en §12.
+- **Affectations, planning, besoins calculés** (effectif requis vs affectations réelles) — features `0009`/`0010`+.
+- Le type de souhait **`PREFERENCE_TOURNEE`** (préférer/éviter une tournée), différé par `0005` faute de tournées : sa réactivation est **possible maintenant** mais **isolée dans une tâche optionnelle T4** clairement séparée du cœur du CRUD — voir §9 et la décision tranchée en §12.
 
 ## 2. Écrans concernés
 
-Une seule route, déjà déclarée en `001` et confirmée par [07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md) (`name: 'tournees'`, path `/tournees`) :
+Une seule route, déjà déclarée en `0001` et confirmée par [07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md) (`name: 'tournees'`, path `/tournees`) :
 
-| Route | Écran | Changement `006` |
+| Route | Écran | Changement `0006` |
 |---|---|---|
 | `/tournees` | **Tournées** | Remplace le placeholder par la **liste des tournées + le CRUD** (ajout/édition en modale, archivage/restauration). |
 
@@ -40,11 +40,11 @@ Une seule route, déjà déclarée en `001` et confirmée par [07-navigation-et-
 
 ## 3. Modèle de données touché
 
-Entité **`Tournee`**, déjà décrite dans le modèle de domaine ([02 §Tournee](../docs/architecture/02-modele-de-domaine.md)) et présente en tant que collection racine `tournees.items` (vide) depuis `002`. **Aucune nouvelle structure, aucun nouveau champ, aucune migration.**
+Entité **`Tournee`**, déjà décrite dans le modèle de domaine ([02 §Tournee](../docs/architecture/02-modele-de-domaine.md)) et présente en tant que collection racine `tournees.items` (vide) depuis `0002`. **Aucune nouvelle structure, aucun nouveau champ, aucune migration.**
 
-Champs de `Tournee` **manipulés** par `006` :
+Champs de `Tournee` **manipulés** par `0006` :
 
-| champ | type | oblig. | rôle `006` |
+| champ | type | oblig. | rôle `0006` |
 |---|---|---|---|
 | `id` | uuid | oui | généré à la création via `genId()` ; **immuable** |
 | `nom` | string | oui | édité (requis) |
@@ -69,7 +69,7 @@ Champs de `Tournee` **manipulés** par `006` :
 
 ## 4. Store (Vuex)
 
-Module `tournees` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). Après `002` il expose : `state {items: []}`, getters `byId` et `actives`, mutation `REPLACE`. Il **n'a pas encore d'action CRUD** (elles étaient explicitement différées à `006`). On calque **exactement** le module `personnes` de `004`.
+Module `tournees` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). Après `0002` il expose : `state {items: []}`, getters `byId` et `actives`, mutation `REPLACE`. Il **n'a pas encore d'action CRUD** (elles étaient explicitement différées à `0006`). On calque **exactement** le module `personnes` de `0004`.
 
 ### 4.1 Getters
 
@@ -77,18 +77,18 @@ Module `tournees` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-eta
 - `byId` (**existant**) : `(id) => state.items.find((t) => t.id === id)`.
 - `archivees` (**ajout**) : `state.items.filter((t) => t.archivee === true)` — alimente la section « Tournées archivées ».
 
-> Le **tri d'affichage** (alphabétique) est un choix de présentation : il est fait dans le composant (§6), pas dans le getter (KISS, cohérent avec `004`).
+> Le **tri d'affichage** (alphabétique) est un choix de présentation : il est fait dans le composant (§6), pas dans le getter (KISS, cohérent avec `0004`).
 
 ### 4.2 Mutations
 
-Deux mutations **ajoutées** (la mutation `REPLACE` d'hydratation reste inchangée), volontairement **fines** — mêmes patrons que `personnes` (`004`) : elles n'appliquent qu'une modification de state, sans logique métier ni horodatage (posés en amont par l'action/domaine).
+Deux mutations **ajoutées** (la mutation `REPLACE` d'hydratation reste inchangée), volontairement **fines** — mêmes patrons que `personnes` (`0004`) : elles n'appliquent qu'une modification de state, sans logique métier ni horodatage (posés en amont par l'action/domaine).
 
 - `ADD(state, tournee)` : ajoute une tournée complète à la collection (`state.items.push(tournee)`).
 - `UPDATE(state, { id, patch })` : **fusion immuable par id** — remplace l'élément d'`id` donné par `{ ...ancien, ...patch }` (via `findIndex` + `splice`). Ne fait rien si l'id est introuvable.
 
 ### 4.3 Actions
 
-Les actions **orchestrent** ; la construction/normalisation d'une tournée vit dans le **domaine** (§5), jamais dans le store (règle d'or #10). Les horodatages techniques (`updatedAt`) sont posés dans l'action via `new Date().toISOString()` (même convention que `personnes` en `004`). Import de `creerTournee` depuis `@/domain/tournees.js`.
+Les actions **orchestrent** ; la construction/normalisation d'une tournée vit dans le **domaine** (§5), jamais dans le store (règle d'or #10). Les horodatages techniques (`updatedAt`) sont posés dans l'action via `new Date().toISOString()` (même convention que `personnes` en `0004`). Import de `creerTournee` depuis `@/domain/tournees.js`.
 
 - `ajouter({ commit }, champs)` : construit une tournée complète via `creerTournee(champs)` (§5.1) puis `commit('ADD', tournee)`.
 - `modifier({ commit }, { id, ...champs })` : `commit('UPDATE', { id, patch: { ...champs, updatedAt: <ISO UTC> } })`. Ne touche jamais `id`, `createdAt`.
@@ -103,7 +103,7 @@ Chaque `commit` d'une mutation `tournees/*` (hors `REPLACE` d'hydratation, qui p
 
 ### 4.5 État racine consommé en lecture seule
 
-L'écran **lit** (sans jamais les muter) l'état racine de sauvegarde posé en `002` pour le retour visuel, exactement comme `003`/`004` :
+L'écran **lit** (sans jamais les muter) l'état racine de sauvegarde posé en `0002` pour le retour visuel, exactement comme `0003`/`0004` :
 
 - `state.statutSauvegarde` (`INACTIF | EN_COURS | ENREGISTRE | ERREUR | ERREUR_CHARGEMENT`) ;
 - `state.derniereSauvegarde` (ISO UTC de la dernière écriture réussie, ou `null`).
@@ -112,11 +112,11 @@ Il lit aussi le getter `cabinet/parametres` pour récupérer `couleursParDefaut`
 
 ## 5. Domaine (logique pure)
 
-Tout dans `src/domain/`, **sans import Vue/Vuex ni `localStorage`** ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)). Réutilisable par le moteur (`009`) et les écrans planning (`010`+).
+Tout dans `src/domain/`, **sans import Vue/Vuex ni `localStorage`** ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)). Réutilisable par le moteur (`0009`) et les écrans planning (`0010`+).
 
 ### 5.1 `src/domain/tournees.js` (**nouveau**) — fabrique & normalisation d'une Tournee
 
-Calque strict de `src/domain/personnes.js` (`004`).
+Calque strict de `src/domain/personnes.js` (`0004`).
 
 - **`creerTournee(champs)`** → `Tournee` : construit une tournée **complète et normalisée** à partir d'un objet partiel (les champs saisis dans le formulaire), en appliquant les **valeurs par défaut** et en générant les champs techniques. Fonction **pure** (hors `genId()` et `new Date().toISOString()`, tolérés car techniques — même usage que `schema.js`/`personnes.js`).
   - `id` : `champs.id ?? genId()` (import de `src/domain/utils/id.js`).
@@ -136,41 +136,41 @@ Calque strict de `src/domain/personnes.js` (`004`).
   - JSDoc : `@typedef {Object} Tournee` (aligné sur [02 §Tournee](../docs/architecture/02-modele-de-domaine.md)) + `@param`/`@returns`.
 - **`normaliserJours(valeur)`** (interne, non exporté nécessairement) : coerce en `number[]` ISO 1..7, triés et dédupliqués (même logique que le helper homonyme de `preferences.js`). Garantit un stockage propre et stable de `joursApplication`.
 
-> **Cohérence des heures / dates : au formulaire, pas au domaine.** Conformément au choix de `004` (où la cohérence `dateSortie ≥ dateEntree` vivait dans le formulaire via Vuelidate), les contrôles `heureFin > heureDebut` et `dateFinValidite ≥ dateDebutValidite` sont portés par **Vuelidate** dans `FormulaireTournee` (§7), **pas** par un helper de domaine. Le domaine garantit la **normalisation structurelle** (`joursApplication` trié/dédupliqué, champs tous initialisés). Un éventuel `validerTournee` de domaine (partagé avec le moteur `009`) reste **différé** (§12), pour ne pas dupliquer la validation de saisie.
+> **Cohérence des heures / dates : au formulaire, pas au domaine.** Conformément au choix de `0004` (où la cohérence `dateSortie ≥ dateEntree` vivait dans le formulaire via Vuelidate), les contrôles `heureFin > heureDebut` et `dateFinValidite ≥ dateDebutValidite` sont portés par **Vuelidate** dans `FormulaireTournee` (§7), **pas** par un helper de domaine. Le domaine garantit la **normalisation structurelle** (`joursApplication` trié/dédupliqué, champs tous initialisés). Un éventuel `validerTournee` de domaine (partagé avec le moteur `0009`) reste **différé** (§12), pour ne pas dupliquer la validation de saisie.
 
 ### 5.2 `src/domain/libelles.js` (**modifier**) — libellé de liste de jours
 
-`LIBELLES_CRENEAU`/`libelleCreneau` (créneau en clair) et `JOURS_SEMAINE`/`libelleJour` (jours ISO) existent **déjà** (utilisés par `003`/`005`) et sont réutilisés tels quels. Ajout d'un seul helper d'affichage, pour présenter `joursApplication` en toutes lettres sans logique dans le composant :
+`LIBELLES_CRENEAU`/`libelleCreneau` (créneau en clair) et `JOURS_SEMAINE`/`libelleJour` (jours ISO) existent **déjà** (utilisés par `0003`/`0005`) et sont réutilisés tels quels. Ajout d'un seul helper d'affichage, pour présenter `joursApplication` en toutes lettres sans logique dans le composant :
 
 | Export | Forme | Rôle |
 |---|---|---|
 | `libelleJours(joursIso)` | `(number[]) → string` | Énumération FR naturelle des jours (« Lundi », « Lundi et Mardi », « Lundi, Mardi et Jeudi »). Ordonne par ISO croissant ; `''` si liste vide. |
 
-> Ce helper **ne fait que de l'affichage** (comme le reste de `libelles.js`, prêt pour i18n). Il reproduit l'esprit du helper de jonction FR interne de `preferences.js` (`décrire une liste de jours`), mais en **public et réutilisable** pour `006` (liste des tournées), `007` (absences) et `010` (planning). Alternative KISS possible (si l'on veut éviter tout ajout à `libelles.js`) : joindre `joursApplication.map(libelleJour)` directement dans la vue — **retenu : le helper**, pour garder la vue sans logique et mutualiser l'énumération « … et … ».
+> Ce helper **ne fait que de l'affichage** (comme le reste de `libelles.js`, prêt pour i18n). Il reproduit l'esprit du helper de jonction FR interne de `preferences.js` (`décrire une liste de jours`), mais en **public et réutilisable** pour `0006` (liste des tournées), `0007` (absences) et `0010` (planning). Alternative KISS possible (si l'on veut éviter tout ajout à `libelles.js`) : joindre `joursApplication.map(libelleJour)` directement dans la vue — **retenu : le helper**, pour garder la vue sans logique et mutualiser l'énumération « … et … ».
 
 ### 5.3 Dates, heures & horodatages
 
 Aucune manipulation `Date` custom :
 
 - **Heures** (`heureDebut`/`heureFin`) : chaînes `"HH:mm"` ([ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)). `<input type="time">` **produit et consomme nativement** ce format. La comparaison `heureFin > heureDebut` se fait par **comparaison lexicographique de chaînes** `"HH:mm"` (l'ordre lexicographique coïncide avec l'ordre chronologique sur une même journée, `"08:00"` étant zéro-paddé) — **aucun objet `Date`**. L'affichage réutilise directement les chaînes (« 08:00 – 12:00 »).
-- **Dates de validité** (`dateDebutValidite`/`dateFinValidite`) : chaînes `"YYYY-MM-DD"` via `<input type="date">`. Comparaison `dateFinValidite ≥ dateDebutValidite` par **comparaison lexicographique de chaînes** (identique à `004`). Affichage lisible via `dateUtil.formatDateFr` (déjà utilisé par `EquipeView`).
+- **Dates de validité** (`dateDebutValidite`/`dateFinValidite`) : chaînes `"YYYY-MM-DD"` via `<input type="date">`. Comparaison `dateFinValidite ≥ dateDebutValidite` par **comparaison lexicographique de chaînes** (identique à `0004`). Affichage lisible via `dateUtil.formatDateFr` (déjà utilisé par `EquipeView`).
 - **Jours** : entiers ISO 1..7, **aucun** `Date.getDay()`.
 - **Horodatages** : `createdAt`/`updatedAt` posés via `new Date().toISOString()` dans `creerTournee` et dans les actions — jamais dans les composants.
 
 ## 6. Composants
 
-Séparation conforme à [06-structure-du-code.md](../docs/architecture/06-structure-du-code.md) : les composants transverses (modale, confirmation, indicateur) sont **déjà** dans `components/communs/` (`004`) ; le formulaire spécifique va dans `components/tournees/` ; l'écran routé dans `views/`.
+Séparation conforme à [06-structure-du-code.md](../docs/architecture/06-structure-du-code.md) : les composants transverses (modale, confirmation, indicateur) sont **déjà** dans `components/communs/` (`0004`) ; le formulaire spécifique va dans `components/tournees/` ; l'écran routé dans `views/`.
 
 ### 6.1 Réutilisation directe (aucune modification)
 
 - `src/components/communs/ModaleBase.vue` — coquille de modale accessible (focus piégé, `Échap`, **retour du focus à l'ouvrant** à la fermeture, ARIA). Props `visible`/`titre`/`taille` ; slots `default`/`pied` ; événements `fermeture` et `affichee`. Réutilisée telle quelle.
 - `src/components/communs/DialogueConfirmation.vue` — confirmation générique au-dessus de `ModaleBase` (props `visible`/`titre`/`message`/`libelleConfirmer`/`varianteConfirmer` ; événements `confirmer`/`annuler` ; fermeture = `annuler`). Réutilisée pour l'archivage.
 - `src/components/communs/IndicateurSauvegarde.vue` — retour visuel de persistance (statut + dernière sauvegarde + `apres-edition`), avec l'encart `ERREUR_CHARGEMENT`. Réutilisé.
-- `src/styles/_bootstrap.scss` — **aucun ajout requis** : `close`, `modal`, `forms` (dont `form-control-color` pour le sélecteur de couleur et les `<input type="time">`/`type="date">`), `alert` sont **déjà** importés (`004`). KISS confirmé.
+- `src/styles/_bootstrap.scss` — **aucun ajout requis** : `close`, `modal`, `forms` (dont `form-control-color` pour le sélecteur de couleur et les `<input type="time">`/`type="date">`), `alert` sont **déjà** importés (`0004`). KISS confirmé.
 
 ### 6.2 `src/components/tournees/FormulaireTournee.vue` (**nouveau**)
 
-Formulaire **présentational** d'ajout/édition, bâti au-dessus de `ModaleBase`, calqué sur `FormulairePersonne` (`004`). **N'accède pas au store** : il reçoit ses données par props et **émet** le résultat ; l'écran (`TourneesView`) dispatche.
+Formulaire **présentational** d'ajout/édition, bâti au-dessus de `ModaleBase`, calqué sur `FormulairePersonne` (`0004`). **N'accède pas au store** : il reçoit ses données par props et **émet** le résultat ; l'écran (`TourneesView`) dispatche.
 
 - **Props** :
   - `visible` (Boolean, requis) ;
@@ -196,14 +196,14 @@ Formulaire **présentational** d'ajout/édition, bâti au-dessus de `ModaleBase`
 
 ### 6.3 `src/views/TourneesView.vue` (**réécriture** complète du placeholder)
 
-Écran routé (Options API), calqué sur `EquipeView` (`004`). **Orchestre** : liste + modales, sans logique métier (délègue au store/domaine).
+Écran routé (Options API), calqué sur `EquipeView` (`0004`). **Orchestre** : liste + modales, sans logique métier (délègue au store/domaine).
 
 - **Titre** `<h1>` « Tournées ».
 - **Encart `ERREUR_CHARGEMENT`** : même patron qu'`EquipeView` (`alert alert-warning`, `PhWarning`), message adapté aux tournées.
 - **Indicateur de sauvegarde** : `IndicateurSauvegarde` alimenté par `statutSauvegarde`/`derniereSauvegarde` (root state via `mapState`) et `apres-edition="aEdite"` (passe à `true` après le 1er ajout/édition/archivage/restauration — même logique qu'`EquipeView`).
 - **En-tête d'action** : bouton principal **« Ajouter une tournée »** (`btn btn-primary`, icône Phosphor `PhPlus`) ⇒ ouvre `FormulaireTournee` en création (`tournee = null`). Une `ref` (ex. `boutonAjout`) sert de **point de repli du focus** après archivage/restauration (comme `EquipeView`).
 - **État vide** : si `actives` **et** `archivees` sont vides → encart accueillant (icône Phosphor évocatrice de circuit, ex. `PhMapTrifold` ou `PhPath` — le développeur confirme l'existence dans `@phosphor-icons/vue`, doublée du texte), « Aucune tournée pour l'instant. Ajoutez la première pour organiser les circuits de soins. » + bouton d'ajout.
-- **Liste des tournées actives** (`actives`, triées) : une **liste de cartes/lignes** (pas un tableau dense, plus lisible et responsive, comme `004`). Chaque ligne affiche :
+- **Liste des tournées actives** (`actives`, triées) : une **liste de cartes/lignes** (pas un tableau dense, plus lisible et responsive, comme `0004`). Chaque ligne affiche :
   - **pastille de couleur** (rond `couleur`, `aria-hidden`) **+ nom** (couleur toujours doublée du nom) ; le **code** entre parenthèses s'il existe (« Tournée Nord (N) ») ;
   - **créneau** en clair (`libelleCreneau`) **+ horaires** (« Matin · 08:00 – 12:00 ») ;
   - **jours d'application** en toutes lettres (`libelleJours(joursApplication)`) ;
@@ -211,7 +211,7 @@ Formulaire **présentational** d'ajout/édition, bâti au-dessus de `ModaleBase`
   - **secteur** s'il est renseigné ; **période de validité** si `dateDebutValidite`/`dateFinValidite` renseignées (via `dateUtil.formatDateFr`, ex. « à partir du 01/06/2026 », « jusqu'au … », « du … au … ») ;
   - **actions** : « Modifier » (`PhPencilSimple`) ⇒ `FormulaireTournee` en édition ; « Archiver » (`PhArchive`) ⇒ `DialogueConfirmation`. Boutons avec **libellé texte** (pas d'icône seule).
 - **Section « Tournées archivées »** (`archivees`) : **repliée par défaut** via une bascule **Vue simple** (booléen `data`, chevron `PhCaretRight` qui pivote — patron exact d'`EquipeView`, pas de JS Bootstrap `collapse`), titrée « Tournées archivées ({{ archivees.length }}) » ; masquée si `archivees` est vide. Chaque ligne (présentation atténuée) propose « Restaurer » (`PhArrowCounterClockwise`) ⇒ `restaurer(id)` **directement** (action sûre, non destructive, sans confirmation) + feedback via l'indicateur, avec repli du focus sur `boutonAjout` (`$nextTick`, comme `EquipeView`). Une phrase explique « Les tournées archivées sont conservées pour l'historique des plannings. ».
-- **Tri d'affichage** (computed) : actives et archivées triées par `nom` via `localeCompare('fr')` (présentation ; `ordreAffichage` non utilisé en `006`, comme `004`).
+- **Tri d'affichage** (computed) : actives et archivées triées par `nom` via `localeCompare('fr')` (présentation ; `ordreAffichage` non utilisé en `0006`, comme `0004`).
 - **Modales** : instances de `FormulaireTournee` (création/édition, pilotée par `formulaireVisible` + `tourneeEnCours`) et `DialogueConfirmation` (archivage, pilotée par `confirmationVisible` + `tourneeAArchiver`, `libelle-confirmer="Archiver"`, `variante-confirmer="primary"`). Handlers (calqués sur `EquipeView`) :
   - `onEnregistrer(champs)` : si `tourneeEnCours` ⇒ `modifier({ id: tourneeEnCours.id, ...champs })` ; sinon ⇒ `ajouter(champs)`. Puis `aEdite = true`, ferme la modale, `tourneeEnCours = null`.
   - `onConfirmerArchivage()` : `archiver(tourneeAArchiver.id)`, `aEdite = true`, ferme la confirmation, repli du focus sur `boutonAjout` (`$nextTick`).
@@ -219,8 +219,8 @@ Formulaire **présentational** d'ajout/édition, bâti au-dessus de `ModaleBase`
 
 ### 6.4 Réutilisation & style
 
-- `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `libelles.js`, `dateUtil`, tokens/mixins SCSS, intégration Bootstrap, icônes Phosphor : **déjà en place** (`003`/`004`), réutilisés tels quels.
-- La directive `v-debounce` **n'est pas nécessaire** (formulaire à validation explicite, pas de saisie auto-persistée en continu — comme `004`/`005`).
+- `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `libelles.js`, `dateUtil`, tokens/mixins SCSS, intégration Bootstrap, icônes Phosphor : **déjà en place** (`0003`/`0004`), réutilisés tels quels.
+- La directive `v-debounce` **n'est pas nécessaire** (formulaire à validation explicite, pas de saisie auto-persistée en continu — comme `0004`/`0005`).
 - Le SCSS `scoped` de chaque composant ne sert qu'au **spécifique** (lignes de liste, pastilles, présentation atténuée des archivées) ; tout le reste via classes Bootstrap. Cibles ~44 px (`$cible-cliquable-min`), focus visible, aucune valeur « magique » (tokens uniquement).
 
 ## 7. Règles de validation
@@ -262,7 +262,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie.md](../
 - **Tolérance à l'erreur** : la saisie n'est jamais perdue si la validation échoue ; focus porté sur le premier champ à corriger.
 - **Modale accessible** : focus piégé, **fermeture au clavier (`Échap`)**, **retour du focus à l'ouvrant**, `autofocus` sur le 1er champ (fournis par `ModaleBase`).
 - **Ergonomie physique** : cibles ~44 px (boutons, pastilles, cases), bon espacement, `label` associé à chaque champ, **focus clavier visible**, structure de titres `h1 → h2`.
-- **Cohérence** : mêmes patterns que `003`/`004`/`005` (indicateur de sauvegarde, présentation des erreurs, ajout/édition en modale, confirmation destructive, sélecteur de couleur) — l'utilisateur retrouve exactement les mêmes gestes que sur l'écran Équipe.
+- **Cohérence** : mêmes patterns que `0003`/`0004`/`0005` (indicateur de sauvegarde, présentation des erreurs, ajout/édition en modale, confirmation destructive, sélecteur de couleur) — l'utilisateur retrouve exactement les mêmes gestes que sur l'écran Équipe.
 
 ## 9. Étapes d'implémentation
 
@@ -303,7 +303,7 @@ Découpage en **3 tâches cœur** + **1 tâche optionnelle**, chacune destinée 
 **Fichiers** :
 - `src/views/TourneesView.vue` (**réécrire**) — liste des actives, état vide, section repliable des archivées, bouton d'ajout, orchestration des modales, `IndicateurSauvegarde`, encart `ERREUR_CHARGEMENT` (§6.3, §8).
 
-**Dépend de** : T1 (store/getters/libellés), T2 (`FormulaireTournee`), briques `DialogueConfirmation`/`IndicateurSauvegarde` (existant `004`).
+**Dépend de** : T1 (store/getters/libellés), T2 (`FormulaireTournee`), briques `DialogueConfirmation`/`IndicateurSauvegarde` (existant `0004`).
 
 **Critères de sortie** :
 - Au premier lancement (aucune tournée) : **état vide** accueillant + bouton « Ajouter une tournée ».
@@ -313,25 +313,25 @@ Découpage en **3 tâches cœur** + **1 tâche optionnelle**, chacune destinée 
 - Tri alphabétique cohérent ; couleur toujours doublée du nom ; jours/créneau/horaires en clair ; icônes doublées d'un libellé ; focus visible ; navigation clavier possible (ouvrir/fermer la modale, valider).
 - Aucun accès `localStorage`, aucun objet `Date` hors `dateUtil`, aucune logique métier dans le composant ; `npm run build` réussit.
 
-### Tâche 4 (OPTIONNELLE) — Réactivation du type de souhait `PREFERENCE_TOURNEE` (complète la dette de `005`)
+### Tâche 4 (OPTIONNELLE) — Réactivation du type de souhait `PREFERENCE_TOURNEE` (complète la dette de `0005`)
 
-> **Optionnelle et séparable.** Elle ne fait **pas** partie du cœur « CRUD des tournées » de la ROADMAP `006` et **modifie des fichiers de `005`**. À implémenter **seulement** après validation de T1–T3, et **uniquement** si le mainteneur décide de solder la dette `005` maintenant (voir §12, décision tranchée : **retenue mais isolée**). Si écartée, la laisser documentée comme dette dans `005 §12.3`.
+> **Optionnelle et séparable.** Elle ne fait **pas** partie du cœur « CRUD des tournées » de la ROADMAP `0006` et **modifie des fichiers de `0005`**. À implémenter **seulement** après validation de T1–T3, et **uniquement** si le mainteneur décide de solder la dette `0005` maintenant (voir §12, décision tranchée : **retenue mais isolée**). Si écartée, la laisser documentée comme dette dans `0005 §12.3`.
 
-**Dépend de** : `004`/`005` (module `personnes`, `FormulairePreference`, `SouhaitsView`, `src/domain/preferences.js`) **en plus** de T1 (tournées existantes).
+**Dépend de** : `0004`/`0005` (module `personnes`, `FormulairePreference`, `SouhaitsView`, `src/domain/preferences.js`) **en plus** de T1 (tournées existantes).
 
 **Fichiers** :
 - `src/domain/preferences.js` (**modifier**) — (a) `META_TYPES_PREFERENCE.PREFERENCE_TOURNEE` : remplacer le placeholder `champs:'minMax'` par une forme dédiée `champs:'tournees'`, `natureParDefaut:'SOUPLE'`, `aide` claire (« Choisissez une ou plusieurs tournées, puis indiquez si la personne les préfère ou souhaite les éviter. ») ; (b) `TYPES_PREFERENCE_OFFERTS` : **inclure** `PREFERENCE_TOURNEE` (la liste redevient les 8 types) — le **filtrage « pas de tournée disponible »** se fait côté formulaire ; (c) `decrirePreference` : enrichir la branche `PREFERENCE_TOURNEE` avec un **second paramètre optionnel** `options` porteur d'un résolveur `nomTournee(id) => string` — sans résolveur, phrase générique selon `sens` (« Préfère certaines tournées » / « Souhaite éviter certaines tournées ») ; avec résolveur, nommer les tournées (« Préfère la tournée Nord et la tournée Sud »). **Rester rétrocompatible** (les appels existants sans `options` continuent de fonctionner). `normaliserParams` gère **déjà** `{ tourneeIds, sens }` : aucun changement.
 - `src/domain/libelles.js` (**modifier**) — `LIBELLES_SENS_PREFERENCE = { PREFERE:'Préfère', EVITE:'Souhaite éviter' }`, `libelleSensPreference(code)`, `SENS_PREFERENCE_OPTIONS` (pour le groupe de boutons radio du sens).
 - `src/components/equipe/FormulairePreference.vue` (**modifier**) — nouvelle prop `tourneesActives` (Array, défaut `[]`) ; **filtrer** `PREFERENCE_TOURNEE` du sélecteur de type si `tourneesActives.length === 0` (avec, le cas échéant, un texte d'aide « Ajoutez d'abord une tournée pour utiliser ce souhait. ») ; gestion de `champs:'tournees'` dans `construireFormulaire`/`recopierParams`/`onChangeType` (`params = { tourneeIds:[], sens:'PREFERE' }`) ; section dynamique : cases à cocher des tournées (nom + créneau/horaires pour lever l'ambiguïté) ⇒ `params.tourneeIds`, groupe de radios sens ⇒ `params.sens` ; Vuelidate (`tourneeIds` ≥ 1, `sens` requis) ; `champsEnOrdre` inclut le champ tournées ; aperçu via `decrirePreference` avec résolveur bâti sur `tourneesActives`.
 - `src/views/SouhaitsView.vue` (**modifier**) — `mapGetters('tournees', ['actives'])` ; passer `:tournees-actives="…"` à `FormulairePreference` ; passer un **résolveur** `nomTournee` (bâti sur `tournees/byId` ou la liste des actives) à `decrirePreference` pour l'affichage des lignes `PREFERENCE_TOURNEE` dans la liste des souhaits.
-- `src/domain/schema.js` (**modifier**) — `verifierIntegrite` : contrôler l'**intégrité référentielle** des `tourneeIds` des préférences de type `PREFERENCE_TOURNEE` (chaque `tourneeId` doit résoudre vers une tournée existante), sur le modèle des contrôles existants (`absence.personneId`, `affectation.tourneeId`). Messages FR explicites, prêts à afficher (utile à l'import `008`).
+- `src/domain/schema.js` (**modifier**) — `verifierIntegrite` : contrôler l'**intégrité référentielle** des `tourneeIds` des préférences de type `PREFERENCE_TOURNEE` (chaque `tourneeId` doit résoudre vers une tournée existante), sur le modèle des contrôles existants (`absence.personneId`, `affectation.tourneeId`). Messages FR explicites, prêts à afficher (utile à l'import `0008`).
 
 **Critères de sortie** :
 - Avec au moins une tournée active : `FormulairePreference` propose « Tournée préférée ou évitée » ; la section affiche les tournées cochables + le choix « Préfère » / « Souhaite éviter » ; l'aperçu et la liste des souhaits nomment les tournées choisies.
 - Sans aucune tournée active : le type `PREFERENCE_TOURNEE` **n'est pas proposé** (ou est désactivé avec explication), les 7 autres types fonctionnent comme avant.
 - Un souhait `PREFERENCE_TOURNEE` créé/édité est persisté (`params.tourneeIds` normalisé, `params.sens` ∈ `{PREFERE,EVITE}`), rechargé, et **décrit en clair**.
 - `verifierIntegrite` signale un `tourneeId` inconnu référencé par une préférence importée.
-- `decrirePreference` **sans** résolveur reste fonctionnelle (aucune régression `005`) ; `npm run build` réussit ; aucun accès `localStorage` ni objet `Date` hors `dateUtil` dans les composants.
+- `decrirePreference` **sans** résolveur reste fonctionnelle (aucune régression `0005`) ; `npm run build` réussit ; aucun accès `localStorage` ni objet `Date` hors `dateUtil` dans les composants.
 
 ## 10. Critères d'acceptation
 
@@ -368,14 +368,14 @@ Parcours manuel (`npm run dev`, ouvrir `/#/tournees`) :
 
 ## 12. Décisions à confirmer / risques
 
-1. **Convention de soft-delete — `archivee` (confirmée)** — Le modèle `Tournee` (`schema.js` + [02 §Tournee](../docs/architecture/02-modele-de-domaine.md)) définit le soft-delete par le booléen **`archivee`** (`true` = archivée), **distinct** du `Personne.actif` (`false` = archivée). Conséquences retenues : getter `archivees` (`archivee === true`), actions `archiver`/`restaurer` (alignées sur le champ), UI « Archiver »/« Restaurer »/« Tournées archivées ». **Avantage** vs `004` : vocabulaire données et UI **coïncident** (pas de décalage `desactiver` ↔ « Archiver »). **Confirmé, aucune ambiguïté.**
+1. **Convention de soft-delete — `archivee` (confirmée)** — Le modèle `Tournee` (`schema.js` + [02 §Tournee](../docs/architecture/02-modele-de-domaine.md)) définit le soft-delete par le booléen **`archivee`** (`true` = archivée), **distinct** du `Personne.actif` (`false` = archivée). Conséquences retenues : getter `archivees` (`archivee === true`), actions `archiver`/`restaurer` (alignées sur le champ), UI « Archiver »/« Restaurer »/« Tournées archivées ». **Avantage** vs `0004` : vocabulaire données et UI **coïncident** (pas de décalage `desactiver` ↔ « Archiver »). **Confirmé, aucune ambiguïté.**
 2. **Saisie des heures en `"HH:mm"` via `<input type="time">` (retenu)** — Conforme à [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) : l'input `time` produit/consomme nativement `"HH:mm"`, aucun objet `Date`, aucune dépendance ajoutée. La règle `heureFin > heureDebut` est une **comparaison lexicographique de chaînes** (valide car zéro-paddées, sur une même journée). **Limite assumée** : une tournée « à cheval sur minuit » (fin < début) n'est pas modélisable — hors périmètre d'un cabinet infirmier de jour (aucune tournée de nuit prévue en v1). Si un tel besoin émerge, il fera l'objet d'un ADR. **À confirmer.**
-3. **Cohérence heures/dates au formulaire, pas au domaine (retenu)** — Comme `004` (cohérence `dateSortie ≥ dateEntree` dans le formulaire), les contrôles `heureFin > heureDebut` et `dateFin ≥ dateDebut` vivent dans `FormulaireTournee` (Vuelidate). Le domaine (`creerTournee`) garantit la **normalisation structurelle** (jours triés/dédupliqués, champs initialisés). Un `validerTournee` de domaine partagé avec le moteur `009` est **différé** (évite la duplication prématurée). **À confirmer.**
-4. **Formulaire en modale (retenu) vs vue dédiée** — **Retenu : modale** (`ModaleBase`), strictement comme `004` : contexte de la liste visible, **une seule route** `/tournees` (cohérent [07](../docs/architecture/07-navigation-et-ecrans.md)), modale accessible clé en main, pattern déjà éprouvé. **À confirmer.**
-5. **Champs inclus** — La ROADMAP cite « horaires, créneau, jours d'application, effectif requis, archivage ». J'inclus **en plus** `code`, `secteur`, `couleur`, `dateDebutValidite`/`dateFinValidite`, `notes`, **tous facultatifs** (sauf `couleur`, requise avec défaut) car prévus au schéma et utiles à l'affichage planning (`010`+) ; coût quasi nul (la fabrique doit de toute façon initialiser tous les champs). **À confirmer** : les garder ou différer certains (ex. validité).
+3. **Cohérence heures/dates au formulaire, pas au domaine (retenu)** — Comme `0004` (cohérence `dateSortie ≥ dateEntree` dans le formulaire), les contrôles `heureFin > heureDebut` et `dateFin ≥ dateDebut` vivent dans `FormulaireTournee` (Vuelidate). Le domaine (`creerTournee`) garantit la **normalisation structurelle** (jours triés/dédupliqués, champs initialisés). Un `validerTournee` de domaine partagé avec le moteur `0009` est **différé** (évite la duplication prématurée). **À confirmer.**
+4. **Formulaire en modale (retenu) vs vue dédiée** — **Retenu : modale** (`ModaleBase`), strictement comme `0004` : contexte de la liste visible, **une seule route** `/tournees` (cohérent [07](../docs/architecture/07-navigation-et-ecrans.md)), modale accessible clé en main, pattern déjà éprouvé. **À confirmer.**
+5. **Champs inclus** — La ROADMAP cite « horaires, créneau, jours d'application, effectif requis, archivage ». J'inclus **en plus** `code`, `secteur`, `couleur`, `dateDebutValidite`/`dateFinValidite`, `notes`, **tous facultatifs** (sauf `couleur`, requise avec défaut) car prévus au schéma et utiles à l'affichage planning (`0010`+) ; coût quasi nul (la fabrique doit de toute façon initialiser tous les champs). **À confirmer** : les garder ou différer certains (ex. validité).
 6. **Borne `nbPersonnesRequises` — `between(1, 20)`** — Retenu : entier ≥ 1, plafond 20 comme garde-fou contre les saisies aberrantes. `0` interdit (une tournée sans effectif n'a pas de sens). **À confirmer** le plafond.
-7. **Tri & `ordreAffichage`** — Tri **alphabétique** (`nom`, `localeCompare('fr')`) en `006` ; `ordreAffichage` initialisé mais **non édité** (réordonnancement par glisser-déposer différé, comme `004`). **À confirmer.**
-8. **Helper `libelleJours` dans `libelles.js` (retenu)** — Retenu plutôt qu'un `map(libelleJour).join(', ')` en ligne dans la vue : garde la vue sans logique et mutualise l'énumération FR (« … et … ») pour `007`/`010`. **Alternative KISS** (inline dans la vue) possible si l'on veut zéro ajout au domaine. **À confirmer.**
-9. **Extractions de composants réutilisables — différées** — Le **sélecteur de couleur accessible** (dupliqué de `FormulairePersonne` vers `FormulaireTournee`) et les **cases jours ISO** (dupliquées de `FormulairePreference`) restent **en ligne** (KISS, cohérent avec le choix `005 §12.9` de ne pas extraire `ChoixJoursSemaine`). L'extraction de composants partagés `SelecteurCouleur` et `ChoixJoursSemaine` (réutilisés par `004`/`005`/`006`/`007`) devient **pertinente à 3 usages** : à **acter par le mainteneur** comme refactoring transverse — **noté comme dette**, non requis ici.
-10. **`PREFERENCE_TOURNEE` — DÉCISION : réactivation retenue, mais isolée en tâche optionnelle T4** — `005` avait **différé** ce type faute de tournées ; elles existent désormais et le domaine (`preferences.js`) est **structurellement prêt** (`normaliserParams`/`decrirePreference`/`LIBELLES_TYPE_PREFERENCE` couvrent déjà le type ; seul `META_TYPES_PREFERENCE` porte un placeholder `champs:'minMax'`). **Coût/bénéfice** : bénéfice réel (solde la dette `005`, enrichit les données du futur moteur `009`, continuité annoncée par `005 §12.3`) ; coût non nul (touche des fichiers de `005` — `FormulairePreference`, `SouhaitsView`, `preferences.js` — ajoute un cas « aucune tournée disponible », impose un **résolveur** injecté dans `decrirePreference` pour nommer les tournées sans casser sa pureté, et un contrôle d'intégrité `tourneeIds` dans `verifierIntegrite`). **Choix** : la **retenir** pour ne pas laisser traîner la dette, **mais l'isoler dans la tâche optionnelle T4** (après T1–T3) afin de **ne pas alourdir le cœur du CRUD** — qui reste l'objet strict de la ROADMAP `006`. **Repli assumé** : si le mainteneur préfère un `006` minimal, **écarter T4** et la conserver comme dette explicite dans `005 §12.3` (à traiter avec `009`/`010`, qui consommeront réellement ce type). **À trancher par le mainteneur** : implémenter T4 maintenant, ou la différer.
+7. **Tri & `ordreAffichage`** — Tri **alphabétique** (`nom`, `localeCompare('fr')`) en `0006` ; `ordreAffichage` initialisé mais **non édité** (réordonnancement par glisser-déposer différé, comme `0004`). **À confirmer.**
+8. **Helper `libelleJours` dans `libelles.js` (retenu)** — Retenu plutôt qu'un `map(libelleJour).join(', ')` en ligne dans la vue : garde la vue sans logique et mutualise l'énumération FR (« … et … ») pour `0007`/`0010`. **Alternative KISS** (inline dans la vue) possible si l'on veut zéro ajout au domaine. **À confirmer.**
+9. **Extractions de composants réutilisables — différées** — Le **sélecteur de couleur accessible** (dupliqué de `FormulairePersonne` vers `FormulaireTournee`) et les **cases jours ISO** (dupliquées de `FormulairePreference`) restent **en ligne** (KISS, cohérent avec le choix `0005 §12.9` de ne pas extraire `ChoixJoursSemaine`). L'extraction de composants partagés `SelecteurCouleur` et `ChoixJoursSemaine` (réutilisés par `0004`/`0005`/`0006`/`0007`) devient **pertinente à 3 usages** : à **acter par le mainteneur** comme refactoring transverse — **noté comme dette**, non requis ici.
+10. **`PREFERENCE_TOURNEE` — DÉCISION : réactivation retenue, mais isolée en tâche optionnelle T4** — `0005` avait **différé** ce type faute de tournées ; elles existent désormais et le domaine (`preferences.js`) est **structurellement prêt** (`normaliserParams`/`decrirePreference`/`LIBELLES_TYPE_PREFERENCE` couvrent déjà le type ; seul `META_TYPES_PREFERENCE` porte un placeholder `champs:'minMax'`). **Coût/bénéfice** : bénéfice réel (solde la dette `0005`, enrichit les données du futur moteur `0009`, continuité annoncée par `0005 §12.3`) ; coût non nul (touche des fichiers de `0005` — `FormulairePreference`, `SouhaitsView`, `preferences.js` — ajoute un cas « aucune tournée disponible », impose un **résolveur** injecté dans `decrirePreference` pour nommer les tournées sans casser sa pureté, et un contrôle d'intégrité `tourneeIds` dans `verifierIntegrite`). **Choix** : la **retenir** pour ne pas laisser traîner la dette, **mais l'isoler dans la tâche optionnelle T4** (après T1–T3) afin de **ne pas alourdir le cœur du CRUD** — qui reste l'objet strict de la ROADMAP `0006`. **Repli assumé** : si le mainteneur préfère un `0006` minimal, **écarter T4** et la conserver comme dette explicite dans `0005 §12.3` (à traiter avec `0009`/`0010`, qui consommeront réellement ce type). **À trancher par le mainteneur** : implémenter T4 maintenant, ou la différer.
 11. **Point de vigilance technique — modale Bootstrap** — Réutilisation de `ModaleBase` : ne jamais `v-if` l'élément `.modal`, piloter via `visible`, poser le focus sur `affichee` (pas de `setTimeout`), replacer le focus sur un point stable après archivage/restauration (le bouton déclencheur disparaît du DOM). Tout est déjà encapsulé dans `ModaleBase`/le patron `EquipeView` : **suivre ces patrons à l'identique**.

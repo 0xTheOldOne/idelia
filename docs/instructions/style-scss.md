@@ -57,7 +57,7 @@ $border-radius:  t.$rayon-md;
 - **Icônes** : toujours Phosphor ([ADR 0013](../adr/0013-icones-phosphor.md)), **pas** Bootstrap Icons.
 - **Poids** : n'importer que les modules SCSS réellement utilisés (voir liste ciblée ci-dessus).
 
-## Tokens de design (à définir tôt, feature 001)
+## Tokens de design (à définir tôt, feature 0001)
 
 Centraliser **toutes** les valeurs de design dans `_tokens.scss` — aucune valeur « magique » dispersée :
 

@@ -28,8 +28,8 @@ import { genId } from '@/domain/utils/id.js';
  * @property {(string|null)} dateSortie - Date de départ `"YYYY-MM-DD"`, ou `null`.
  * @property {ContactPersonne} contact
  * @property {string} notes
- * @property {(number|null)} ordreAffichage - Réordonnancement manuel (non édité en 004).
- * @property {Array} preferences - `Preference[]`, initialisé vide (édité en 005).
+ * @property {(number|null)} ordreAffichage - Réordonnancement manuel (non édité en 0004).
+ * @property {Array} preferences - `Preference[]`, initialisé vide (édité en 0005).
  * @property {string} createdAt - Horodatage ISO UTC.
  * @property {string} updatedAt - Horodatage ISO UTC.
  */

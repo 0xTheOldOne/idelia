@@ -14,8 +14,8 @@
 | Écran routé | `…View.vue` | `EquipeView.vue` |
 | Module JS | `camelCase.js` | `storageRepository.js` |
 | Partiel SCSS | `_kebab.scss` | `_tokens.scss` |
-| ADR | `NNNN-kebab.md` | `0005-persistance-...md` |
-| Feature | `NNN-KebabOuNom.md` | `004-gestion-equipe.md` |
+| ADR | `NNNNN-kebab.md` | `0005-persistance-...md` |
+| Feature | `NNNN-KebabOuNom.md` | `0004-gestion-equipe.md` |
 
 ## Nommage dans le code
 
@@ -34,7 +34,7 @@
 
 - Messages en français, à l'impératif présent, préfixés par un type léger : `feat:`, `fix:`, `docs:`, `refactor:`, `style:`, `chore:`.
   - Exemple : `feat: ajouter la gestion de l'équipe (CRUD personnes)`.
-- Référencer la feature quand pertinent : `feat(004): …`.
+- Référencer la feature quand pertinent : `feat(0004): …`.
 - Rappel : shell **PowerShell** — syntaxe PowerShell pour toute commande.
 
 ## Général

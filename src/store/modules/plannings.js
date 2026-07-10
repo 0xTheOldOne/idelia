@@ -1,14 +1,14 @@
 /**
  * Module Vuex — plannings.
  *
- * State shape (feature 002) : `{ items: [], selectionId: null }`, hydraté
+ * State shape (feature 0002) : `{ items: [], selectionId: null }`, hydraté
  * par `app/bootstrap` (voir `src/store/index.js`) via la mutation
  * `REPLACE`. Module **persisté** (voir ADR 0005) pour `items` uniquement :
  * `selectionId` est une sélection volatile, non sérialisée dans le
  * `SaveDocument` (voir `src/domain/schema.js`). Aucun accès `localStorage`
  * ici : la persistance est gérée par le plugin dédié du store racine.
  *
- * Génération (feature 010) : l'appel au moteur pur (`@/domain/scheduling`)
+ * Génération (feature 0010) : l'appel au moteur pur (`@/domain/scheduling`)
  * passe **uniquement** par les actions `genererPropose`/`evaluerCourant`
  * (ADR 0008) ; la construction du `Planning` est déléguée au domaine
  * (`@/domain/planning.js`, `creerPlanning`). Les diagnostics (violations,
@@ -16,7 +16,7 @@
  * retournés à l'appelant (`genererPropose`) ou recalculés à la demande
  * (`evaluerCourant`).
  *
- * Édition manuelle (feature 011) : `ajouterAffectation`/`retirerAffectation`/
+ * Édition manuelle (feature 0011) : `ajouterAffectation`/`retirerAffectation`/
  * `deplacerAffectation`/`basculerVerrouillage` appliquent chacune un geste
  * d'édition sur les affectations du planning courant, via le domaine
  * (`creerAffectationManuelle`) et le moteur pur (`appliquerChangement`,
@@ -24,13 +24,13 @@
  * préalable un instantané volatil (`snapshotEdition`, non sérialisé) des
  * affectations d'avant.
  *
- * Undo (feature 011, tâche 2) : `annulerDerniereEdition` restaure ce
+ * Undo (feature 0011, tâche 2) : `annulerDerniereEdition` restaure ce
  * snapshot (`RESTAURER_SNAPSHOT`) puis l'efface — undo **1 niveau, sans
  * redo**. Le getter `peutAnnuler` invalide automatiquement un snapshot
  * devenu obsolète (autre planning sélectionné) en comparant
  * `snapshotEdition.planningId` au planning courant.
  *
- * Régénération en place (feature 011, tâche 6) : `regenerer` remplace les
+ * Régénération en place (feature 0011, tâche 6) : `regenerer` remplace les
  * affectations du planning **courant** (mutation `UPDATE_AFFECTATIONS` sur
  * le même `id`, jamais `ADD`/`SELECT` d'un nouveau `Planning`), en
  * préservant les affectations verrouillées. Retourne le `Resultat` complet
@@ -42,9 +42,9 @@ import { creerPlanning, creerAffectationManuelle } from '@/domain/planning.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Assemble l'`Entree` du moteur (typedef `009 §5.2`) à partir des sources
+ * Assemble l'`Entree` du moteur (typedef `0009 §5.2`) à partir des sources
  * du store, sans logique métier (simple collecte). Le moteur filtre lui-même
- * les tournées applicables et les absences par statut (`009 §5.4`/`§7`).
+ * les tournées applicables et les absences par statut (`0009 §5.4`/`§7`).
  * Helper interne, non exporté : factorise `genererPropose`/`evaluerCourant`.
  *
  * @param {Object} rootGetters
@@ -127,7 +127,7 @@ export default {
      * Remplace immuablement les affectations du planning `id` (jamais de
      * mutation en place) et bump son `updatedAt`. Met à jour
      * `parametresGeneration` uniquement si fourni (régénération, feature
-     * `011` tâche 6) : les gestes d'édition manuelle ne le touchent pas.
+     * `0011` tâche 6) : les gestes d'édition manuelle ne le touchent pas.
      * @param {{ items: object[] }} state
      * @param {{ id: string, affectations: object[], parametresGeneration?: (Object|null) }} payload
      */
@@ -331,7 +331,7 @@ export default {
      * base + variante) puis choisit la graine effective à utiliser —
      * `variante: false` (« à l'identique ») conserve la **même** graine
      * effective, `variante: true` (« essayer une variante ») incrémente la
-     * variante à base inchangée (déterministe et progressif, `009` §6). Si
+     * variante à base inchangée (déterministe et progressif, `0009` §6). Si
      * `parametresGeneration` est absent/altéré (import ancien), repli sur
      * `{ seed: 0, variante: 0 }` — dégradé mais sans plantage.
      *

@@ -1,6 +1,6 @@
 /**
  * Recherche locale — hill-climbing anytime + redémarrages seedés (§5.13 du
- * plan `009`). Améliore le résultat du glouton **sans jamais casser une
+ * plan `0009`). Améliore le résultat du glouton **sans jamais casser une
  * contrainte dure**, ni jamais toucher une affectation `verrouillee: true`.
  *
  * Voisinage à 3 mouvements : **REASSIGNER** (changer la personne d'une

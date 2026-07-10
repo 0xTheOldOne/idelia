@@ -15,7 +15,7 @@ export const CURRENT_SCHEMA_VERSION = 1;
  *
  * Chaque entrée `n` transforme un document de version `n` en un document de
  * version `n + 1` : `{ [n]: (doc) => docVersionNPlus1 }`. Vide en feature
- * `002` (aucune évolution de schéma pour l'instant) ; à compléter au fil des
+ * `0002` (aucune évolution de schéma pour l'instant) ; à compléter au fil des
  * futures évolutions, ex. `MIGRATIONS[1] = (doc) => ({ ...doc, ... })`.
  *
  * @type {Object<number, function(object): object>}

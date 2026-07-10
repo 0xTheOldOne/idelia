@@ -69,7 +69,7 @@ import { PhCheck, PhPath, PhUsers, PhCaretLeft, PhCaretRight, PhCalendarCheck } 
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Barre de réglages d'affichage de `GrillePlanning` (feature 010), **sans
+ * Barre de réglages d'affichage de `GrillePlanning` (feature 0010), **sans
  * état propre** : bascule orientation (Tournées / Personnes), bascule
  * échelle (Jour / Semaine / Mois), navigation dans le temps
  * (précédent / suivant + retour à la période du planning). Boutons
@@ -79,7 +79,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * Ne modifie **jamais** les données : émet uniquement des mises à jour de
  * réglages d'affichage (`update:orientation`, `update:echelle`,
  * `update:dateReference`), calculées via `dateUtil` (aucun objet `Date`
- * manipulé ici). Réutilisable par `011`/`012`.
+ * manipulé ici). Réutilisable par `0011`/`0012`.
  */
 export default {
   name: 'ControlesGrille',

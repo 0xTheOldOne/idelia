@@ -7,11 +7,11 @@ import store from './store';
 import '@/styles/main.scss';
 
 // Pas de JS Bootstrap importé ici : aucun composant interactif Bootstrap
-// n'est câblé en feature 001.
+// n'est câblé en feature 0001.
 const app = createApp(App).use(router).use(store);
 
 // Directive globale de débounce des saisies (ADR 0011), utilisée notamment
-// par le champ « Nom du cabinet » (feature 003). `lock: true` empêche la
+// par le champ « Nom du cabinet » (feature 0003). `lock: true` empêche la
 // touche Entrée de déclencher la fonction avant la fin du délai.
 app.directive('debounce', vueDebounce({ lock: true }));
 
@@ -30,7 +30,7 @@ demarrer();
 
 if (import.meta.env.DEV) {
   // Outil de debug de développement, jetable : permet de dispatcher des
-  // actions depuis la console (vérification manuelle feature 002).
+  // actions depuis la console (vérification manuelle feature 0002).
   // Inactif en build de production.
   window.store = store;
 }

@@ -24,7 +24,7 @@ function nomTourneeDe(entree, tourneeId) {
 /**
  * Compare l'effectif requis (issu des `Demande`) à l'effectif réellement
  * affecté (issu du `PlanningIndexe`), par (tournée, date, créneau).
- * Réutilisée telle quelle par `genererPlanning.js` (feature 009, tâche 5).
+ * Réutilisée telle quelle par `genererPlanning.js` (feature 0009, tâche 5).
  *
  * @param {import('../modele/types.js').Demande[]} demandes
  * @param {import('../modele/types.js').PlanningIndexe} planningIndexe

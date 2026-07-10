@@ -200,7 +200,7 @@ import PanneauConflits from '@/components/planning/PanneauConflits.vue';
 import SelecteurPersonne from '@/components/planning/SelecteurPersonne.vue';
 
 /**
- * Écran « Planning » (feature 010) : orchestre le choix d'une période, le
+ * Écran « Planning » (feature 0010) : orchestre le choix d'une période, le
  * déclenchement d'une génération et l'affichage du planning courant (grille
  * + panneau de conflits), via le store `plannings`. Ne contient **aucune
  * logique métier** : l'appel au moteur pur passe exclusivement par les
@@ -215,7 +215,7 @@ import SelecteurPersonne from '@/components/planning/SelecteurPersonne.vue';
  * `evaluerCourant` (le `Resultat` volatil d'une éventuelle génération
  * précédente a disparu au rechargement).
  *
- * Barre d'actions du planning (feature 011) : porte le bouton « Annuler la
+ * Barre d'actions du planning (feature 0011) : porte le bouton « Annuler la
  * dernière action » (tâche 2, undo 1-niveau, sans redo), désactivé quand
  * `plannings/peutAnnuler` est `false`, et la bascule « Modifier le
  * planning »/« Terminer la modification » (tâche 3) qui pilote `modeEdition`.
@@ -289,7 +289,7 @@ export default {
       // Texte annoncé par la région `aria-live` après une génération
       // (succès ou échec), pour les technologies d'assistance.
       messageAnnonce: '',
-      // Bascule lecture/édition (feature 011, tâche 3) : purement volatil,
+      // Bascule lecture/édition (feature 0011, tâche 3) : purement volatil,
       // jamais persisté (§4.7).
       modeEdition: false,
       // Visibilité du sélecteur de personne (modale).
@@ -306,7 +306,7 @@ export default {
       varianteEnAttente: false,
       // `null` hors régénération ; `'IDENTIQUE'` ou `'VARIANTE'` pendant
       // l'exécution de `executerRegeneration`, pour afficher un libellé actif
-      // sur le bon bouton (correctif ergonomie MIN-3/MIN-4, feature 011).
+      // sur le bon bouton (correctif ergonomie MIN-3/MIN-4, feature 0011).
       regenerationEnCours: null,
     };
   },
@@ -356,7 +356,7 @@ export default {
      * `TOURNEES` (§6.1 : seule orientation où une case a un créneau propre,
      * modèle mental unique pour le sélecteur de personne). Annonce l'entrée/
      * sortie du mode via la région `aria-live` (correctif ergonomie MAJ-1,
-     * feature 011) : le repère visuel persistant est le badge « Mode
+     * feature 0011) : le repère visuel persistant est le badge « Mode
      * modification » (MIN-1), affiché près du titre du planning.
      */
     onBasculerEdition() {
@@ -433,7 +433,7 @@ export default {
 
     /**
      * Déplace une affectation glissée vers une autre case (événement
-     * sémantique `deplacer` de `GrillePlanning`, feature 011 tâche 5 :
+     * sémantique `deplacer` de `GrillePlanning`, feature 0011 tâche 5 :
      * glisser-déposer natif, **surcouche** de confort au clic — jamais
      * l'unique moyen). Dispatche `deplacerAffectation`, qui préserve
      * l'identité (`id`) et le verrou de l'affectation (§4.4) ; rafraîchit
@@ -465,7 +465,7 @@ export default {
      * bouton « Annuler » devenant `disabled` (undo 1-niveau) perd le focus :
      * on le replace explicitement sur la bascule « Modifier le planning »/
      * « Terminer la modification », élément stable de la barre d'actions
-     * (correctif ergonomie MAJ-2, feature 011).
+     * (correctif ergonomie MAJ-2, feature 0011).
      */
     async onAnnuler() {
       await this.annulerDerniereEdition();
@@ -514,7 +514,7 @@ export default {
      * rappelant que les affectations verrouillées ont été conservées.
      * Renseigne `regenerationEnCours` (`'IDENTIQUE'`/`'VARIANTE'`) pour que
      * le bouton déclenché affiche « Régénération en cours… » (correctifs
-     * ergonomie MIN-3/MIN-4, feature 011).
+     * ergonomie MIN-3/MIN-4, feature 0011).
      * @param {boolean} variante
      */
     async executerRegeneration(variante) {
@@ -715,7 +715,7 @@ export default {
 }
 
 // Repère visible du mode modification (correctif ergonomie MIN-1,
-// feature 011) : icône + libellé (jamais la seule couleur), affiché
+// feature 0011) : icône + libellé (jamais la seule couleur), affiché
 // uniquement quand `modeEdition` est actif.
 .planning-badge-edition {
   display: inline-flex;

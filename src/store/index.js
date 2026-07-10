@@ -18,7 +18,7 @@ import plannings from './modules/plannings';
 import ui from './modules/ui';
 
 /**
- * Store racine de l'application (feature 002).
+ * Store racine de l'application (feature 0002).
  *
  * Porte l'état racine (statut de sauvegarde), la mutation d'hydratation
  * atomique `REPLACE_ALL`, les actions d'orchestration `bootstrap` /
@@ -202,7 +202,7 @@ export default createStore({
      * vérifie son intégrité, puis remplace l'état courant et flush la
      * persistance immédiatement. Ne lève jamais : toute erreur est
      * capturée et renvoyée sous forme de résultat exploitable par la
-     * future UI d'import (feature 008).
+     * future UI d'import (feature 0008).
      *
      * @param {import('vuex').ActionContext} context
      * @param {File|string} fichierOuTexte - Fichier (`File`, avec `.text()`)

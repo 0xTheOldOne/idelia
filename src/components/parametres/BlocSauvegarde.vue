@@ -153,11 +153,11 @@ import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue'
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Bloc « Sauvegarde » de l'écran Paramètres (feature 008) : enregistrer un
+ * Bloc « Sauvegarde » de l'écran Paramètres (feature 0008) : enregistrer un
  * fichier de sauvegarde, en restaurer un, ou tout effacer.
  *
  * Composant **conteneur** : il dispatche les actions racines déjà en place
- * (`exporter`/`importer`/`reinitialiser`, feature 002) et l'action volatile
+ * (`exporter`/`importer`/`reinitialiser`, feature 0002) et l'action volatile
  * `ui/enregistrerExport`, puis affiche leurs résultats. Aucune
  * (dé)sérialisation, migration ou validation ici — tout vit dans le store/
  * domaine/storage ; ce composant se contente d'orchestrer l'UI.

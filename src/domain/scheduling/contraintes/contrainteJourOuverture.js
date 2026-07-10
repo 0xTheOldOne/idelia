@@ -1,6 +1,6 @@
 /**
  * Contrainte dure « jour d'ouverture » : sécurité pour qu'une affectation
- * (y compris `MANUEL`, posée en `011`) tombant un jour fermé du cabinet
+ * (y compris `MANUEL`, posée en `0011`) tombant un jour fermé du cabinet
  * soit signalée. La génération ne produit jamais un tel cas (filtré en
  * amont par `expanserDemandes`) ; cette contrainte protège la
  * **validation** d'un planning modifié à la main (§7.1 du plan).

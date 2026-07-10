@@ -27,7 +27,7 @@ Nous utilisons **Bootstrap 5** comme **base de composants et d'utilitaires**, av
   - Style « Bootstrap » reconnaissable → **mitigation** : thématiser via les tokens.
   - Risque de **doublon** entre utilitaires Bootstrap et SCSS maison → discipline : privilégier Bootstrap pour ce qu'il couvre, SCSS maison pour le spécifique.
   - Cohabitation JS impérative de Bootstrap ↔ réactivité Vue → préférer Vue pour les cas simples.
-- **Suivi** : cadrer l'intégration et l'ordre d'import dans [instructions style-scss](../instructions/style-scss.md) ; **mapper tokens ↔ variables Bootstrap** dès la feature `001` ([ROADMAP](../../features/ROADMAP.md)).
+- **Suivi** : cadrer l'intégration et l'ordre d'import dans [instructions style-scss](../instructions/style-scss.md) ; **mapper tokens ↔ variables Bootstrap** dès la feature `0001` ([ROADMAP](../../features/ROADMAP.md)).
 
 ## Alternatives considérées
 

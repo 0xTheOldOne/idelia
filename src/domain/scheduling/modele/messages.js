@@ -1,7 +1,7 @@
 /**
  * Table `code -> gabarit` et fonction `messagePour(code, params)` : sépare
  * le `code` stable (`Violation.code`) du message FR affiché, prêt à être
- * affiché **tel quel** par une future UI (`010`/`011`) — jamais de code
+ * affiché **tel quel** par une future UI (`0010`/`0011`) — jamais de code
  * brut ni de jargon technique dans le texte.
  *
  * Réutilise `src/domain/libelles.js` (`libelleCreneau`, `libelleTypeAbsence`)

@@ -78,7 +78,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
  * Formulaire présentational du choix de période, pour lancer une génération
- * de planning (feature 010).
+ * de planning (feature 0010).
  *
  * N'accède **pas** au store : reçoit `chargement` en prop et **émet**
  * `generer({ dateDebut, dateFin })` à la soumission, si valide. C'est l'écran

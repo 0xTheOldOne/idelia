@@ -1,12 +1,12 @@
 /**
- * Validation complète d'un planning (§5.10 du plan `009`) : construit le
+ * Validation complète d'un planning (§5.10 du plan `0009`) : construit le
  * `ContexteEvaluation` puis appelle `evaluer(ctx)` de **chaque** contrainte
  * du catalogue `creerContraintes(entree)` -- la **même** source de vérité
  * que `genererPlanning` (§5.1 du plan, aucune règle métier dupliquée).
  *
  * Nuance de nommage volontaire (§5.10) : `validerPlanning` prend directement
  * un tableau d'`Affectation`, pas une entité `Planning` complète, pour
- * permettre à `011` de valider un état **en cours d'édition** (avant tout
+ * permettre à `0011` de valider un état **en cours d'édition** (avant tout
  * `commit` dans le store).
  *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
@@ -47,7 +47,7 @@ function comparerViolations(a, b) {
 
 /**
  * Valide intégralement un tableau d'`Affectation` au regard de toutes les
- * règles métier du cabinet (§7 du plan `009`). Ne lève **jamais** : une
+ * règles métier du cabinet (§7 du plan `0009`). Ne lève **jamais** : une
  * `entree` limite (aucune personne, aucune tournée, période vide) produit
  * simplement un tableau de violations vide ou réduit, jamais une exception.
  *

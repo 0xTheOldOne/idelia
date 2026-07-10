@@ -378,7 +378,7 @@ function estVide(valeur) {
 }
 
 /**
- * Formulaire présentational d'ajout/édition d'une préférence (feature 005).
+ * Formulaire présentational d'ajout/édition d'une préférence (feature 0005).
  *
  * Bâti au-dessus de `ModaleBase`, sur le même patron que `FormulairePersonne`.
  * N'accède **pas** au store : il reçoit ses données par props (`preference` =
@@ -454,7 +454,7 @@ export default {
      * d'un souhait « Tournée préférée ou évitée » alors que la dernière
      * tournée active a depuis été archivée) : sans cette exception, le
      * `<select>` afficherait une valeur absente de ses options (piège pour
-     * l'utilisateur, voir relecture 006/M1). Le filtrage « aucune tournée
+     * l'utilisateur, voir relecture 0006/M1). Le filtrage « aucune tournée
      * disponible » vit ici, pas dans le domaine — voir `domain/preferences.js`.
      */
     typesProposes() {
@@ -468,7 +468,7 @@ export default {
      * brouillon mais absentes de `tourneesActives` (archivées, ou
      * introuvables), pour la section « Tournées concernées » : une tournée
      * déjà cochée doit rester visible et **décochable**, même si elle n'est
-     * plus active (voir 006/M1). Chaque entrée porte un `libelle` prêt à
+     * plus active (voir 0006/M1). Chaque entrée porte un `libelle` prêt à
      * afficher et un indicateur `active` (non utilisé pour l'instant, prévu
      * pour un futur style visuel si besoin).
      * @returns {Array<{ id: string, libelle: string, active: boolean }>}

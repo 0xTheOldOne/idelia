@@ -28,7 +28,7 @@ export default {
   components: { PhHouse, PhUsers, PhPath, PhCalendarX, PhCalendarBlank, PhGear },
   data() {
     return {
-      // Barre de navigation permanente (feature 001) : chaque icône est
+      // Barre de navigation permanente (feature 0001) : chaque icône est
       // toujours doublée d'un libellé texte (accessibilité).
       navigation: [
         { nom: 'accueil', chemin: '/', libelle: 'Accueil', icone: 'PhHouse' },

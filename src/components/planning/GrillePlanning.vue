@@ -130,32 +130,32 @@ import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
  */
 
 /**
- * Composant central de visualisation d'un planning (feature 010),
- * **éditable au clic** en mode édition (feature 011, prop `editable`, par
+ * Composant central de visualisation d'un planning (feature 0010),
+ * **éditable au clic** en mode édition (feature 0011, prop `editable`, par
  * défaut `false`). Rend **toujours** une matrice lignes × jours (§6.1 du
- * plan `010`) : l'échelle (`JOUR`/`SEMAINE`/`MOIS`) ne change que l'ensemble
+ * plan `0010`) : l'échelle (`JOUR`/`SEMAINE`/`MOIS`) ne change que l'ensemble
  * des colonnes-jours, l'orientation (`TOURNEES`/`PERSONNES`) ne change que
  * ce que sont les lignes et le contenu d'une cellule.
  *
  * Ne fait **aucune dérivation métier** : la sous-couverture vient
  * directement de la prop `tourneesNonCouvertes` (jamais des violations), le
  * surlignage est un mapping purement présentational de `Violation.cible`
- * vers une cellule/un en-tête de ligne (§6.2 de `010`). Aucun import de
+ * vers une cellule/un en-tête de ligne (§6.2 de `0010`). Aucun import de
  * `@/domain/scheduling` ici.
  *
- * Édition (`011` §6.1) : ancrée sur l'orientation `TOURNEES` — quand
+ * Édition (`0011` §6.1) : ancrée sur l'orientation `TOURNEES` — quand
  * `editable` est `true` mais que l'orientation est `PERSONNES`, la grille
  * reste **strictement en lecture seule** (aucun bouton, aucune émission),
  * `PlanningView` affichant alors un message invitant à repasser sur
  * « Tournées ». Reste **présentational** : n'appelle ni store ni moteur ;
  * **traduit** l'événement élémentaire `ajouter-ici` de `CellulePlanning` en
  * événement **sémantique** `ajouter` enrichi du contexte, et **réémet tel
- * quel** `retirer`/`verrouiller` (feature 011, tâche 4 : la bascule de
+ * quel** `retirer`/`verrouiller` (feature 0011, tâche 4 : la bascule de
  * verrouillage ne nécessite aucun contexte supplémentaire, `element.id`
  * porte déjà l'`affectationId`), vers `PlanningView` (seule à dispatcher,
  * ADR 0008).
  *
- * Glisser-déposer natif (feature 011, tâche 5, **surcouche** de confort au
+ * Glisser-déposer natif (feature 0011, tâche 5, **surcouche** de confort au
  * clic, API HTML5 native, aucune dépendance ajoutée) : tient l'état volatil
  * `affectationEnGlissement` (mis à jour via `debut-glisser`/`fin-glisser`
  * remontés de `CellulePlanning`) et `celluleCible` (case survolée comme
@@ -167,7 +167,7 @@ import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
  * ignoré sur la case source, une case non éligible, ou hors glisse. Reste
  * **présentational** : n'appelle ni store ni moteur.
  *
- * Expose un **slot scopé `cellule`** (point de greffe `011`), dont le
+ * Expose un **slot scopé `cellule`** (point de greffe `0011`), dont le
  * contenu par défaut est `CellulePlanning`.
  */
 export default {
@@ -187,8 +187,8 @@ export default {
     /** `NonCouverture[]` du moteur — source unique de la sous-couverture affichée. */
     tourneesNonCouvertes: { type: Array, default: () => [] },
     /**
-     * `true` en mode édition (feature 011), piloté par `PlanningView`
-     * (`:editable="modeEdition"`). Par défaut `false` : comportement `010`
+     * `true` en mode édition (feature 0011), piloté par `PlanningView`
+     * (`:editable="modeEdition"`). Par défaut `false` : comportement `0010`
      * strictement inchangé (aucun bouton, aucune émission).
      */
     editable: { type: Boolean, default: false },
@@ -198,7 +198,7 @@ export default {
     return {
       /**
        * Identifiant de l'affectation en cours de glisser-déposer (feature
-       * 011, tâche 5), mis à jour via `debut-glisser`/`fin-glisser` remontés
+       * 0011, tâche 5), mis à jour via `debut-glisser`/`fin-glisser` remontés
        * de `CellulePlanning`. `null` hors glisse.
        */
       affectationEnGlissement: null,
@@ -365,7 +365,7 @@ export default {
     /**
      * Résout une `Affectation` en élément d'affichage (pastille + nom, +
      * créneau en orientation Personnes, masqué si `JOURNEE`). Enrichi de
-     * `verrouillee` (feature 011, tâche 3), rendu par `CellulePlanning`
+     * `verrouillee` (feature 0011, tâche 3), rendu par `CellulePlanning`
      * (cadenas + libellé « Verrouillée », tâche 4).
      * @param {object} affectation
      * @returns {ElementCellule}
@@ -456,10 +456,10 @@ export default {
 
     /**
      * Construit le descripteur complet d'une cellule, exposé tel quel par le
-     * slot scopé `cellule` (§6.3 de `010`). Les jours fermés n'ont « aucune
+     * slot scopé `cellule` (§6.3 de `0010`). Les jours fermés n'ont « aucune
      * cellule active » : éléments et sous-couverture y sont vidés.
      *
-     * `editable`/`ajoutable` (feature 011, tâche 3) : `editable` reflète
+     * `editable`/`ajoutable` (feature 0011, tâche 3) : `editable` reflète
      * `editableEffectif` (retirer un élément reste possible même sur une
      * case hors période, pour corriger une affectation existante) ;
      * `ajoutable` restreint en plus le bouton « Ajouter une personne » aux
@@ -503,7 +503,7 @@ export default {
     },
 
     /**
-     * Démarrage d'un glisser (feature 011, tâche 5) : mémorise l'affectation
+     * Démarrage d'un glisser (feature 0011, tâche 5) : mémorise l'affectation
      * en cours de glisse, remontée par `debut-glisser` de `CellulePlanning`.
      * @param {{ affectationId: string }} payload
      */
@@ -736,7 +736,7 @@ export default {
 }
 
 // Repère visuel de la case survolée comme cible de dépôt pendant un
-// glisser-déposer (feature 011, tâche 5) : bordure marquée + fond léger
+// glisser-déposer (feature 0011, tâche 5) : bordure marquée + fond léger
 // (jamais la seule couleur), retiré à la fin de la glisse. `outline` (plutôt
 // que `border`) pour ne pas perturber la géométrie de la grille.
 .grille-planning-cellule--cible-depot {

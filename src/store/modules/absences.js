@@ -1,20 +1,20 @@
 /**
  * Module Vuex — absences & congés.
  *
- * State shape (feature 002) : `{ items: [] }`, hydraté par
+ * State shape (feature 0002) : `{ items: [] }`, hydraté par
  * `app/bootstrap` (voir `src/store/index.js`) via la mutation `REPLACE`.
  * Module **persisté** (voir ADR 0005) : la persistance elle-même est gérée
  * par le plugin dédié du store racine, jamais ici (aucun accès
  * `localStorage`).
  *
- * CRUD (feature 007) : les mutations restent **fines** (aucune logique
+ * CRUD (feature 0007) : les mutations restent **fines** (aucune logique
  * métier ni horodatage) ; la construction/normalisation d'une absence vit
  * dans le domaine (`src/domain/absences.js`, `creerAbsence`), les
  * horodatages techniques (`updatedAt`, `decideLe`) sont posés dans les
  * actions.
  *
  * Contrairement à `personnes`/`tournees` (soft-delete), `Absence` n'est
- * référencée par aucune autre entité (§3 de la feature 007) : sa
+ * référencée par aucune autre entité (§3 de la feature 0007) : sa
  * suppression est donc **physique** (`REMOVE`), protégée par une
  * confirmation côté UI.
  */

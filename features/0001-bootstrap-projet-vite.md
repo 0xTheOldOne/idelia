@@ -1,27 +1,27 @@
-# Feature 001 — Bootstrap projet Vite
+# Feature 0001 — Bootstrap projet Vite
 
 - **Statut** : Fait
 - **Dépend de** : — (première feature, aucune dépendance)
-- **ADR liés** : [0002](../docs/adr/0002-application-frontend-sans-backend.md) (sans backend), [0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md) (stack), [0004](../docs/adr/0004-pas-de-typescript-js-jsdoc.md) (JS pur), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (dates/jours ISO), [0012](../docs/adr/0012-style-scss.md) (SCSS), [0013](../docs/adr/0013-icones-phosphor.md) (Phosphor), [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) (Bootstrap), [0016](../docs/adr/0016-router-mode-hash-pour-pages.md) (router en mode hash). Préparent le terrain pour [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) et [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md), utilisés dès la feature 002+.
+- **ADR liés** : [0002](../docs/adr/0002-application-frontend-sans-backend.md) (sans backend), [0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md) (stack), [0004](../docs/adr/0004-pas-de-typescript-js-jsdoc.md) (JS pur), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (dates/jours ISO), [0012](../docs/adr/0012-style-scss.md) (SCSS), [0013](../docs/adr/0013-icones-phosphor.md) (Phosphor), [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) (Bootstrap), [0016](../docs/adr/0016-router-mode-hash-pour-pages.md) (router en mode hash). Préparent le terrain pour [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) et [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md), utilisés dès la feature 0002+.
 
 ## 1. Contexte & objectif
 
 C'est la **toute première** feature du projet : elle ne livre **aucune fonctionnalité métier**. Son but est de poser la **coquille applicative runnable** et les **squelettes** de chaque couche (UI / état / domaine / stockage) conformément à l'architecture cible ([06](../docs/architecture/06-structure-du-code.md)).
 
-À l'issue de 001, l'application **démarre** (`npm run dev`) et **se construit** (`npm run build`) ; on peut **naviguer** entre des écrans placeholder via une barre de navigation permanente ; le **thème SCSS + Bootstrap** (tokens de design) et les **icônes Phosphor** sont opérationnels. La logique métier, la persistance et les données réelles sont explicitement **hors périmètre** (features 002 et suivantes).
+À l'issue de 0001, l'application **démarre** (`npm run dev`) et **se construit** (`npm run build`) ; on peut **naviguer** entre des écrans placeholder via une barre de navigation permanente ; le **thème SCSS + Bootstrap** (tokens de design) et les **icônes Phosphor** sont opérationnels. La logique métier, la persistance et les données réelles sont explicitement **hors périmètre** (features 0002 et suivantes).
 
 ## 2. Écrans concernés
 
-Création de **6 écrans placeholder** (un titre + un court texte d'attente chacun), rattachés aux routes de la [carte des écrans](../docs/architecture/07-navigation-et-ecrans.md). Les routes paramétrées (`/equipe/:id/souhaits`, `/planning/:id/diffusion`) sont **hors périmètre** (features 005 / 012).
+Création de **6 écrans placeholder** (un titre + un court texte d'attente chacun), rattachés aux routes de la [carte des écrans](../docs/architecture/07-navigation-et-ecrans.md). Les routes paramétrées (`/equipe/:id/souhaits`, `/planning/:id/diffusion`) sont **hors périmètre** (features 0005 / 0012).
 
 | Route | Écran (vue) | Feature cible du contenu réel |
 |---|---|---|
-| `/` | `AccueilView.vue` | 013 |
-| `/equipe` | `EquipeView.vue` | 004 |
-| `/tournees` | `TourneesView.vue` | 006 |
-| `/absences` | `AbsencesView.vue` | 007 |
-| `/planning` | `PlanningView.vue` | 010 / 011 |
-| `/parametres` | `ParametresView.vue` | 003 / 008 |
+| `/` | `AccueilView.vue` | 0013 |
+| `/equipe` | `EquipeView.vue` | 0004 |
+| `/tournees` | `TourneesView.vue` | 0006 |
+| `/absences` | `AbsencesView.vue` | 0007 |
+| `/planning` | `PlanningView.vue` | 0010 / 0011 |
+| `/parametres` | `ParametresView.vue` | 0003 / 0008 |
 
 **Expérience visée (utilisateur non-technique)** : une **barre de navigation toujours visible** (libellés en français courant + icône Phosphor), l'écran courant **clairement mis en évidence**, et sur chaque écran un **titre explicite** indiquant où l'on se trouve. Le contenu de chaque écran se limite pour l'instant à son titre et à une phrase « Cet écran arrivera prochainement. » — pas de cul-de-sac, la navigation reste toujours accessible.
 
@@ -29,29 +29,29 @@ Création de **6 écrans placeholder** (un titre + un court texte d'attente chac
 
 ## 3. Modèle de données touché
 
-**Aucun.** 001 ne définit ni entité ni champ métier et ne persiste rien.
+**Aucun.** 0001 ne définit ni entité ni champ métier et ne persiste rien.
 
-- `src/domain/schema.js` est créé en **placeholder** (fichier présent, sans logique de (dé)sérialisation ni `verifierIntegrite`) pour matérialiser l'emplacement ; son remplissage relève de la feature **002**.
-- La notion de `schemaVersion` / `CURRENT_SCHEMA_VERSION` et les migrations sont **posées en squelette** (voir §5) mais **non implémentées** : c'est la feature **002** qui les activera ([ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md)).
+- `src/domain/schema.js` est créé en **placeholder** (fichier présent, sans logique de (dé)sérialisation ni `verifierIntegrite`) pour matérialiser l'emplacement ; son remplissage relève de la feature **0002**.
+- La notion de `schemaVersion` / `CURRENT_SCHEMA_VERSION` et les migrations sont **posées en squelette** (voir §5) mais **non implémentées** : c'est la feature **0002** qui les activera ([ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md)).
 
 ## 4. Store (Vuex)
 
 Mise en place de l'**ossature Vuex** uniquement, sans état métier ni persistance.
 
-- `src/store/index.js` : assemble les modules via `createStore` et les expose en `modules`. **Pas** de plugin de persistance ni de mutation `REPLACE_ALL` à ce stade (feature **002**, [ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) / [archi 04](../docs/architecture/04-gestion-etat-vuex.md)).
+- `src/store/index.js` : assemble les modules via `createStore` et les expose en `modules`. **Pas** de plugin de persistance ni de mutation `REPLACE_ALL` à ce stade (feature **0002**, [ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) / [archi 04](../docs/architecture/04-gestion-etat-vuex.md)).
 - `src/store/modules/` : **6 modules namespacés VIDES**, chacun exportant un objet `{ namespaced: true, state: () => ({}), getters: {}, mutations: {}, actions: {} }` :
   - `cabinet.js`, `personnes.js`, `tournees.js`, `absences.js`, `plannings.js` (destinés à être persistés plus tard),
   - `ui.js` (**non persisté**, état volatile d'interface).
-- **Persisté vs volatile** : non applicable en 001 (aucun state). La distinction est documentée ici pour guider la feature 002.
+- **Persisté vs volatile** : non applicable en 0001 (aucun state). La distinction est documentée ici pour guider la feature 0002.
 
 ## 5. Domaine (logique pure)
 
 Création des **squelettes** de `src/domain/` (aucun import de Vue/Vuex — [ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)) :
 
-- `src/domain/utils/dates.js` — **squelette minimal** exportant un objet `dateUtil` avec les fonctions documentées ([06](../docs/architecture/06-structure-du-code.md)) : `parse`, `format`, `addDays`, `diffDays`, `weekdayISO`, `rangeInclusive`. Chaque fonction porte sa **JSDoc** (`@param`/`@returns`). La conversion `Date.getDay()` (0=dimanche) → **ISO 1-7** (1=lundi…7=dimanche) est faite **ici et une seule fois** dans `weekdayISO`, conformément à l'[ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md). Implémentation minimale mais correcte (pas de dépendance externe type `dayjs` en 001, KISS).
+- `src/domain/utils/dates.js` — **squelette minimal** exportant un objet `dateUtil` avec les fonctions documentées ([06](../docs/architecture/06-structure-du-code.md)) : `parse`, `format`, `addDays`, `diffDays`, `weekdayISO`, `rangeInclusive`. Chaque fonction porte sa **JSDoc** (`@param`/`@returns`). La conversion `Date.getDay()` (0=dimanche) → **ISO 1-7** (1=lundi…7=dimanche) est faite **ici et une seule fois** dans `weekdayISO`, conformément à l'[ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md). Implémentation minimale mais correcte (pas de dépendance externe type `dayjs` en 0001, KISS).
 - `src/domain/utils/id.js` — **squelette minimal** exportant `genId()` : `crypto.randomUUID()` avec un secours (fallback) simple si indisponible.
-- `src/domain/schema.js` — **placeholder** (voir §3), à remplir en 002.
-- `src/domain/scheduling/` — **placeholder** : dossier créé avec un fichier d'amorçage (ex. `index.js` exportant un objet vide et documenté « moteur — feature 009 »). Aucune logique de génération ([archi 05](../docs/architecture/05-moteur-de-planification.md), feature **009**).
+- `src/domain/schema.js` — **placeholder** (voir §3), à remplir en 0002.
+- `src/domain/scheduling/` — **placeholder** : dossier créé avec un fichier d'amorçage (ex. `index.js` exportant un objet vide et documenté « moteur — feature 0009 »). Aucune logique de génération ([archi 05](../docs/architecture/05-moteur-de-planification.md), feature **0009**).
 
 > Règle : ces modules restent **purs**. Interdiction d'importer Vue/Vuex ; interdiction de manipuler `Date` ailleurs qu'à travers `dateUtil` ([ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)).
 
@@ -75,7 +75,7 @@ Création des **squelettes** de `src/domain/` (aucun import de Vue/Vuex — [ADR
 
 ## 7. Règles de validation
 
-**Aucune** en 001 : pas de formulaire. Les dépendances `@vuelidate/core`, `@vuelidate/validators` et `vue-debounce` sont **installées** (pour être disponibles) mais **non câblées** ; leur usage est cadré par l'[ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) et les [instructions formulaires](../docs/instructions/formulaires-validation.md), à partir de la feature **003+**.
+**Aucune** en 0001 : pas de formulaire. Les dépendances `@vuelidate/core`, `@vuelidate/validators` et `vue-debounce` sont **installées** (pour être disponibles) mais **non câblées** ; leur usage est cadré par l'[ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) et les [instructions formulaires](../docs/instructions/formulaires-validation.md), à partir de la feature **0003+**.
 
 ## 8. Points d'attention ergonomie
 
@@ -129,7 +129,7 @@ npm install -D sass
 
 - `vuex@4` et `vue-router@4` : versions compatibles **Vue 3** ([ADR 0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md)).
 - `bootstrap` + `@popperjs/core` : base de composants, intégrée en **SCSS** ([ADR 0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md)). Popper est requis par les composants JS interactifs (dropdown, tooltip…), installé maintenant même s'il n'est pas encore câblé.
-- `@vuelidate/core`, `@vuelidate/validators`, `vue-debounce` : installés pour les features de formulaires ([ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md)), non câblés en 001.
+- `@vuelidate/core`, `@vuelidate/validators`, `vue-debounce` : installés pour les features de formulaires ([ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md)), non câblés en 0001.
 - `@phosphor-icons/vue` : icônes ([ADR 0013](../docs/adr/0013-icones-phosphor.md)).
 - `sass` : compilateur SCSS (dev) — [ADR 0012](../docs/adr/0012-style-scss.md).
 - **KISS** : ne **rien** ajouter d'autre sans justification en ADR.
@@ -165,7 +165,7 @@ Créer `src/styles/` selon les [instructions style-scss](../docs/instructions/st
    3. **surcharge des variables Bootstrap** à partir des tokens (`$primary: t.$couleur-primaire;`, `$font-family-base: t.$police-base;`, `$border-radius: t.$rayon-md;`, plus `$success`/`$danger`/`$warning`, `$spacer`…) — **avant** l'import des variables Bootstrap ;
    4. `@import 'bootstrap/scss/variables';` puis `maps`, `mixins`, `root` ;
    5. **uniquement les modules utilisés** : `reboot`, `grid`, `buttons`, `forms`, `nav`, `navbar`, puis `utilities` + `utilities/api` pour les classes utilitaires. (Ajouter `modal`, `alert`… au fil des features, pas maintenant.)
-3. `_mixins.scss` — mixins réutilisables (focus visible, media queries, carte…). Minimal en 001.
+3. `_mixins.scss` — mixins réutilisables (focus visible, media queries, carte…). Minimal en 0001.
 4. `_base.scss` — reset léger + styles d'éléments de base (`body`, titres, liens) construits sur les tokens.
 5. `main.scss` — point d'entrée : `@use` des partiels dans l'ordre `tokens` → `bootstrap` → `mixins` → `base`, + styles globaux éventuels.
 
@@ -173,7 +173,7 @@ Créer `src/styles/` selon les [instructions style-scss](../docs/instructions/st
 
 ### Étape 6 — `main.js` (montage de l'app)
 
-`src/main.js` : `createApp(App)`, `.use(router)`, `.use(store)`, `import '@/styles/main.scss'`, puis `.mount('#app')`. **Ne pas** importer le JS global de Bootstrap ni de plugin de persistance en 001 (aucun composant interactif ni store persistant à ce stade).
+`src/main.js` : `createApp(App)`, `.use(router)`, `.use(store)`, `import '@/styles/main.scss'`, puis `.mount('#app')`. **Ne pas** importer le JS global de Bootstrap ni de plugin de persistance en 0001 (aucun composant interactif ni store persistant à ce stade).
 
 ### Étape 7 — Router (routes placeholder)
 
@@ -185,7 +185,7 @@ Créer `src/styles/` selon les [instructions style-scss](../docs/instructions/st
 
 ### Étape 9 — Domaine & stockage (squelettes)
 
-Créer `src/domain/utils/dates.js` et `id.js` (squelettes minimaux, §5), `src/domain/schema.js` et `src/domain/scheduling/index.js` (placeholders), `src/storage/storageRepository.js` et `src/storage/migrations.js` (squelettes avec **signatures async** documentées `load`/`save`/`clear`/`isAvailable` et `CURRENT_SCHEMA_VERSION` + pipeline vide — **non implémentés**, feature 002, [ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md)).
+Créer `src/domain/utils/dates.js` et `id.js` (squelettes minimaux, §5), `src/domain/schema.js` et `src/domain/scheduling/index.js` (placeholders), `src/storage/storageRepository.js` et `src/storage/migrations.js` (squelettes avec **signatures async** documentées `load`/`save`/`clear`/`isAvailable` et `CURRENT_SCHEMA_VERSION` + pipeline vide — **non implémentés**, feature 0002, [ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md)).
 
 ### Étape 10 — `App.vue` (layout + navigation)
 
@@ -232,6 +232,6 @@ npm run preview  # sert le build (vérifie le rendu sous la base /idelia/)
 - **Historique du router vs GitHub Pages** : ✅ **Décidé** — `createWebHashHistory(import.meta.env.BASE_URL)` ([ADR 0016](../docs/adr/0016-router-mode-hash-pour-pages.md)). Le mode hash fonctionne d'emblée sur un hébergement statique (rafraîchissement et liens directs fiables, aucun `404.html` à maintenir). Compromis assumé : présence du `#` dans les URLs, sans impact pour les utilisateurs cibles.
 - **Sass + Bootstrap 5.3 (`@import`)** : Bootstrap 5.3 utilise encore `@import` et des fonctions globales, ce qui déclenche des **avertissements de dépréciation** avec les versions récentes de Dart Sass (et casserait avec Sass 2.0). **Mitigation** : suivre exactement l'ordre d'import de l'ADR 0015 ; en cas de bruit, épingler une version de `sass` compatible et/ou fixer le mode d'API Sass de Vite. Migration attendue vers `@use` sur les versions ultérieures de Bootstrap.
 - **Répertoire racine non vide au scaffold** : le dépôt contient déjà `docs/`, `features/`, `.claude/`. La procédure « scaffold dans un dossier temporaire puis remontée » (étape 1) évite tout écrasement ; **vérifier** après coup que ces dossiers sont intacts et que `docs/`/`features/` ne se retrouvent pas dans `dist`.
-- **`@popperjs/core` non utilisé en 001** : installé pour anticiper les composants interactifs (dropdown, tooltip, modale), mais **non importé** tant qu'aucun composant JS Bootstrap n'est câblé — normal, pas un oubli.
-- **Vuelidate 2 en Options API** : `@vuelidate/core` (v2) est pensé d'abord pour la Composition API. Son usage en **Options API** (imposé par l'[ADR 0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md)) demande un petit pont (`setup()` renvoyant `v$: useVuelidate()` + option `validations()`). **Sans impact en 001** (non câblé), mais à cadrer dans la feature de formulaires (003+) et éventuellement à préciser dans l'[ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md).
+- **`@popperjs/core` non utilisé en 0001** : installé pour anticiper les composants interactifs (dropdown, tooltip, modale), mais **non importé** tant qu'aucun composant JS Bootstrap n'est câblé — normal, pas un oubli.
+- **Vuelidate 2 en Options API** : `@vuelidate/core` (v2) est pensé d'abord pour la Composition API. Son usage en **Options API** (imposé par l'[ADR 0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md)) demande un petit pont (`setup()` renvoyant `v$: useVuelidate()` + option `validations()`). **Sans impact en 0001** (non câblé), mais à cadrer dans la feature de formulaires (0003+) et éventuellement à préciser dans l'[ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md).
 - **`components/communs/` vide** : par KISS, ne créer un composant d'amorçage que s'il sert réellement la navigation ; sinon laisser le dossier prêt pour les features suivantes.

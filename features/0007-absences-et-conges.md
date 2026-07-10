@@ -1,33 +1,33 @@
-# Feature 007 — Absences & congés
+# Feature 0007 — Absences & congés
 
 - **Statut** : Fait
-- **Dépend de** : `004` (module `personnes` avec CRUD, getters `actifs`/`byId` — indispensables au sélecteur de personne et à l'affichage ; briques `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde` ; `src/domain/libelles.js`, `dateUtil`, patron Vuelidate + formulaire en modale de `FormulairePersonne`/`FormulaireTournee`). S'appuie indirectement sur `002` (store persisté, `schema.js` avec l'entité `Absence` et ses enums, module `absences` squelette `{ items:[] }` + getters `byId`/`parPersonne` + mutation `REPLACE`, plugin de persistance débouncé).
+- **Dépend de** : `0004` (module `personnes` avec CRUD, getters `actifs`/`byId` — indispensables au sélecteur de personne et à l'affichage ; briques `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde` ; `src/domain/libelles.js`, `dateUtil`, patron Vuelidate + formulaire en modale de `FormulairePersonne`/`FormulaireTournee`). S'appuie indirectement sur `0002` (store persisté, `schema.js` avec l'entité `Absence` et ses enums, module `absences` squelette `{ items:[] }` + getters `byId`/`parPersonne` + mutation `REPLACE`, plugin de persistance débouncé).
 - **ADR liés** : [0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md) (Options API + Vuex), [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance derrière repository), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (domaine = module pur), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (dates `"YYYY-MM-DD"`, horodatages ISO UTC), [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) (Vuelidate), [0012](../docs/adr/0012-style-scss.md) / [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) (SCSS + Bootstrap thémé, dont le composant modale), [0013](../docs/adr/0013-icones-phosphor.md) (icônes Phosphor).
 
 ## 1. Contexte & objectif
 
-Après l'équipe (`004`), ses souhaits (`005`) et les tournées (`006`), le cabinet a besoin d'enregistrer les **absences et congés** de ses membres : congés payés, RTT, arrêts maladie, maternité/paternité, formation… Chaque absence est **datée** (une période, éventuellement une demi-journée) et porte un **statut de validation** (`Demande` → `Validée` / `Refusée`). Ces données sont, avec l'équipe, les souhaits et les tournées, le dernier pilier de données de référence qui alimentera le **moteur de planification** (`009`) et la **génération** (`010`) : une absence **validée** empêchera d'affecter la personne sur cette période, une simple **demande** produira seulement un avertissement.
+Après l'équipe (`0004`), ses souhaits (`0005`) et les tournées (`0006`), le cabinet a besoin d'enregistrer les **absences et congés** de ses membres : congés payés, RTT, arrêts maladie, maternité/paternité, formation… Chaque absence est **datée** (une période, éventuellement une demi-journée) et porte un **statut de validation** (`Demande` → `Validée` / `Refusée`). Ces données sont, avec l'équipe, les souhaits et les tournées, le dernier pilier de données de référence qui alimentera le **moteur de planification** (`0009`) et la **génération** (`0010`) : une absence **validée** empêchera d'affecter la personne sur cette période, une simple **demande** produira seulement un avertissement.
 
-À l'issue de `002`, la collection `absences` existe dans l'état (vide, persistée automatiquement) et son module Vuex expose déjà `byId`/`parPersonne`/`REPLACE`, mais **aucun écran ne permet de la consulter ni de la modifier** : `AbsencesView.vue` est un simple placeholder. Les **actions CRUD étaient explicitement différées à `007`**.
+À l'issue de `0002`, la collection `absences` existe dans l'état (vide, persistée automatiquement) et son module Vuex expose déjà `byId`/`parPersonne`/`REPLACE`, mais **aucun écran ne permet de la consulter ni de la modifier** : `AbsencesView.vue` est un simple placeholder. Les **actions CRUD étaient explicitement différées à `0007`**.
 
-La feature `007` rend l'écran **Absences & congés** opérationnel pour le référent (public **peu à l'aise avec l'informatique**) : **lister, ajouter, modifier, supprimer** les absences de toute l'équipe, et **traiter les demandes** (valider / refuser / remettre en demande). Le CRUD reprend le patron éprouvé de `004`/`006` : liste de cartes, ajout/édition en modale, confirmation avant suppression. Chaque enregistrement valide est **persisté automatiquement** (plugin débouncé de `002`) avec un **retour visuel clair** réutilisant `IndicateurSauvegarde`.
+La feature `0007` rend l'écran **Absences & congés** opérationnel pour le référent (public **peu à l'aise avec l'informatique**) : **lister, ajouter, modifier, supprimer** les absences de toute l'équipe, et **traiter les demandes** (valider / refuser / remettre en demande). Le CRUD reprend le patron éprouvé de `0004`/`0006` : liste de cartes, ajout/édition en modale, confirmation avant suppression. Chaque enregistrement valide est **persisté automatiquement** (plugin débouncé de `0002`) avec un **retour visuel clair** réutilisant `IndicateurSauvegarde`.
 
-**Hors périmètre `007`** (à ne pas implémenter ici) :
+**Hors périmètre `0007`** (à ne pas implémenter ici) :
 
-- **Exploitation** des absences par le moteur (blocage d'affectation sur absence `VALIDE`, avertissement sur `DEMANDE`) — features `009`/`010`. La règle métier ([02 §Absence](../docs/architecture/02-modele-de-domaine.md)) est **reflétée dans le vocabulaire UI** (« Validée » = bloquante ; « Demande » = à titre indicatif) mais son **application** est différée.
-- **Détection des conflits absence ↔ affectation** (chevauchement avec le planning) — feature `009`. `007` ne connaît pas encore les affectations.
+- **Exploitation** des absences par le moteur (blocage d'affectation sur absence `VALIDE`, avertissement sur `DEMANDE`) — features `0009`/`0010`. La règle métier ([02 §Absence](../docs/architecture/02-modele-de-domaine.md)) est **reflétée dans le vocabulaire UI** (« Validée » = bloquante ; « Demande » = à titre indicatif) mais son **application** est différée.
+- **Détection des conflits absence ↔ affectation** (chevauchement avec le planning) — feature `0009`. `0007` ne connaît pas encore les affectations.
 - **Import de jours fériés / calendrier**, **récurrence** d'absences, **décompte de soldes** (compteurs de congés restants) — hors v1.
 - **Notifications / workflow multi-utilisateurs** : pas d'authentification en v1 (règle d'or #11), le référent est seul à saisir **et** à décider.
 
 ## 2. Écrans concernés
 
-Une seule route, déjà déclarée en `001` et confirmée par [07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md) (`name: 'absences'`, path `/absences`) :
+Une seule route, déjà déclarée en `0001` et confirmée par [07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md) (`name: 'absences'`, path `/absences`) :
 
-| Route | Écran | Changement `007` |
+| Route | Écran | Changement `0007` |
 |---|---|---|
 | `/absences` | **Absences & congés** | Remplace le placeholder par la **liste globale des absences + le CRUD** (ajout/édition en modale, suppression confirmée, transitions de statut). |
 
-> Aucune route paramétrée n'est ajoutée ici (l'écran liste **toutes** les personnes, il n'est pas rattaché à une personne comme `005`). Aucune modification du `router` n'est nécessaire (la route existe déjà).
+> Aucune route paramétrée n'est ajoutée ici (l'écran liste **toutes** les personnes, il n'est pas rattaché à une personne comme `0005`). Aucune modification du `router` n'est nécessaire (la route existe déjà).
 
 **Expérience visée** (utilisateur non-technique) :
 
@@ -43,11 +43,11 @@ Une seule route, déjà déclarée en `001` et confirmée par [07-navigation-et-
 
 ## 3. Modèle de données touché
 
-Entité **`Absence`**, déjà décrite dans le modèle de domaine ([02 §Absence](../docs/architecture/02-modele-de-domaine.md)) et présente en tant que collection racine `absences.items` (vide) depuis `002`. Ses enums (`TYPES_ABSENCE`, `STATUTS_ABSENCE`, `CRENEAUX`) existent **déjà** dans `schema.js`. **Aucune nouvelle structure, aucun nouveau champ, aucune migration.**
+Entité **`Absence`**, déjà décrite dans le modèle de domaine ([02 §Absence](../docs/architecture/02-modele-de-domaine.md)) et présente en tant que collection racine `absences.items` (vide) depuis `0002`. Ses enums (`TYPES_ABSENCE`, `STATUTS_ABSENCE`, `CRENEAUX`) existent **déjà** dans `schema.js`. **Aucune nouvelle structure, aucun nouveau champ, aucune migration.**
 
-Champs d'`Absence` **manipulés** par `007` :
+Champs d'`Absence` **manipulés** par `0007` :
 
-| champ | type | oblig. | rôle `007` |
+| champ | type | oblig. | rôle `0007` |
 |---|---|---|---|
 | `id` | uuid | oui | généré à la création via `genId()` ; **immuable** |
 | `personneId` | uuid → Personne | oui | édité (requis) ; sélecteur de personne ; intégrité **déjà** contrôlée par `verifierIntegrite` |
@@ -61,24 +61,24 @@ Champs d'`Absence` **manipulés** par `007` :
 | `decideLe` | ISO UTC \| null | non | posé automatiquement à la **décision** (valider/refuser) ; remis à `null` si retour en demande |
 | `createdAt` / `updatedAt` | ISO UTC | oui | posés/rafraîchis automatiquement |
 
-> **Pas de soft-delete au modèle** : `Absence` ne porte **ni** `actif` **ni** `archivee` (contrairement à `Personne`/`Tournee`). Une absence n'est **référencée par aucune autre entité** (les `Affectation` référencent `personneId`/`tourneeId`, jamais une absence) : sa **suppression physique** est donc légitime, protégée par une **confirmation** (même raisonnement que la `Preference` de `005`, objet non référencé). Voir §12.
+> **Pas de soft-delete au modèle** : `Absence` ne porte **ni** `actif` **ni** `archivee` (contrairement à `Personne`/`Tournee`). Une absence n'est **référencée par aucune autre entité** (les `Affectation` référencent `personneId`/`tourneeId`, jamais une absence) : sa **suppression physique** est donc légitime, protégée par une **confirmation** (même raisonnement que la `Preference` de `0005`, objet non référencé). Voir §12.
 
 **Impact `schemaVersion` / migrations** : **aucun**. `CURRENT_SCHEMA_VERSION` reste `1`. La collection `absences` et l'entité sont déjà couvertes par `toSaveDocument`/`fromSaveDocument`, et `verifierIntegrite` contrôle déjà `absence.personneId`.
 
 ## 4. Store (Vuex)
 
-Module `absences` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). Après `002` il expose : `state {items: []}`, getters `byId` et `parPersonne`, mutation `REPLACE`, `actions: {}`. On calque le module `tournees` de `006`, en ajoutant une **suppression physique** et des **transitions de statut**.
+Module `absences` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). Après `0002` il expose : `state {items: []}`, getters `byId` et `parPersonne`, mutation `REPLACE`, `actions: {}`. On calque le module `tournees` de `0006`, en ajoutant une **suppression physique** et des **transitions de statut**.
 
 ### 4.1 Getters
 
 - `byId` (**existant, conservé**) : `(id) => state.items.find((a) => a.id === id)`.
-- `parPersonne` (**existant, conservé**) : `(personneId) => state.items.filter((a) => a.personneId === personneId)` — utile au moteur `009` et à d'éventuels regroupements.
+- `parPersonne` (**existant, conservé**) : `(personneId) => state.items.filter((a) => a.personneId === personneId)` — utile au moteur `0009` et à d'éventuels regroupements.
 
-> **Aucun getter de tri/filtre ajouté** : le tri (par date décroissante) et le filtre par statut sont des **choix de présentation**, faits dans la vue (§6), pas dans le store (KISS, cohérent avec `004`/`006`).
+> **Aucun getter de tri/filtre ajouté** : le tri (par date décroissante) et le filtre par statut sont des **choix de présentation**, faits dans la vue (§6), pas dans le store (KISS, cohérent avec `0004`/`0006`).
 
 ### 4.2 Mutations
 
-Trois mutations (la mutation `REPLACE` d'hydratation reste inchangée), volontairement **fines** — mêmes patrons que `tournees` (`006`) : elles n'appliquent qu'une modification de state, sans logique métier ni horodatage (posés en amont par l'action/domaine).
+Trois mutations (la mutation `REPLACE` d'hydratation reste inchangée), volontairement **fines** — mêmes patrons que `tournees` (`0006`) : elles n'appliquent qu'une modification de state, sans logique métier ni horodatage (posés en amont par l'action/domaine).
 
 - `ADD(state, absence)` : ajoute une absence complète à la collection (`state.items.push(absence)`).
 - `UPDATE(state, { id, patch })` : **fusion immuable par id** — remplace l'élément d'`id` donné par `{ ...ancien, ...patch }` (via `findIndex` + `splice`). Ne fait rien si l'id est introuvable.
@@ -105,16 +105,16 @@ Chaque `commit` d'une mutation `absences/*` (hors `REPLACE` d'hydratation, qui p
 
 L'écran **lit** (sans jamais les muter) :
 
-- `state.statutSauvegarde` (`INACTIF | EN_COURS | ENREGISTRE | ERREUR | ERREUR_CHARGEMENT`) et `state.derniereSauvegarde` (ISO UTC) — retour visuel via `IndicateurSauvegarde`, exactement comme `003`/`004`/`006`.
+- `state.statutSauvegarde` (`INACTIF | EN_COURS | ENREGISTRE | ERREUR | ERREUR_CHARGEMENT`) et `state.derniereSauvegarde` (ISO UTC) — retour visuel via `IndicateurSauvegarde`, exactement comme `0003`/`0004`/`0006`.
 - le getter `personnes/actifs` (personnes sélectionnables dans le formulaire) et `personnes/byId` (résolution de la personne d'une absence pour l'affichage de la liste, y compris une personne archivée — voir §6).
 
 ## 5. Domaine (logique pure)
 
-Tout dans `src/domain/`, **sans import Vue/Vuex ni `localStorage`** ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)). Réutilisable par le moteur (`009`) et les écrans planning (`010`+).
+Tout dans `src/domain/`, **sans import Vue/Vuex ni `localStorage`** ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)). Réutilisable par le moteur (`0009`) et les écrans planning (`0010`+).
 
 ### 5.1 `src/domain/absences.js` (**nouveau**) — fabrique, normalisation & chevauchements
 
-Calque strict de `src/domain/tournees.js` (`006`) pour la fabrique, complété par des **helpers purs de chevauchement** (réutilisables par le moteur `009`).
+Calque strict de `src/domain/tournees.js` (`0006`) pour la fabrique, complété par des **helpers purs de chevauchement** (réutilisables par le moteur `0009`).
 
 - **`creerAbsence(champs)`** → `Absence` : construit une absence **complète et normalisée** à partir d'un objet partiel (les champs saisis dans le formulaire), en appliquant les **valeurs par défaut** et en générant les champs techniques. Fonction **pure** (hors `genId()` et `new Date().toISOString()`, tolérés car techniques — même usage que `schema.js`/`personnes.js`/`tournees.js`).
   - `id` : `champs.id ?? genId()` (import de `src/domain/utils/id.js`).
@@ -128,13 +128,13 @@ Calque strict de `src/domain/tournees.js` (`006`) pour la fabrique, complété p
   - `decideLe` : `champs.decideLe ?? null` — resté `null` tant qu'aucune décision n'est prise.
   - `createdAt` : `champs.createdAt ?? <ISO UTC courant>` ; `updatedAt` : `<ISO UTC courant>`.
   - JSDoc : `@typedef {Object} Absence` (aligné sur [02 §Absence](../docs/architecture/02-modele-de-domaine.md)) + `@param`/`@returns`.
-- **Helpers de chevauchement** (purs, exportés — utilisés par un **avertissement non bloquant** à la saisie en `007`, réutilisables par le moteur `009`) :
+- **Helpers de chevauchement** (purs, exportés — utilisés par un **avertissement non bloquant** à la saisie en `0007`, réutilisables par le moteur `0009`) :
   - **`creneauxSeChevauchent(a, b)`** → `boolean` : `true` si l'un des créneaux est `'JOURNEE'` ou s'ils sont égaux (une demi-journée `MATIN` ne chevauche pas `APRES_MIDI`, mais chacune chevauche `JOURNEE`).
   - **`periodesSeChevauchent(debutA, finA, debutB, finB)`** → `boolean` : intersection de deux intervalles de dates **inclusifs**, par **comparaison lexicographique de chaînes** `"YYYY-MM-DD"` (`debutA <= finB && debutB <= finA`) — **aucun objet `Date`**.
   - **`absencesSeChevauchent(a, b)`** → `boolean` : `true` si `a` et `b` concernent la **même personne** (`personneId` égaux), ont des **périodes** qui se recoupent **et** des **créneaux** compatibles, en **excluant l'identité** (`a.id !== b.id`, pour ne pas se comparer à soi-même en édition).
   - **`chevauchementsPour(absenceCible, absences)`** → `Absence[]` : liste des absences de `absences` qui **chevauchent** `absenceCible` (via `absencesSeChevauchent`). Renvoie `[]` si aucune. Utilisé par le formulaire pour un **avertissement non bloquant** (§6/§7).
 
-> **Cohérence des dates : au formulaire, pas au domaine.** Conformément au choix de `004`/`006`, le contrôle **bloquant** `dateFin ≥ dateDebut` est porté par **Vuelidate** dans `FormulaireAbsence` (§7). Le **chevauchement**, lui, est un **avertissement non bloquant** (comme la cohérence des paramètres en `003`) : le domaine fournit la fonction pure, le formulaire l'affiche à titre indicatif sans jamais empêcher l'enregistrement (une personne peut légitimement cumuler p. ex. une formation le matin et un congé l'après-midi, ou l'utilisateur peut vouloir corriger sciemment). Le domaine garantit la **normalisation structurelle** (champs tous initialisés, commentaire trimé).
+> **Cohérence des dates : au formulaire, pas au domaine.** Conformément au choix de `0004`/`0006`, le contrôle **bloquant** `dateFin ≥ dateDebut` est porté par **Vuelidate** dans `FormulaireAbsence` (§7). Le **chevauchement**, lui, est un **avertissement non bloquant** (comme la cohérence des paramètres en `0003`) : le domaine fournit la fonction pure, le formulaire l'affiche à titre indicatif sans jamais empêcher l'enregistrement (une personne peut légitimement cumuler p. ex. une formation le matin et un congé l'après-midi, ou l'utilisateur peut vouloir corriger sciemment). Le domaine garantit la **normalisation structurelle** (champs tous initialisés, commentaire trimé).
 
 ### 5.2 `src/domain/libelles.js` (**modifier**) — libellés de type & de statut d'absence
 
@@ -176,18 +176,18 @@ Aucune manipulation `Date` custom :
 
 ## 6. Composants
 
-Séparation conforme à [06-structure-du-code.md](../docs/architecture/06-structure-du-code.md) : les briques transverses (modale, confirmation, indicateur) sont **déjà** dans `components/communs/` (`004`) ; le formulaire spécifique va dans `components/absences/` ; l'écran routé dans `views/`.
+Séparation conforme à [06-structure-du-code.md](../docs/architecture/06-structure-du-code.md) : les briques transverses (modale, confirmation, indicateur) sont **déjà** dans `components/communs/` (`0004`) ; le formulaire spécifique va dans `components/absences/` ; l'écran routé dans `views/`.
 
 ### 6.1 Réutilisation directe (aucune modification)
 
 - `src/components/communs/ModaleBase.vue` — coquille de modale accessible (focus piégé, `Échap`, **retour du focus à l'ouvrant** à la fermeture, ARIA). Props `visible`/`titre`/`taille` ; slots `default`/`pied` ; événements `fermeture` et `affichee`. Réutilisée telle quelle.
 - `src/components/communs/DialogueConfirmation.vue` — confirmation générique au-dessus de `ModaleBase` (props `visible`/`titre`/`message`/`libelleConfirmer`/`varianteConfirmer` ; événements `confirmer`/`annuler` ; fermeture = `annuler`). Réutilisée pour la **suppression** (`variante-confirmer="danger"`, `libelle-confirmer="Supprimer"`).
 - `src/components/communs/IndicateurSauvegarde.vue` — retour visuel de persistance (statut + dernière sauvegarde + `apres-edition`), avec l'encart `ERREUR_CHARGEMENT`. Réutilisé.
-- `src/styles/_bootstrap.scss` — **aucun ajout requis** : `close`, `modal`, `forms` (dont `form-select`/`<input type="date">`), `alert` sont **déjà** importés (`004`). Le statut est rendu en **icône + texte** (pas de `badge`) ; le filtre en **groupe de boutons** (`btn`/`btn-outline-*` déjà présents). KISS confirmé.
+- `src/styles/_bootstrap.scss` — **aucun ajout requis** : `close`, `modal`, `forms` (dont `form-select`/`<input type="date">`), `alert` sont **déjà** importés (`0004`). Le statut est rendu en **icône + texte** (pas de `badge`) ; le filtre en **groupe de boutons** (`btn`/`btn-outline-*` déjà présents). KISS confirmé.
 
 ### 6.2 `src/components/absences/FormulaireAbsence.vue` (**nouveau**)
 
-Formulaire **présentational** d'ajout/édition d'**une** absence, bâti au-dessus de `ModaleBase`, calqué sur `FormulaireTournee` (`006`). **N'accède pas au store** : il reçoit ses données par props et **émet** le résultat ; l'écran (`AbsencesView`) dispatche.
+Formulaire **présentational** d'ajout/édition d'**une** absence, bâti au-dessus de `ModaleBase`, calqué sur `FormulaireTournee` (`0006`). **N'accède pas au store** : il reçoit ses données par props et **émet** le résultat ; l'écran (`AbsencesView`) dispatche.
 
 - **Props** :
   - `visible` (Boolean, requis) ;
@@ -214,7 +214,7 @@ Formulaire **présentational** d'ajout/édition d'**une** absence, bâti au-dess
 
 ### 6.3 `src/views/AbsencesView.vue` (**réécriture** complète du placeholder)
 
-Écran routé (Options API), calqué sur `TourneesView` (`006`). **Orchestre** : liste + filtre + modales, sans logique métier (délègue au store/domaine).
+Écran routé (Options API), calqué sur `TourneesView` (`0006`). **Orchestre** : liste + filtre + modales, sans logique métier (délègue au store/domaine).
 
 - **Titre** `<h1>` « Absences & congés ».
 - **Encart `ERREUR_CHARGEMENT`** : même patron que `TourneesView` (`alert alert-warning`, `PhWarning`), message adapté aux absences.
@@ -223,7 +223,7 @@ Formulaire **présentational** d'ajout/édition d'**une** absence, bâti au-dess
 - **En-tête d'action** : bouton principal **« Ajouter une absence »** (`btn btn-primary`, icône Phosphor `PhCalendarPlus` — le développeur confirme l'existence dans `@phosphor-icons/vue`, sinon `PhPlus`) ⇒ ouvre `FormulaireAbsence` en création (`absence = null`). Une `ref` (`boutonAjout`) sert de **point de repli du focus** après suppression/décision (comme `TourneesView`).
 - **Filtre par statut** : un petit groupe de boutons (« Toutes » / « En attente » / « Validées » / « Refusées »), piloté par un `data` `filtreStatut` (`'TOUS'` par défaut). État `aria-pressed`/actif clair, cibles ~44 px. Purement présentation (aucun getter store).
 - **État vide** : si **aucune** absence n'existe → encart accueillant (icône Phosphor évocatrice, ex. `PhCalendarBlank`, doublée du texte) « Aucune absence enregistrée. Ajoutez la première pour tenir compte des congés et arrêts dans les plannings. » + bouton d'ajout (si au moins une personne).
-- **Liste des absences** (`absencesTriees` **puis** filtrées) : une **liste de cartes/lignes** (pas un tableau dense, cohérent avec `004`/`006`). Chaque ligne affiche :
+- **Liste des absences** (`absencesTriees` **puis** filtrées) : une **liste de cartes/lignes** (pas un tableau dense, cohérent avec `0004`/`0006`). Chaque ligne affiche :
   - **pastille de couleur** (rond, `aria-hidden`) **+ « Prénom Nom »** de la personne, résolus via `personnes/byId` (fonctionne même si la personne a été archivée ; si introuvable — ne devrait pas arriver, intégrité garantie — afficher « Personne inconnue »). Une personne archivée peut être signalée discrètement (« (archivée) ») sans que ce soit l'unique repère ;
   - **motif** en clair (`libelleTypeAbsence`) ;
   - **période** lisible (`periodeTexte` : « du {formatDateFr} au {formatDateFr} », ou « le {formatDateFr} » si `dateDebut === dateFin`) ;
@@ -248,8 +248,8 @@ Formulaire **présentational** d'ajout/édition d'**une** absence, bâti au-dess
 
 ### 6.4 Réutilisation & style
 
-- `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `libelles.js`, `dateUtil`, tokens/mixins SCSS, intégration Bootstrap, icônes Phosphor : **déjà en place** (`003`/`004`/`006`), réutilisés tels quels.
-- La directive `v-debounce` **n'est pas nécessaire** (formulaire à validation explicite, pas de saisie auto-persistée en continu — comme `004`/`005`/`006`).
+- `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `libelles.js`, `dateUtil`, tokens/mixins SCSS, intégration Bootstrap, icônes Phosphor : **déjà en place** (`0003`/`0004`/`0006`), réutilisés tels quels.
+- La directive `v-debounce` **n'est pas nécessaire** (formulaire à validation explicite, pas de saisie auto-persistée en continu — comme `0004`/`0005`/`0006`).
 - Le SCSS `scoped` de chaque composant ne sert qu'au **spécifique** (lignes de liste, pastille personne, repère de statut, groupe de filtre) ; tout le reste via classes Bootstrap. Cibles ~44 px (`$cible-cliquable-min`), focus visible, tokens uniquement (aucune valeur « magique »).
 
 ## 7. Règles de validation
@@ -267,7 +267,7 @@ Vuelidate ([ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md), [i
 
 **Comportement d'enregistrement** : l'**ensemble** du formulaire est validé au clic sur « Enregistrer » ; si un champ est invalide, l'enregistrement est **bloqué**, les messages s'affichent sous les champs concernés, le **premier champ erroné reçoit le focus**, et la **saisie est conservée** (tolérance à l'erreur, zéro perte — [08](../docs/architecture/08-principes-ux-ergonomie.md)). « Annuler » / `Échap` / clic hors fenêtre ferment sans enregistrer.
 
-> **Chevauchement = avertissement, pas validation.** Le recoupement avec une autre absence de la personne n'est **jamais** une règle Vuelidate bloquante : c'est un **encart informatif** non bloquant (§6.2), cohérent avec la règle métier « une `DEMANDE` avertit, seule une `VALIDE` bloque » (côté moteur, `009`).
+> **Chevauchement = avertissement, pas validation.** Le recoupement avec une autre absence de la personne n'est **jamais** une règle Vuelidate bloquante : c'est un **encart informatif** non bloquant (§6.2), cohérent avec la règle métier « une `DEMANDE` avertit, seule une `VALIDE` bloque » (côté moteur, `0009`).
 
 ## 8. Points d'attention ergonomie
 
@@ -287,7 +287,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie.md](../
 - **Tolérance à l'erreur** : la saisie n'est jamais perdue si la validation échoue ; focus porté sur le premier champ à corriger.
 - **Modale accessible** : focus piégé, **fermeture au clavier (`Échap`)**, **retour du focus à l'ouvrant**, `autofocus` sur le 1ᵉʳ champ (fournis par `ModaleBase`).
 - **Ergonomie physique** : cibles ~44 px (boutons, filtres), bon espacement, `label` associé à chaque champ, **focus clavier visible**, structure de titres `h1 → h2`.
-- **Cohérence** : mêmes patterns que `003`/`004`/`005`/`006` (indicateur de sauvegarde, présentation des erreurs, ajout/édition en modale, confirmation destructive) — l'utilisateur retrouve exactement les mêmes gestes que sur les écrans Équipe et Tournées.
+- **Cohérence** : mêmes patterns que `0003`/`0004`/`0005`/`0006` (indicateur de sauvegarde, présentation des erreurs, ajout/édition en modale, confirmation destructive) — l'utilisateur retrouve exactement les mêmes gestes que sur les écrans Équipe et Tournées.
 
 ## 9. Étapes d'implémentation
 
@@ -334,7 +334,7 @@ Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`developpeu
 **Fichiers** :
 - `src/views/AbsencesView.vue` (**réécrire**) — liste globale triée + filtre par statut, état vide, cas « aucune personne » (lien vers Équipe), bouton d'ajout, transitions de statut, suppression confirmée, orchestration des modales, `IndicateurSauvegarde`, encart `ERREUR_CHARGEMENT` (§6.3, §8).
 
-**Dépend de** : T1 (store/getters/libellés), T2 (`FormulaireAbsence`), briques `DialogueConfirmation`/`IndicateurSauvegarde` (existant `004`), getters `personnes/actifs`/`byId` (existant `004`).
+**Dépend de** : T1 (store/getters/libellés), T2 (`FormulaireAbsence`), briques `DialogueConfirmation`/`IndicateurSauvegarde` (existant `0004`), getters `personnes/actifs`/`byId` (existant `0004`).
 
 **Critères de sortie** :
 - **Aucune personne active** : l'écran explique qu'il faut d'abord ajouter des personnes, avec un **lien vers l'Équipe** ; le bouton d'ajout est neutralisé ; les absences existantes (le cas échéant) restent affichées.
@@ -369,7 +369,7 @@ Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`developpeu
 Parcours manuel (`npm run dev`, ouvrir `/absences`) :
 
 1. **Cas « aucune personne »** — Sur un stockage vide (`localStorage.clear()` + recharger) sans personne : l'écran explique qu'il faut d'abord ajouter des personnes et propose un **lien vers l'Équipe**. Le bouton d'ajout est neutralisé.
-2. **Pré-requis** — Créer au moins deux personnes actives via `/equipe` (feature `004`), avec des couleurs distinctes.
+2. **Pré-requis** — Créer au moins deux personnes actives via `/equipe` (feature `0004`), avec des couleurs distinctes.
 3. **État vide** — Revenir sur `/absences` : état vide accueillant + bouton « Ajouter une absence ».
 4. **Ajout — période** — « Ajouter une absence », choisir une personne, motif « Congés payés », `Du` 12/08/2026 (la date `Au` se cale automatiquement), porter `Au` au 23/08/2026, créneau « Journée entière », enregistrer : la modale se ferme, l'absence apparaît (pastille + « Prénom Nom » + « Congés payés » + « du 12/08/2026 au 23/08/2026 » + statut « En attente »). Indicateur « Modifications enregistrées ». **Recharger** → conservée.
 5. **Ajout — demi-journée** — Ajouter une absence « Formation » sur un seul jour (`Du` = `Au`), créneau « Matin » → la carte affiche « le … » **et** « Matin ».
@@ -387,11 +387,11 @@ Parcours manuel (`npm run dev`, ouvrir `/absences`) :
 
 1. **Présentation de la liste : liste plate triée par date décroissante + filtre par statut (retenu)** — **Retenu** plutôt qu'un **regroupement par personne**. Justification : la personne est déjà affichée sur chaque carte (pastille + nom) ; le volume attendu pour un petit cabinet reste modeste ; une **liste unique triée par `dateDebut` décroissant** (récent/à venir en tête) est la plus simple (KISS) et lisible. Un **unique filtre par statut** (« Toutes / En attente / Validées / Refusées ») est ajouté car il sert directement le **workflow** (retrouver les demandes à traiter) à coût quasi nul (un `data` + un computed). **Filtre par personne** différé (person déjà visible ; volume faible). **À confirmer** : ce choix vs regroupement par personne, et l'ajout du filtre statut.
 2. **Statut hors formulaire, piloté par actions de liste (retenu)** — **Retenu** : le formulaire ne saisit que les **faits** ; toute absence naît **« En attente »**, puis « Valider » / « Refuser » / « Remettre en demande » depuis la liste. Justification : sépare la **saisie** de la **décision** (mental model clair : on enregistre une demande, puis on la traite) ; garde le formulaire minimal ; rend la décision explicite et **traçable** (`decideLe` posé au bon moment) ; évite un `form-select` de statut mélangeant les concepts. **Alternative** : choisir le statut dès le formulaire (utile car le référent est seul à saisir **et** décider) — écartée pour la clarté du workflow et la propreté des horodatages ; réintroductible facilement si le mainteneur préfère. **À confirmer**.
-3. **Suppression physique + confirmation (retenu)** — **Confirmée** : `Absence` ne porte **ni** `actif` **ni** `archivee` dans `schema.js`/[02](../docs/architecture/02-modele-de-domaine.md), et n'est **référencée par aucune autre entité** (les `Affectation` référencent `personneId`/`tourneeId`). La **suppression physique** (`REMOVE`) est donc légitime, protégée par une **confirmation** (bouton rouge, geste définitif), exactement comme la `Preference` de `005`. **À confirmer**.
-4. **Détection de chevauchement : incluse comme avertissement non bloquant (retenu)** — **Retenu** : helpers **purs** dans `domain/absences.js` (`absencesSeChevauchent`/`chevauchementsPour`), surfacés par un **encart non bloquant** dans le formulaire (comme la cohérence des paramètres en `003`). Justification : prévient les doubles saisies évidentes pour la **même personne** à coût faible, et les helpers seront **réutilisés par le moteur `009`**. Ce n'est **pas** une règle Vuelidate bloquante (un cumul légitime existe : matin/après-midi, correction volontaire). Le conflit **absence ↔ affectation** reste, lui, du ressort de `009`. **À confirmer** : inclure maintenant vs tout différer à `009`.
+3. **Suppression physique + confirmation (retenu)** — **Confirmée** : `Absence` ne porte **ni** `actif` **ni** `archivee` dans `schema.js`/[02](../docs/architecture/02-modele-de-domaine.md), et n'est **référencée par aucune autre entité** (les `Affectation` référencent `personneId`/`tourneeId`). La **suppression physique** (`REMOVE`) est donc légitime, protégée par une **confirmation** (bouton rouge, geste définitif), exactement comme la `Preference` de `0005`. **À confirmer**.
+4. **Détection de chevauchement : incluse comme avertissement non bloquant (retenu)** — **Retenu** : helpers **purs** dans `domain/absences.js` (`absencesSeChevauchent`/`chevauchementsPour`), surfacés par un **encart non bloquant** dans le formulaire (comme la cohérence des paramètres en `0003`). Justification : prévient les doubles saisies évidentes pour la **même personne** à coût faible, et les helpers seront **réutilisés par le moteur `0009`**. Ce n'est **pas** une règle Vuelidate bloquante (un cumul légitime existe : matin/après-midi, correction volontaire). Le conflit **absence ↔ affectation** reste, lui, du ressort de `0009`. **À confirmer** : inclure maintenant vs tout différer à `0009`.
 5. **Horodatages `demandeLe`/`decideLe` : automatiques et minimaux (retenu)** — **Retenu** : `demandeLe` posé à la **création** (dans `creerAbsence`) ; `decideLe` posé à la **décision** (`valider`/`refuser`) et remis à `null` par `remettreEnDemande`. Aucune saisie manuelle de ces champs (KISS). Justification : renseigne les champs prévus au schéma sans surcharge d'UI, utile à l'affichage futur (« demandé le X », « décidé le Y ») et au moteur. **À confirmer** : ce niveau d'automatisme (alternative : ignorer ces champs en v1).
 6. **Cas « aucune personne active » : message + lien vers Équipe (retenu)** — **Retenu** : plutôt qu'un sélecteur de personne vide, un encart explicatif avec un **`router-link` vers `{ name: 'equipe' }`** ; bouton d'ajout neutralisé. Les absences déjà enregistrées (personnes ensuite archivées) restent affichées, et l'**édition** d'une absence d'une personne archivée reste possible (la personne référencée est réinjectée dans le sélecteur — §6.3). **À confirmer**.
 7. **Sélecteur de personne = `form-select` + aperçu pastille (retenu)** — **Retenu** : un `<select>` natif (nom seul dans la liste déroulante, la plus accessible et la plus simple) **complété d'un aperçu** « pastille + Prénom Nom » (couleur doublée du nom). **Alternative** : un groupe de cartes-radio avec pastilles (plus riche, plus lourd) — différée. **À confirmer**.
 8. **Libellés FR (type/statut)** — Proposés en §5.2 (« Congés payés », « Arrêt maladie », « En attente / Validée / Refusée »…). « En attente » retenu pour `DEMANDE` (état affiché) tout en gardant le verbe « Remettre en demande » (action). **À confirmer** : ces libellés.
 9. **Point de vigilance — repli du focus** : après une **suppression**, une **décision** de statut, ou un **ajout depuis l'état vide**, le bouton déclencheur peut disparaître/être remplacé dans le DOM (`ModaleBase` ne peut alors restaurer le focus, qui retomberait sur `<body>`). Reproduire la parade de `TourneesView`/`EquipeView` : replacer le focus sur `boutonAjout` via `$nextTick` après ces actions.
-10. **Point de vigilance — lecture de la collection d'absences dans la vue** : exposer les absences via un accès propre au module (`mapState('absences', ['items'])` ou un getter dédié), et garder **tri + filtre** dans la vue (présentation), conformément au choix de `004`/`006`. Ne pas introduire de logique métier dans le composant.
+10. **Point de vigilance — lecture de la collection d'absences dans la vue** : exposer les absences via un accès propre au module (`mapState('absences', ['items'])` ou un getter dédié), et garder **tri + filtre** dans la vue (présentation), conformément au choix de `0004`/`0006`. Ne pas introduire de logique métier dans le composant.

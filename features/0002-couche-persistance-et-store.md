@@ -1,39 +1,39 @@
-# Feature 002 — Couche persistance et store
+# Feature 0002 — Couche persistance et store
 
 - **Statut** : Fait
-- **Dépend de** : `001` (squelettes UI / store / domaine / stockage déjà en place)
+- **Dépend de** : `0001` (squelettes UI / store / domaine / stockage déjà en place)
 - **ADR liés** : [0002](../docs/adr/0002-application-frontend-sans-backend.md) (sans backend), [0004](../docs/adr/0004-pas-de-typescript-js-jsdoc.md) (JS pur + JSDoc), [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance LocalStorage derrière repository), [0006](../docs/adr/0006-sauvegarde-partage-par-export-import-json.md) (export/import JSON), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (dates & jours ISO), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (domaine pur).
 
 ## 1. Contexte & objectif
 
-À l'issue de la feature `001`, l'application **démarre** mais son état est **vide et volatile** : les 6 modules Vuex sont des ossatures sans `state`, `src/domain/schema.js` est un placeholder, et `storageRepository` / `migrations` ne sont pas implémentés.
+À l'issue de la feature `0001`, l'application **démarre** mais son état est **vide et volatile** : les 6 modules Vuex sont des ossatures sans `state`, `src/domain/schema.js` est un placeholder, et `storageRepository` / `migrations` ne sont pas implémentés.
 
-La feature `002` rend l'état applicatif **réel, persisté et sérialisable**, **sans écran de saisie** (les CRUD par entité arrivent en `003`-`007`). Concrètement, après `002` :
+La feature `0002` rend l'état applicatif **réel, persisté et sérialisable**, **sans écran de saisie** (les CRUD par entité arrivent en `0003`-`0007`). Concrètement, après `0002` :
 
 - L'application possède un **état par défaut** (cabinet par défaut, collections vides) au premier lancement.
 - Toute modification de l'état est **persistée automatiquement** dans `localStorage` (via `storageRepository`, écriture **débouncée ~400 ms**), et **rechargée** au démarrage suivant.
 - L'état est **sérialisable** vers/depuis le **SaveDocument** JSON canonique ([03](../docs/architecture/03-modele-de-donnees.md)), avec **garde de version**, **migration** (pipeline structuré, vide pour l'instant) et **vérification d'intégrité**.
-- Les **briques d'export/import** (round-trip JSON) sont posées côté store (leur **UI** dédiée reste la feature `008`).
+- Les **briques d'export/import** (round-trip JSON) sont posées côté store (leur **UI** dédiée reste la feature `0008`).
 
-En résumé, `002` pose **l'ossature persistante** : `schema.js` (défauts + (dé)sérialisation + intégrité), `migrations`, `storageRepository`, le `state`/`REPLACE`/getters de base des modules, le **plugin de persistance** et le **module racine `app`** (`bootstrap`/`REPLACE_ALL`/`importer`/`exporter`/`reinitialiser`). Les **actions CRUD riches** de chaque entité sont **explicitement différées** aux features `003`-`007`.
+En résumé, `0002` pose **l'ossature persistante** : `schema.js` (défauts + (dé)sérialisation + intégrité), `migrations`, `storageRepository`, le `state`/`REPLACE`/getters de base des modules, le **plugin de persistance** et le **module racine `app`** (`bootstrap`/`REPLACE_ALL`/`importer`/`exporter`/`reinitialiser`). Les **actions CRUD riches** de chaque entité sont **explicitement différées** aux features `0003`-`0007`.
 
 ## 2. Écrans concernés
 
-**Aucun.** La feature `002` ne crée ni ne modifie aucune route ni aucun écran ([07](../docs/architecture/07-navigation-et-ecrans.md)). Les 6 vues placeholder de `001` (`AccueilView`, `EquipeView`, `TourneesView`, `AbsencesView`, `PlanningView`, `ParametresView`) restent **inchangées**.
+**Aucun.** La feature `0002` ne crée ni ne modifie aucune route ni aucun écran ([07](../docs/architecture/07-navigation-et-ecrans.md)). Les 6 vues placeholder de `0001` (`AccueilView`, `EquipeView`, `TourneesView`, `AbsencesView`, `PlanningView`, `ParametresView`) restent **inchangées**.
 
 L'état, la persistance et le round-trip export/import sont **observables uniquement** via la **console du navigateur** et/ou l'onglet Vuex des **Vue Devtools** (voir §11). Les écrans qui exposent réellement ces données à l'utilisateur non-technique viennent ensuite :
 
 | Concerne | Écran qui l'exposera | Feature |
 |---|---|---|
-| Paramètres du cabinet | `ParametresView` | `003` |
-| Équipe (personnes) | `EquipeView` | `004` |
-| Tournées | `TourneesView` | `006` |
-| Absences | `AbsencesView` | `007` |
-| Export / import / rappel de sauvegarde | `ParametresView` | `008` |
+| Paramètres du cabinet | `ParametresView` | `0003` |
+| Équipe (personnes) | `EquipeView` | `0004` |
+| Tournées | `TourneesView` | `0006` |
+| Absences | `AbsencesView` | `0007` |
+| Export / import / rappel de sauvegarde | `ParametresView` | `0008` |
 
 ## 3. Modèle de données touché
 
-`002` **matérialise l'intégralité du SaveDocument** décrit dans [03-modele-de-donnees.md](../docs/architecture/03-modele-de-donnees.md), avec les entités de [02-modele-de-domaine.md](../docs/architecture/02-modele-de-domaine.md). Aucune entité n'est *saisie* dans cette feature, mais toutes sont **représentables, sérialisables et vérifiables**.
+`0002` **matérialise l'intégralité du SaveDocument** décrit dans [03-modele-de-donnees.md](../docs/architecture/03-modele-de-donnees.md), avec les entités de [02-modele-de-domaine.md](../docs/architecture/02-modele-de-domaine.md). Aucune entité n'est *saisie* dans cette feature, mais toutes sont **représentables, sérialisables et vérifiables**.
 
 ### 3.1 Structure racine du SaveDocument (rappel)
 
@@ -51,7 +51,7 @@ L'état, la persistance et le round-trip export/import sont **observables unique
 
 ### 3.2 Enums / constantes du domaine (à poser dans `schema.js`)
 
-Codes stables `MAJUSCULES_SNAKE` ([02 §Conventions](../docs/architecture/02-modele-de-domaine.md), [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)). Les **libellés affichés** ne sont **pas** dans le périmètre `002` (ils viendront avec les écrans) — on n'expose ici que les **codes**.
+Codes stables `MAJUSCULES_SNAKE` ([02 §Conventions](../docs/architecture/02-modele-de-domaine.md), [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)). Les **libellés affichés** ne sont **pas** dans le périmètre `0002` (ils viendront avec les écrans) — on n'expose ici que les **codes**.
 
 | Constante | Valeurs |
 |---|---|
@@ -65,7 +65,7 @@ Codes stables `MAJUSCULES_SNAKE` ([02 §Conventions](../docs/architecture/02-mod
 | `STATUTS_PLANNING` | `BROUILLON`, `VALIDE`, `PUBLIE` |
 | `COULEURS_PAR_DEFAUT` | palette de suggestion, ex. `["#2E86AB", "#E4572E", "#5B8C5A", "#B5179E"]` |
 
-> Ces enums sont posés **maintenant** parce qu'ils constituent le vocabulaire partagé de la (dé)sérialisation et de la vérification d'intégrité ; les features `003`-`007` s'y réfèreront sans les redéfinir.
+> Ces enums sont posés **maintenant** parce qu'ils constituent le vocabulaire partagé de la (dé)sérialisation et de la vérification d'intégrité ; les features `0003`-`0007` s'y réfèreront sans les redéfinir.
 
 ### 3.3 Cabinet par défaut (`etatParDefaut()`)
 
@@ -87,30 +87,30 @@ Collections `personnes` / `tournees` / `absences` / `plannings` : **vides** (`[]
 ### 3.4 Version de schéma & migrations
 
 - `schemaVersion` = **1** ; `CURRENT_SCHEMA_VERSION = 1` (**source unique** dans `src/storage/migrations.js`, [03 §Versionnement](../docs/architecture/03-modele-de-donnees.md)).
-- **Aucune migration réelle** en `002` (`MIGRATIONS = {}`), mais le pipeline `migrate(doc)` est **structuré** pour l'avenir (application séquentielle) et intègre la **garde de version future**.
-- ⚠️ Le placeholder `001` a laissé un **doublon** `CURRENT_SCHEMA_VERSION` dans `src/domain/schema.js` : il doit être **supprimé** (voir §12, tâche 1) pour éviter toute dérive de valeur.
+- **Aucune migration réelle** en `0002` (`MIGRATIONS = {}`), mais le pipeline `migrate(doc)` est **structuré** pour l'avenir (application séquentielle) et intègre la **garde de version future**.
+- ⚠️ Le placeholder `0001` a laissé un **doublon** `CURRENT_SCHEMA_VERSION` dans `src/domain/schema.js` : il doit être **supprimé** (voir §12, tâche 1) pour éviter toute dérive de valeur.
 
 ## 4. Store (Vuex)
 
 Voir [04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md) et [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md).
 
-### 4.1 Répartition périmètre `002` vs features CRUD (`003`-`007`)
+### 4.1 Répartition périmètre `0002` vs features CRUD (`0003`-`0007`)
 
-| Élément | `002` (cette feature) | Différé (feature) |
+| Élément | `0002` (cette feature) | Différé (feature) |
 |---|---|---|
 | `state` réel de chaque module | ✅ | — |
 | mutation `REPLACE` par module **persisté** | ✅ | — |
 | getters **fondamentaux** (`byId`, `actifs`/`actives`, `parametres`, `parPersonne`, `courant`) | ✅ | — |
 | mutation racine `REPLACE_ALL` + actions `app` (`bootstrap`/`importer`/`exporter`/`reinitialiser`) | ✅ | — |
 | plugin de persistance débouncé | ✅ | — |
-| **actions CRUD riches** (`ajouter`/`modifier`/`desactiver`/`archiver`, CRUD préférences/affectations, `changerStatut`, `generer`…) | ❌ | `003`-`007`, `009`-`011` |
-| getters métier avancés (`applicablesLe`, `validesSur`, `enConflit`, `besoinsNonCouverts`, `conflits`, `parStatut`) | ❌ | `006`, `007`, `009`-`011` |
+| **actions CRUD riches** (`ajouter`/`modifier`/`desactiver`/`archiver`, CRUD préférences/affectations, `changerStatut`, `generer`…) | ❌ | `0003`-`0007`, `0009`-`0011` |
+| getters métier avancés (`applicablesLe`, `validesSur`, `enConflit`, `besoinsNonCouverts`, `conflits`, `parStatut`) | ❌ | `0006`, `0007`, `0009`-`0011` |
 
-> **Règle de découpe** : `002` pose **l'ossature + `REPLACE` + les getters de lecture de base** indispensables tôt. Tout ce qui *écrit* de la donnée métier (au-delà de l'hydratation `REPLACE`/`REPLACE_ALL`) appartient aux features dédiées.
+> **Règle de découpe** : `0002` pose **l'ossature + `REPLACE` + les getters de lecture de base** indispensables tôt. Tout ce qui *écrit* de la donnée métier (au-delà de l'hydratation `REPLACE`/`REPLACE_ALL`) appartient aux features dédiées.
 
 ### 4.2 State shape par module
 
-| module | `state` initial (feature `002`) | persisté ? |
+| module | `state` initial (feature `0002`) | persisté ? |
 |---|---|---|
 | `cabinet` | `{ parametres: null }` (hydraté au `bootstrap`) | oui |
 | `personnes` | `{ items: [] }` | oui |
@@ -160,9 +160,9 @@ Voir [04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md) et 
   2. `migrate(doc)` (⇒ **refuse** un `schemaVersion` supérieur à `CURRENT_SCHEMA_VERSION` avec un message FR clair).
   3. `verifierIntegrite(doc)` → si `!ok`, **rejeter** avec la liste d'erreurs (pas de `REPLACE_ALL`).
   4. `commit('REPLACE_ALL', fromSaveDocument(doc))` puis **flush immédiat** de la persistance (écriture directe, hors debounce) + `SET_DERNIERE_SAUVEGARDE`.
-  5. Renvoie un résultat exploitable par la future UI `008` (succès / message d'erreur FR).
+  5. Renvoie un résultat exploitable par la future UI `0008` (succès / message d'erreur FR).
 - `exporter({ state })` : `doc = toSaveDocument(state, { schemaVersion: CURRENT_SCHEMA_VERSION })` → `JSON.stringify(doc, null, 2)` → `Blob` (`application/json`) → téléchargement via un `<a download>` (nom `idelia-sauvegarde-YYYY-MM-DD.json`, date via `dateUtil.format(new Date())`) → révoquer l'URL objet.
-- `reinitialiser({ commit })` : `commit('REPLACE_ALL', etatParDefaut())` puis `await storageRepository.clear()`. **La confirmation utilisateur est une responsabilité UI** (feature `003`/`008`) : ne **pas** mettre de `window.confirm` dans le store (voir §12).
+- `reinitialiser({ commit })` : `commit('REPLACE_ALL', etatParDefaut())` puis `await storageRepository.clear()`. **La confirmation utilisateur est une responsabilité UI** (feature `0003`/`0008`) : ne **pas** mettre de `window.confirm` dans le store (voir §12).
 
 ### 4.5 Plugin de persistance (dans `src/store/index.js`)
 
@@ -189,15 +189,15 @@ Fonctions **pures** (frontière unique de (dé)sérialisation — [03 §Sériali
 
 **Injection de la version** : `toSaveDocument` **ne connaît pas** `CURRENT_SCHEMA_VERSION` (qui vit dans la couche `storage/`) → l'appelant (plugin/actions) la passe en paramètre. Cela garde `schema.js` **sans dépendance à `storage/`** et **pur/testable** (voir §12).
 
-**Réutilisation** : horodatages via l'objet `Date` **uniquement** au travers de `new Date().toISOString()` pour les champs techniques ISO UTC (autorisé par [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)) ; les dates calendaires restent des chaînes. `dateUtil` (`src/domain/utils/dates.js`, fait en `001`) est réutilisé pour tout calcul de date ; `genId()` (`src/domain/utils/id.js`) servira aux CRUD ultérieurs.
+**Réutilisation** : horodatages via l'objet `Date` **uniquement** au travers de `new Date().toISOString()` pour les champs techniques ISO UTC (autorisé par [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)) ; les dates calendaires restent des chaînes. `dateUtil` (`src/domain/utils/dates.js`, fait en `0001`) est réutilisé pour tout calcul de date ; `genId()` (`src/domain/utils/id.js`) servira aux CRUD ultérieurs.
 
 ### 5.2 `src/storage/migrations.js` (couche stockage, pas domaine, mais logique pure)
 
 - `CURRENT_SCHEMA_VERSION = 1` — **source unique** de la version.
-- `MIGRATIONS = {}` — table `{ n: (doc) → doc }` (vide en `002`, prête à recevoir `1: v1→v2`…).
+- `MIGRATIONS = {}` — table `{ n: (doc) → doc }` (vide en `0002`, prête à recevoir `1: v1→v2`…).
 - `migrate(doc)` :
   1. **Garde de version future** : si `doc.schemaVersion > CURRENT_SCHEMA_VERSION` → **throw** message FR (« sauvegarde créée par une version plus récente d'Idelia… »).
-  2. Applique **séquentiellement** `MIGRATIONS[v]` de `doc.schemaVersion` jusqu'à `CURRENT_SCHEMA_VERSION` (aucune itération en `002`).
+  2. Applique **séquentiellement** `MIGRATIONS[v]` de `doc.schemaVersion` jusqu'à `CURRENT_SCHEMA_VERSION` (aucune itération en `0002`).
   3. Retourne le doc avec `schemaVersion = CURRENT_SCHEMA_VERSION`.
 - Appelée **à la fois** par `storageRepository.load()` (via l'action `bootstrap`) et par l'action `importer` ([03 §Règles d'import](../docs/architecture/03-modele-de-donnees.md)).
 
@@ -214,15 +214,15 @@ Interface **asynchrone** conservée ([ADR 0005](../docs/adr/0005-persistance-loc
 
 ## 6. Composants
 
-**Aucun composant Vue** créé ou modifié en `002`. La feature est purement **infrastructure** (état / domaine / stockage).
+**Aucun composant Vue** créé ou modifié en `0002`. La feature est purement **infrastructure** (état / domaine / stockage).
 
 > Le seul « point d'entrée » utile aux tests manuels (§11) est l'exposition **temporaire et jetable** de `store` sur `window` en mode dev — ce n'est **pas** un composant et ne doit **pas** être livré (voir §11 et §12).
 
 ## 7. Règles de validation
 
-Pas de **formulaire** ni de **Vuelidate** en `002` (les règles de saisie — prénom requis, `heureFin > heureDebut`, `dateFin ≥ dateDebut`, quotité 0-100… — arrivent avec les écrans, features `003`-`007`, cf. [instructions/formulaires-validation.md](../docs/instructions/formulaires-validation.md)).
+Pas de **formulaire** ni de **Vuelidate** en `0002` (les règles de saisie — prénom requis, `heureFin > heureDebut`, `dateFin ≥ dateDebut`, quotité 0-100… — arrivent avec les écrans, features `0003`-`0007`, cf. [instructions/formulaires-validation.md](../docs/instructions/formulaires-validation.md)).
 
-En revanche, `002` introduit deux niveaux de **contrôle de données** (logique pure, pas de la validation de formulaire) :
+En revanche, `0002` introduit deux niveaux de **contrôle de données** (logique pure, pas de la validation de formulaire) :
 
 1. **Garde de version** (`migrate`) : refus d'un `schemaVersion` supérieur à `CURRENT_SCHEMA_VERSION` avec message FR.
 2. **Intégrité** (`verifierIntegrite`) — vérifie et signale en FR :
@@ -233,9 +233,9 @@ En revanche, `002` introduit deux niveaux de **contrôle de données** (logique 
 
 Peu d'UI directe, mais des **fondations ergonomiques** ([08](../docs/architecture/08-principes-ux-ergonomie.md)) posées pour les features suivantes :
 
-- **Filet de sécurité** : `derniereSauvegarde` / `statutSauvegarde` alimentent le futur rappel « **dernière sauvegarde le…** » ([ADR 0006](../docs/adr/0006-sauvegarde-partage-par-export-import-json.md)) — nommage et sémantique à choisir dès maintenant pour ne pas casser `008`.
+- **Filet de sécurité** : `derniereSauvegarde` / `statutSauvegarde` alimentent le futur rappel « **dernière sauvegarde le…** » ([ADR 0006](../docs/adr/0006-sauvegarde-partage-par-export-import-json.md)) — nommage et sémantique à choisir dès maintenant pour ne pas casser `0008`.
 - **Zéro perte de données** : hydratation **atomique** (`REPLACE_ALL`), repli sur l'état par défaut plutôt que crash, **sauvegarde défensive** du contenu corrompu (`idelia:data.corrompu`) avant tout écrasement.
-- **Messages en français, orientés action** dès la couche domaine (garde de version, erreurs d'intégrité, erreur de quota) : ils seront **affichés tels quels** par l'UI d'import de `008`. Éviter le jargon technique.
+- **Messages en français, orientés action** dès la couche domaine (garde de version, erreurs d'intégrité, erreur de quota) : ils seront **affichés tels quels** par l'UI d'import de `0008`. Éviter le jargon technique.
 - **Valeurs par défaut raisonnables** du cabinet (jours d'ouverture, créneaux, repos) → l'utilisateur démarre sur une base cohérente sans rien saisir.
 
 ## 9. Étapes d'implémentation
@@ -336,6 +336,6 @@ Sans écran de saisie, la vérification se fait **à la console** (et/ou Vue Dev
 3. **`plannings.selectionId` non persisté** — traité comme une **sélection volatile** : `toSaveDocument` ne sérialise que `plannings.items` (conforme au SaveDocument du doc 03), et `fromSaveDocument` remet `selectionId` à `null`. **À confirmer** si l'on souhaite persister la sélection courante.
 4. **Boucle d'écriture du plugin** — risque réel : le plugin commit `SET_DERNIERE_SAUVEGARDE`/`SET_STATUT_SAUVEGARDE` après chaque save ; ces mutations **doivent** être exclues du filtrage sous peine de boucle infinie. Vérifier le filtrage (`ui/*` + statuts) avec soin.
 5. **Écrasement de données corrompues au repli** — après un `bootstrap` en repli (`etatParDefaut`), le plugin pourrait persister par-dessus des données récupérables. Mitigation retenue : **sauvegarde défensive** du brut sous `idelia:data.corrompu` avant tout écrasement. **À confirmer** : suffisant, ou faut-il aussi suspendre la persistance après un repli tant qu'aucune action utilisateur n'a eu lieu ?
-6. **Confirmation de `reinitialiser`** — laissée à l'**UI** (features `003`/`008`) pour garder le store sans dépendance UI (`window.confirm`). **À confirmer**.
-7. **Multi-onglets** — `localStorage` en *last-write-wins* ([ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md)) : hors périmètre `002`, risque assumé.
+6. **Confirmation de `reinitialiser`** — laissée à l'**UI** (features `0003`/`0008`) pour garder le store sans dépendance UI (`window.confirm`). **À confirmer**.
+7. **Multi-onglets** — `localStorage` en *last-write-wins* ([ADR 0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md)) : hors périmètre `0002`, risque assumé.
 8. **`window.store` de test** — jetable ; décider s'il reste **derrière `import.meta.env.DEV`** (confort de debug) ou est **entièrement retiré** en fin de feature.

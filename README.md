@@ -17,7 +17,7 @@ L'application est pensée pour des personnes **peu à l'aise avec l'informatique
 
 ## Statut
 
-Projet en amorçage. Cette première étape met en place le **harness** (documentation d'architecture, décisions, guidelines, agents et roadmap). Le code applicatif n'existe pas encore : son initialisation est la première feature (`001`).
+Projet en amorçage. Cette première étape met en place le **harness** (documentation d'architecture, décisions, guidelines, agents et roadmap). Le code applicatif n'existe pas encore : son initialisation est la première feature (`0001`).
 
 ## Carte du dépôt
 
@@ -27,7 +27,7 @@ Projet en amorçage. Cette première étape met en place le **harness** (documen
 | [`docs/adr/`](docs/adr/) | **Le pourquoi** — décisions d'architecture (ADR). |
 | [`docs/architecture/`](docs/architecture/) | **Le comment** — vue d'ensemble et conception. |
 | [`docs/instructions/`](docs/instructions/) | Guidelines de développement par domaine. |
-| [`features/`](features/) | Plans de features (`NNN-NomDeLaFeature.md`) et [roadmap](features/ROADMAP.md). |
+| [`features/`](features/) | Plans de features (`NNNN-NomDeLaFeature.md`) et [roadmap](features/ROADMAP.md). |
 
 ## Stack technique
 
@@ -35,4 +35,4 @@ Vite · Vue 3 (Options API) · Vuex · vue-router · SCSS + **Bootstrap 5** · V
 
 ## Démarrage (à venir)
 
-Les commandes (`npm install`, `npm run dev`, …) seront disponibles une fois la feature `001-bootstrap-projet-vite` réalisée. Voir [`features/ROADMAP.md`](features/ROADMAP.md).
+Les commandes (`npm install`, `npm run dev`, …) seront disponibles une fois la feature `0001-bootstrap-projet-vite` réalisée. Voir [`features/ROADMAP.md`](features/ROADMAP.md).

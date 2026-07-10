@@ -250,7 +250,7 @@ export function verifierIntegrite(doc) {
     }
   }
 
-  // Souhaits « Tournée préférée ou évitée » (`PREFERENCE_TOURNEE`, 006) :
+  // Souhaits « Tournée préférée ou évitée » (`PREFERENCE_TOURNEE`, 0006) :
   // chaque tournée référencée dans `params.tourneeIds` doit exister.
   if (personnesOk && idsTournees) {
     for (const personne of doc.personnes) {

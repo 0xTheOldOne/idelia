@@ -181,9 +181,9 @@ import { chevauchementsPour } from '@/domain/absences.js';
 import { genId } from '@/domain/utils/id.js';
 
 /**
- * Formulaire présentational d'ajout/édition d'une absence (feature 007).
+ * Formulaire présentational d'ajout/édition d'une absence (feature 0007).
  *
- * Bâti au-dessus de `ModaleBase`, calqué sur `FormulaireTournee` (006).
+ * Bâti au-dessus de `ModaleBase`, calqué sur `FormulaireTournee` (0006).
  * N'accède **pas** au store : il reçoit ses données par props (`absence` =
  * `null` en création, objet en édition) et **émet** le résultat normalisé
  * (`enregistrer`) ou une annulation (`annuler`) ; c'est l'écran appelant
@@ -233,7 +233,7 @@ export default {
     },
     /**
      * Absences en conflit avec la période/créneau saisis, pour un
-     * avertissement **non bloquant** (§6.2/§7 de la feature 007) : calculé
+     * avertissement **non bloquant** (§6.2/§7 de la feature 0007) : calculé
      * dès que personne + les deux dates sont renseignées.
      * @returns {Array} Absences en conflit, `[]` si aucune ou saisie incomplète.
      */

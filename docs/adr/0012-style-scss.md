@@ -17,7 +17,7 @@ Nous stylons l'application en **SCSS**. Nous centralisons les **tokens de design
 
 - **Positives** : contrôle total du rendu ; cohérence via tokens ; pas de dette de framework CSS externe ; adapté aux exigences d'ergonomie/contraste.
 - **Négatives / compromis** : plus de CSS à écrire soi-même qu'avec un framework utilitaire ; discipline nécessaire pour éviter la duplication (d'où les tokens/mixins).
-- **Suivi** : définir la palette et l'échelle typographique tôt (feature `001`) pour que tous les écrans s'y conforment.
+- **Suivi** : définir la palette et l'échelle typographique tôt (feature `0001`) pour que tous les écrans s'y conforment.
 
 ## Alternatives considérées
 

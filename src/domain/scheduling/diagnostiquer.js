@@ -1,8 +1,8 @@
 /**
- * Diagnostic complet d'un planning (amendement `010` à la surface publique
- * de `009`, §5.3 du plan `010`) : factorise la queue déjà présente dans
+ * Diagnostic complet d'un planning (amendement `0010` à la surface publique
+ * de `0009`, §5.3 du plan `0010`) : factorise la queue déjà présente dans
  * `genererPlanning` (`validerPlanning` + `calculerNonCouvertures` +
- * `calculerScore`), pour que `010`/`011` obtiennent les diagnostics d'un
+ * `calculerScore`), pour que `0010`/`0011` obtiennent les diagnostics d'un
  * planning **déjà persisté** sans jamais les stocker (recalcul à la
  * demande, le moteur restant l'unique source de vérité).
  *

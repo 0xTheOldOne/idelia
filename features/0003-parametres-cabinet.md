@@ -1,26 +1,26 @@
-# Feature 003 — Paramètres cabinet
+# Feature 0003 — Paramètres cabinet
 
 - **Statut** : Fait
-- **Dépend de** : `001` (bootstrap, layout, tokens/Bootstrap, Phosphor), `002` (store persisté, module `cabinet`, `schema.js`, plugin de persistance débouncé)
+- **Dépend de** : `0001` (bootstrap, layout, tokens/Bootstrap, Phosphor), `0002` (store persisté, module `cabinet`, `schema.js`, plugin de persistance débouncé)
 - **ADR liés** : [0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md) (Options API + Vuex), [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance derrière repository), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (jours ISO 1-7 + dates/heures), [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) (Vuelidate + vue-debounce), [0012](../docs/adr/0012-style-scss.md) / [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) (SCSS + Bootstrap thémé par tokens), [0013](../docs/adr/0013-icones-phosphor.md) (icônes Phosphor).
 
 ## 1. Contexte & objectif
 
-C'est le **premier écran réel** de l'application. À l'issue de `002`, l'état du cabinet existe (valeurs par défaut, persistance automatique) mais **aucun écran ne le montre ni ne le laisse modifier** : `ParametresView.vue` est un simple placeholder.
+C'est le **premier écran réel** de l'application. À l'issue de `0002`, l'état du cabinet existe (valeurs par défaut, persistance automatique) mais **aucun écran ne le montre ni ne le laisse modifier** : `ParametresView.vue` est un simple placeholder.
 
-La feature `003` rend l'écran **Paramètres** opérationnel pour le référent (public **peu à l'aise avec l'informatique**) : **consulter et modifier** les réglages globaux du cabinet — nom, jours d'ouverture, créneaux de travail, repos hebdomadaire minimum, jours consécutifs maximum, premier jour de la semaine. Chaque modification valide est **enregistrée automatiquement** (persistance débouncée déjà en place), avec un **retour visuel clair** (« Modifications enregistrées »). Ces réglages serviront de socle aux features suivantes (équipe, tournées, absences, moteur de planification).
+La feature `0003` rend l'écran **Paramètres** opérationnel pour le référent (public **peu à l'aise avec l'informatique**) : **consulter et modifier** les réglages globaux du cabinet — nom, jours d'ouverture, créneaux de travail, repos hebdomadaire minimum, jours consécutifs maximum, premier jour de la semaine. Chaque modification valide est **enregistrée automatiquement** (persistance débouncée déjà en place), avec un **retour visuel clair** (« Modifications enregistrées »). Ces réglages serviront de socle aux features suivantes (équipe, tournées, absences, moteur de planification).
 
-**Hors périmètre `003`** (à ne pas implémenter ici) :
+**Hors périmètre `0003`** (à ne pas implémenter ici) :
 
-- `couleursParDefaut` (palette de suggestion) — **différé** : sans écran qui l'exploite (personnes/tournées, features `004`/`006`), l'éditer maintenant n'apporte rien. Le champ est **préservé** tel quel par la mise à jour (voir §4).
-- **Export / import / réinitialisation** de la sauvegarde — c'est la feature `008` (même écran, mais bloc séparé).
-- La saisie de personnes, tournées, absences — features `004`-`007`.
+- `couleursParDefaut` (palette de suggestion) — **différé** : sans écran qui l'exploite (personnes/tournées, features `0004`/`0006`), l'éditer maintenant n'apporte rien. Le champ est **préservé** tel quel par la mise à jour (voir §4).
+- **Export / import / réinitialisation** de la sauvegarde — c'est la feature `0008` (même écran, mais bloc séparé).
+- La saisie de personnes, tournées, absences — features `0004`-`0007`.
 
 ## 2. Écrans concernés
 
-Une seule route, déjà déclarée en `001` ([07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md)) :
+Une seule route, déjà déclarée en `0001` ([07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md)) :
 
-| Route | Écran | Changement `003` |
+| Route | Écran | Changement `0003` |
 |---|---|---|
 | `/parametres` | **Paramètres** | Remplace le placeholder par le **formulaire de réglages du cabinet**. |
 
@@ -36,7 +36,7 @@ Une seule route, déjà déclarée en `001` ([07-navigation-et-ecrans](../docs/a
 
 Entité **`ParametresCabinet`** (singleton), déjà entièrement définie et présente dans l'état par défaut ([02-modele-de-domaine.md §ParametresCabinet](../docs/architecture/02-modele-de-domaine.md)). **Aucune nouvelle structure, aucun nouveau champ.**
 
-Champs **édités** par `003` :
+Champs **édités** par `0003` :
 
 | champ | type | contrainte affichée / validée | libellé UI (FR) |
 |---|---|---|---|
@@ -53,11 +53,11 @@ Champs **préservés, non édités** : `couleursParDefaut` (hors périmètre), `
 
 ## 4. Store (Vuex)
 
-Module `cabinet` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). Après `002` il expose : `state {parametres:null}` (hydraté au `bootstrap`), getter `parametres`, mutation `REPLACE`. Il **n'a pas encore d'action de modification**.
+Module `cabinet` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). Après `0002` il expose : `state {parametres:null}` (hydraté au `bootstrap`), getter `parametres`, mutation `REPLACE`. Il **n'a pas encore d'action de modification**.
 
 ### 4.1 Ajout : action `majParametres`
 
-`003` ajoute **une seule action** au module `cabinet`, sans nouvelle mutation (on réutilise `REPLACE`) :
+`0003` ajoute **une seule action** au module `cabinet`, sans nouvelle mutation (on réutilise `REPLACE`) :
 
 - **`majParametres({ commit, getters }, patch)`** :
   - construit les nouveaux paramètres par **fusion immuable** du patch sur les paramètres courants : `{ ...getters.parametres, ...patch, updatedAt: <ISO UTC courant> }` ;
@@ -73,7 +73,7 @@ La sauvegarde est **automatique** : chaque `commit('cabinet/REPLACE', …)` déc
 
 ### 4.3 État racine consommé en lecture seule
 
-L'écran **lit** (sans jamais les muter) l'état racine de sauvegarde posé en `002` pour le retour visuel :
+L'écran **lit** (sans jamais les muter) l'état racine de sauvegarde posé en `0002` pour le retour visuel :
 
 - `state.statutSauvegarde` (`INACTIF | EN_COURS | ENREGISTRE | ERREUR | ERREUR_CHARGEMENT`) ;
 - `state.derniereSauvegarde` (ISO UTC de la dernière écriture réussie, ou `null`).
@@ -129,7 +129,7 @@ Si l'on affiche l'horodatage de dernière sauvegarde (§6), ajouter un helper **
 
 ### 6.2 `src/components/communs/IndicateurSauvegarde.vue` (**nouveau**, réutilisable)
 
-Petit composant **présentational** (props, aucun accès store) — réutilisable ensuite sur l'Accueil (`013`) et les autres écrans :
+Petit composant **présentational** (props, aucun accès store) — réutilisable ensuite sur l'Accueil (`0013`) et les autres écrans :
 
 - **Props** : `statut` (String), `derniereSauvegarde` (String|null).
 - **Rendu** selon `statut` :
@@ -142,7 +142,7 @@ Petit composant **présentational** (props, aucun accès store) — réutilisabl
 
 Enregistrer **globalement** la directive `vue-debounce` ([ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md)) si elle ne l'est pas encore, afin d'en disposer sur le champ `nomCabinet` (`v-debounce`). Ne rien changer d'autre au démarrage.
 
-> Réutilisation : `App.vue` (barre de nav), tokens SCSS et intégration Bootstrap sont déjà en place (`001`) ; icônes Phosphor déjà utilisées dans `App.vue`. Le SCSS `scoped` de la vue ne sert qu'au **spécifique** (espacement des sections, mise en forme des groupes de cases) — utiliser les classes Bootstrap pour tout le reste.
+> Réutilisation : `App.vue` (barre de nav), tokens SCSS et intégration Bootstrap sont déjà en place (`0001`) ; icônes Phosphor déjà utilisées dans `App.vue`. Le SCSS `scoped` de la vue ne sert qu'au **spécifique** (espacement des sections, mise en forme des groupes de cases) — utiliser les classes Bootstrap pour tout le reste.
 
 ## 7. Règles de validation
 
@@ -239,11 +239,11 @@ Parcours manuel (`npm run dev`, ouvrir `/parametres`) :
 
 ## 12. Décisions à confirmer / risques
 
-1. **Enregistrement automatique vs bouton « Enregistrer »** — Choisi : **auto-save par champ valide** (cohérent avec la persistance débouncée de `002` et le retour « Modifications enregistrées » demandé). Conséquence assumée : un champ momentanément invalide n'est pas poussé, le dernier réglage valide reste persisté. **À confirmer** : accepter ce modèle plutôt qu'un bouton explicite.
-2. **Emplacement des libellés (`src/domain/libelles.js`)** — Placé dans le **domaine** (données pures, sans Vue), à côté de `schema.js` qui porte les codes, et **réutilisable** par `004`-`012`. Alternative : un util UI. **À confirmer** : ce placement.
+1. **Enregistrement automatique vs bouton « Enregistrer »** — Choisi : **auto-save par champ valide** (cohérent avec la persistance débouncée de `0002` et le retour « Modifications enregistrées » demandé). Conséquence assumée : un champ momentanément invalide n'est pas poussé, le dernier réglage valide reste persisté. **À confirmer** : accepter ce modèle plutôt qu'un bouton explicite.
+2. **Emplacement des libellés (`src/domain/libelles.js`)** — Placé dans le **domaine** (données pures, sans Vue), à côté de `schema.js` qui porte les codes, et **réutilisable** par `0004`-`0012`. Alternative : un util UI. **À confirmer** : ce placement.
 3. **Cohérence en domaine (`src/domain/cabinet.js`)** — Le contrôle de cohérence est une (petite) règle métier → placée dans le domaine (règle d'or #10), pas dans le composant. **À confirmer** : garder ce module dédié plutôt que de l'ajouter à `schema.js`.
 4. **Affichage de l'horodatage de sauvegarde** — Optionnel. S'il est affiché, il **doit** passer par un helper `dateUtil.formatHorodatageFr` (respect [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) : `Date` uniquement dans `dateUtil`). Sinon, se limiter à « Modifications enregistrées » sans date. **À trancher** par le développeur (KISS).
 5. **Contrôle des entiers : `input[type=number]` vs `form-select`** — Retenu : `input[type=number]` + Vuelidate (pour démontrer la validation demandée). Un `form-select` des valeurs autorisées supprimerait les états invalides mais masquerait la validation. **À confirmer**.
-6. **Enregistrement de la directive `vue-debounce`** — `003` l'enregistre dans `main.js`. Vérifier l'API exacte de la version installée (`vue-debounce@^5`, enregistrement de la directive globale) au moment de l'implémentation.
+6. **Enregistrement de la directive `vue-debounce`** — `0003` l'enregistre dans `main.js`. Vérifier l'API exacte de la version installée (`vue-debounce@^5`, enregistrement de la directive globale) au moment de l'implémentation.
 7. **Ordre d'affichage des jours** — Les cases sont affichées en **ordre ISO fixe** (Lundi→Dimanche), indépendamment de `premierJourSemaine` (qui ne concerne que l'affichage **calendrier** des features ultérieures). **À confirmer** : ne pas réordonner ici (KISS).
-8. **`couleursParDefaut` différé** — Hors périmètre `003` ; préservé par la fusion de `majParametres`. Son édition viendra avec un écran qui l'exploite (ou une feature dédiée).
+8. **`couleursParDefaut` différé** — Hors périmètre `0003` ; préservé par la fusion de `majParametres`. Son édition viendra avec un écran qui l'exploite (ou une feature dédiée).

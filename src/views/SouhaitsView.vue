@@ -177,7 +177,7 @@ import { libelleStatutPersonne, libelleNaturePreference } from '@/domain/libelle
 import { decrirePreference, NIVEAUX_IMPORTANCE, poidsVersNiveau } from '@/domain/preferences.js';
 
 /**
- * Écran « Souhaits et contraintes » (feature 005) : liste les souhaits et
+ * Écran « Souhaits et contraintes » (feature 0005) : liste les souhaits et
  * contraintes d'**une** personne (paramètre de route `id`) et **orchestre**
  * leur cycle de vie (ajout, édition, suppression, mise en pause) via le
  * store `personnes`. Ne contient **aucune logique métier** : les résumés en
@@ -341,7 +341,7 @@ export default {
       this.preferenceASupprimer = null;
       // Le bouton « Supprimer » déclencheur disparaît du DOM (la ligne quitte
       // la liste) : on replace le focus sur un point stable plutôt que de le
-      // laisser retomber sur `<body>` (même précaution qu'EquipeView, 004).
+      // laisser retomber sur `<body>` (même précaution qu'EquipeView, 0004).
       this.$nextTick(() => this.$refs.boutonAjout?.focus());
     },
     onAnnulerSuppression() {

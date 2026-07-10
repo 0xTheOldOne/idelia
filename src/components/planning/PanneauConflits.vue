@@ -100,7 +100,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleCreneau } from '@/domain/libelles.js';
 
 /**
- * Panneau de conflits (feature 010), **présentational** : affiche les
+ * Panneau de conflits (feature 0010), **présentational** : affiche les
  * `Violation` reçues **telles quelles** (message FR du moteur, jamais
  * reformulé), groupées erreurs (dures) puis avertissements (souples), et
  * résume les tournées non couvertes à partir de `tourneesNonCouvertes` (pas
@@ -108,7 +108,7 @@ import { libelleCreneau } from '@/domain/libelles.js';
  *
  * N'accède au store que pour résoudre le nom/couleur d'une tournée
  * (`tournees/byId`) ; aucune logique métier, aucun appel moteur, aucun
- * événement essentiel émis en `010`. Réutilisable par `011`.
+ * événement essentiel émis en `0010`. Réutilisable par `0011`.
  */
 export default {
   name: 'PanneauConflits',

@@ -314,7 +314,7 @@ import { CRENEAUX } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
 
 /**
- * Formulaire présentational d'ajout/édition d'une tournée (feature 006).
+ * Formulaire présentational d'ajout/édition d'une tournée (feature 0006).
  *
  * Bâti au-dessus de `ModaleBase`, sur le même patron que `FormulairePersonne`
  * (identité, sélecteur de couleur accessible) et `FormulairePreference`

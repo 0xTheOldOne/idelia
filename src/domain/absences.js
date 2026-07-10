@@ -109,7 +109,7 @@ export function absencesSeChevauchent(a, b) {
 /**
  * Liste les absences de `absences` qui chevauchent `absenceCible` (voir
  * {@link absencesSeChevauchent}). Utilisé pour un avertissement non
- * bloquant à la saisie (`007`), réutilisable par le moteur (`009`).
+ * bloquant à la saisie (`0007`), réutilisable par le moteur (`0009`).
  *
  * @param {Absence} absenceCible
  * @param {Absence[]} absences - Absences à comparer à `absenceCible`.

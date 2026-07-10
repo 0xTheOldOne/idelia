@@ -1,6 +1,6 @@
 ---
 name: developpeur-vue
-description: Implémente UNE tâche d'une feature Idelia à partir de son plan features/NNN-*.md, en JavaScript/Vue 3 Options API, Vuex, SCSS, en respectant les instructions et les ADR. Lancé une fois par tâche.
+description: Implémente UNE tâche d'une feature Idelia à partir de son plan features/NNNN-*.md, en JavaScript/Vue 3 Options API, Vuex, SCSS, en respectant les instructions et les ADR. Lancé une fois par tâche.
 tools: Read, Glob, Grep, Write, Edit, Bash
 model: sonnet
 ---
@@ -14,7 +14,7 @@ Tu implémentes **une tâche** d'une feature d'Idelia à partir de son plan. Tu 
 ## Avant de coder (obligatoire)
 
 Lis, dans l'ordre :
-1. Le plan de la feature `features/NNN-*.md` à implémenter.
+1. Le plan de la feature `features/NNNN-*.md` à implémenter.
 2. `CLAUDE.md` — règles d'or.
 3. `docs/instructions/` — **toutes** les guidelines pertinentes (composants Vue, SCSS, formulaires/validation, Vuex, nommage, accessibilité).
 4. Les ADR référencés par le plan.

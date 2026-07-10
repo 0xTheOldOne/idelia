@@ -56,8 +56,8 @@ export function libelleJour(iso) {
 /**
  * Énumère une liste de jours ISO en toutes lettres, dans l'ordre ISO
  * croissant quel que soit l'ordre d'entrée (« Lundi », « Lundi et Mardi »,
- * « Lundi, Mardi et Jeudi »). Affichage uniquement, réutilisé par `006`
- * (tournées), `007` (absences) et `010` (planning).
+ * « Lundi, Mardi et Jeudi »). Affichage uniquement, réutilisé par `0006`
+ * (tournées), `0007` (absences) et `0010` (planning).
  *
  * @param {number[]} joursIso - Jours ISO 8601 (1 = lundi … 7 = dimanche).
  * @returns {string} Énumération FR, ou chaîne vide si la liste est vide.
@@ -179,7 +179,7 @@ export const NATURES_PREFERENCE_OPTIONS = NATURES_PREFERENCE.map((code) => ({
 /**
  * Table de correspondance code type de préférence (`schema.js` →
  * `TYPES_PREFERENCE`) → libellé FR. Couvre les **8** types, y compris
- * `PREFERENCE_TOURNEE` (réactivé en `006` maintenant que les tournées
+ * `PREFERENCE_TOURNEE` (réactivé en `0006` maintenant que les tournées
  * existent — voir `FormulairePreference`, prop `tourneesActives`, pour le
  * filtrage « aucune tournée disponible »).
  *

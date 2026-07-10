@@ -1,13 +1,13 @@
 /**
  * Module Vuex — tournées.
  *
- * State shape (feature 002) : `{ items: [] }`, hydraté par
+ * State shape (feature 0002) : `{ items: [] }`, hydraté par
  * `app/bootstrap` (voir `src/store/index.js`) via la mutation `REPLACE`.
  * Module **persisté** (voir ADR 0005) : la persistance elle-même est gérée
  * par le plugin dédié du store racine, jamais ici (aucun accès
  * `localStorage`).
  *
- * CRUD (feature 006) : les mutations restent **fines** (aucune logique
+ * CRUD (feature 0006) : les mutations restent **fines** (aucune logique
  * métier ni horodatage) ; la construction/normalisation d'une tournée vit
  * dans le domaine (`src/domain/tournees.js`, `creerTournee`), les
  * horodatages techniques (`updatedAt`) sont posés dans les actions.

@@ -9,10 +9,10 @@ import PlanningView from '@/views/PlanningView.vue';
 import ParametresView from '@/views/ParametresView.vue';
 
 /**
- * Routes de l'application. `souhaits` (feature 005) est la première route
+ * Routes de l'application. `souhaits` (feature 0005) est la première route
  * paramétrée : le rafraîchissement direct sur `/#/equipe/<id>/souhaits`
  * fonctionne car le `bootstrap` du store hydrate l'état avant le montage. La
- * route paramétrée de diffusion (feature 012) sera ajoutée plus tard.
+ * route paramétrée de diffusion (feature 0012) sera ajoutée plus tard.
  */
 const routes = [
   { path: '/', name: 'accueil', component: AccueilView },

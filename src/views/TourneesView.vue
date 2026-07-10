@@ -186,13 +186,13 @@ import { libelleCreneau, libelleJours } from '@/domain/libelles.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Écran « Tournées » (feature 006) : liste les tournées du cabinet et
+ * Écran « Tournées » (feature 0006) : liste les tournées du cabinet et
  * **orchestre** leur cycle de vie (ajout, édition, archivage, restauration)
  * via le store `tournees`. Ne contient **aucune logique métier** : la
  * construction/normalisation d'une tournée est déléguée au domaine
  * (`creerTournee`, appelé par l'action `tournees/ajouter`) ; le tri
  * alphabétique et les textes de présentation ne sont que des choix
- * d'affichage locaux à l'écran (calqué sur `EquipeView`, feature 004).
+ * d'affichage locaux à l'écran (calqué sur `EquipeView`, feature 0004).
  */
 export default {
   name: 'TourneesView',
@@ -259,7 +259,7 @@ export default {
 
     /**
      * Ordre d'affichage (présentation uniquement, `ordreAffichage` n'est pas
-     * utilisé en 006) : tri alphabétique du nom, comparaison locale française.
+     * utilisé en 0006) : tri alphabétique du nom, comparaison locale française.
      * @param {object} a
      * @param {object} b
      * @returns {number}

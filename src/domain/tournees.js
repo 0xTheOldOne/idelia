@@ -25,7 +25,7 @@ import { genId } from '@/domain/utils/id.js';
  * @property {boolean} archivee - Soft-delete : `true` = archivée.
  * @property {(string|null)} dateDebutValidite - Date `"YYYY-MM-DD"`, ou `null`.
  * @property {(string|null)} dateFinValidite - Date `"YYYY-MM-DD"`, ou `null`.
- * @property {(number|null)} ordreAffichage - Réordonnancement manuel (non édité en 006).
+ * @property {(number|null)} ordreAffichage - Réordonnancement manuel (non édité en 0006).
  * @property {string} notes
  * @property {string} createdAt - Horodatage ISO UTC.
  * @property {string} updatedAt - Horodatage ISO UTC.

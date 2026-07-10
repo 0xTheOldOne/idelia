@@ -15,7 +15,7 @@ Règle d'exécution des features en phase de développement. S'adresse à **l'ag
 
 Le prompt du sous-agent doit contenir **au minimum** :
 
-1. **Le chemin du fichier de feature** (`features/NNN-*.md`).
+1. **Le chemin du fichier de feature** (`features/NNNN-*.md`).
 2. **Le numéro et le titre de la tâche** à réaliser.
 3. **La liste des fichiers à créer ou modifier** pour cette tâche.
 4. **Le contexte d'architecture pertinent, déjà chargé** : les extraits utiles des ADR / docs d'architecture / instructions (règles d'or applicables, conventions, structures de données concernées), afin que le sous-agent n'ait pas à tout relire.

@@ -245,7 +245,7 @@ import { STATUTS_PERSONNE_OPTIONS } from '@/domain/libelles.js';
 import { genId } from '@/domain/utils/id.js';
 
 /**
- * Formulaire présentational d'ajout/édition d'une personne (feature 004).
+ * Formulaire présentational d'ajout/édition d'une personne (feature 0004).
  *
  * Bâti au-dessus de `ModaleBase`. N'accède **pas** au store : il reçoit ses
  * données par props (`personne` = `null` en création, objet en édition) et

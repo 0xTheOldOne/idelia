@@ -58,14 +58,14 @@ import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Mini-sélecteur de personne (feature 011, tâche 3) : modale bâtie sur
+ * Mini-sélecteur de personne (feature 0011, tâche 3) : modale bâtie sur
  * `ModaleBase` (§6.2 du plan) listant les **personnes actives** (pastille +
  * Prénom Nom, jamais la couleur seule), avec filtre texte et note discrète
  * « déjà N affectation(s) ce jour-là » (lecture présentationnelle des
  * affectations du planning courant, **aucune règle métier**). Masque les
  * personnes déjà présentes sur le créneau exact ciblé (dé-doublonnage) et
  * affiche alors une ligne d'aide expliquant ce masquage (correctif
- * ergonomie MIN-5, feature 011).
+ * ergonomie MIN-5, feature 0011).
  *
  * **Liste de choix, pas un formulaire** ([ADR 0011](../../../docs/adr/0011-validation-vuelidate-vue-debounce.md)) :
  * pas de Vuelidate. Un clic sur un nom émet `choisir(personneId)` ; toute
@@ -162,7 +162,7 @@ export default {
      * `true` si au moins une personne active a été masquée de la liste car
      * déjà présente sur ce créneau exact (§7) — pilote la ligne d'aide
      * discrète expliquant le masquage (correctif ergonomie MIN-5,
-     * feature 011), affichée uniquement quand un masquage a effectivement
+     * feature 0011), affichée uniquement quand un masquage a effectivement
      * lieu.
      * @returns {boolean}
      */
@@ -195,7 +195,7 @@ export default {
 @use '@/styles/tokens' as t;
 
 // Ligne d'aide discrète expliquant le masquage de personnes déjà présentes
-// sur le créneau exact (correctif ergonomie MIN-5, feature 011) : affichée
+// sur le créneau exact (correctif ergonomie MIN-5, feature 0011) : affichée
 // uniquement quand un masquage a effectivement lieu.
 .selecteur-personne-aide-masquage {
   margin: 0 0 t.$espace-3;

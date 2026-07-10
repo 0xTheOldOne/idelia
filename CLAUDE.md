@@ -27,11 +27,11 @@ Idelia aide un **cabinet infirmier** à établir ses **plannings** (personnes, s
 - **Comment c'est architecturé** → [`docs/architecture/`](docs/architecture/) (commencer par [`01-vue-ensemble.md`](docs/architecture/01-vue-ensemble.md))
 - **Comment coder ici (par domaine)** → [`docs/instructions/`](docs/instructions/)
 - **Quoi construire, dans quel ordre** → [`features/ROADMAP.md`](features/ROADMAP.md)
-- **Plans de features** → [`features/`](features/) au format `NNN-NomDeLaFeature.md`
+- **Plans de features** → [`features/`](features/) au format `NNNN-NomDeLaFeature.md`
 
 ## Flux de travail
 
-1. L'agent **`architecte`** transforme une demande en plan `features/NNN-*.md` (gabarit : [`features/000-modele-feature.md`](features/000-modele-feature.md)).
+1. L'agent **`architecte`** transforme une demande en plan `features/NNNN-*.md` (gabarit : [`features/0000-modele-feature.md`](features/0000-modele-feature.md)).
 2. L'agent **`developpeur-vue`** implémente le plan. **Règle : une tâche = un nouveau sous-agent** lancé via l'outil Agent, **`model: sonnet`**, effort **`medium`**, à qui l'on passe le chemin du fichier de feature, le n° + titre de la tâche, la liste des fichiers à créer/modifier, et le contexte d'architecture déjà chargé. Voir [`docs/instructions/workflow-implementation.md`](docs/instructions/workflow-implementation.md).
 3. L'agent **`relecteur-ergonomie`** relit les écrans sous l'angle utilisateurs non-informaticiens.
 

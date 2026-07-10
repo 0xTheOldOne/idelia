@@ -236,7 +236,7 @@ import { coherenceParametres } from '@/domain/cabinet.js';
 import { CRENEAUX } from '@/domain/schema.js';
 
 /**
- * Écran « Paramètres du cabinet » (feature 003).
+ * Écran « Paramètres du cabinet » (feature 0003).
  *
  * Fonctionne sur un **brouillon local** (`data().brouillon`), copie des
  * paramètres courants du store : chaque champ n'est renvoyé au store

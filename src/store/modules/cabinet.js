@@ -1,13 +1,13 @@
 /**
  * Module Vuex — cabinet.
  *
- * State shape (feature 002) : `{ parametres: null }`, hydraté par
+ * State shape (feature 0002) : `{ parametres: null }`, hydraté par
  * `app/bootstrap` (voir `src/store/index.js`) via la mutation `REPLACE`.
  * Module **persisté** (voir ADR 0005) : la persistance elle-même est gérée
  * par le plugin dédié du store racine, jamais ici (aucun accès
  * `localStorage`).
  *
- * Action `majParametres` (feature 003) : met à jour les paramètres via une
+ * Action `majParametres` (feature 0003) : met à jour les paramètres via une
  * fusion immuable, en réutilisant la mutation `REPLACE` (aucune nouvelle
  * mutation).
  */

@@ -6,14 +6,14 @@ Idelia s'organise autour d'un petit nombre d'écrans clairs, accessibles depuis 
 
 | Route | Écran | Rôle | Feature |
 |---|---|---|---|
-| `/` | **Accueil** | Vue d'ensemble, actions rapides, état de la sauvegarde | `013` |
-| `/equipe` | **Équipe** | Gérer les personnes du cabinet (ajout/édition/désactivation) | `004` |
-| `/equipe/:id/souhaits` | **Souhaits** | Souhaits & préférences d'une personne | `005` |
-| `/tournees` | **Tournées** | Gérer les tournées et leurs horaires | `006` |
-| `/absences` | **Absences & congés** | Saisir et valider les absences | `007` |
-| `/planning` | **Planning** | Générer, éditer (drag & drop), voir les conflits | `010`, `011` |
-| `/planning/:id/diffusion` | **Diffusion** | Impression / export PDF pour l'équipe | `012` |
-| `/parametres` | **Paramètres** | Réglages cabinet + sauvegarde / import / export | `003`, `008` |
+| `/` | **Accueil** | Vue d'ensemble, actions rapides, état de la sauvegarde | `0013` |
+| `/equipe` | **Équipe** | Gérer les personnes du cabinet (ajout/édition/désactivation) | `0004` |
+| `/equipe/:id/souhaits` | **Souhaits** | Souhaits & préférences d'une personne | `0005` |
+| `/tournees` | **Tournées** | Gérer les tournées et leurs horaires | `0006` |
+| `/absences` | **Absences & congés** | Saisir et valider les absences | `0007` |
+| `/planning` | **Planning** | Générer, éditer (drag & drop), voir les conflits | `0010`, `0011` |
+| `/planning/:id/diffusion` | **Diffusion** | Impression / export PDF pour l'équipe | `0012` |
+| `/parametres` | **Paramètres** | Réglages cabinet + sauvegarde / import / export | `0003`, `0008` |
 
 ## Principes de navigation
 

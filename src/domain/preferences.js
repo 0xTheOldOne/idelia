@@ -224,7 +224,7 @@ export const META_TYPES_PREFERENCE = Object.freeze({
 /**
  * Liste des types de préférence proposés au sélecteur du formulaire :
  * `TYPES_PREFERENCE` dans son intégralité (les 8 types), y compris
- * `PREFERENCE_TOURNEE` — réactivé en `006` maintenant que les tournées
+ * `PREFERENCE_TOURNEE` — réactivé en `0006` maintenant que les tournées
  * existent. Le **filtrage** « aucune tournée disponible » (retirer
  * `PREFERENCE_TOURNEE` tant qu'aucune tournée active n'existe) se fait **côté
  * formulaire** (`FormulairePreference`), pas ici : ce module reste

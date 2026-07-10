@@ -1,6 +1,6 @@
 /**
  * Construction gloutonne (algorithme MRV — Minimum Remaining Values) du
- * planning (§5.12 du plan `009`), fidèle au pseudocode de
+ * planning (§5.12 du plan `0009`), fidèle au pseudocode de
  * `docs/architecture/05-moteur-de-planification.md` §3.
  *
  * Traite les `Demande` restantes (après retrait de celles déjà couvertes par
@@ -125,7 +125,7 @@ function choisirMeilleurCandidat(candidats, demande, contraintes, ctx, rng) {
 }
 
 /**
- * Construit le planning par glouton MRV (§5.12 du plan `009`). Inclut
+ * Construit le planning par glouton MRV (§5.12 du plan `0009`). Inclut
  * d'emblée `entree.affectationsVerrouillees`, préservées à l'identique (mode
  * hybride, ADR 0007).
  *

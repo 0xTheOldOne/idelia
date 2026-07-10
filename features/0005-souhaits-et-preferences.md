@@ -1,32 +1,32 @@
-# Feature 005 — Souhaits & préférences
+# Feature 0005 — Souhaits & préférences
 
 - **Statut** : Fait
-- **Dépend de** : `004` (module `personnes` avec CRUD, getter `byId`, mutation `UPDATE` par fusion immuable ; briques `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde` ; `src/domain/libelles.js`, `src/domain/personnes.js`, `dateUtil`). S'appuie indirectement sur `002` (store persisté, `schema.js`, plugin de persistance débouncé).
+- **Dépend de** : `0004` (module `personnes` avec CRUD, getter `byId`, mutation `UPDATE` par fusion immuable ; briques `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde` ; `src/domain/libelles.js`, `src/domain/personnes.js`, `dateUtil`). S'appuie indirectement sur `0002` (store persisté, `schema.js`, plugin de persistance débouncé).
 - **ADR liés** : [0003](../docs/adr/0003-stack-vue-vite-optionsapi-vuex-router.md) (Options API + Vuex), [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance derrière repository), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (domaine = module pur), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (jours ISO 1-7 + horodatages ISO UTC), [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) (Vuelidate), [0012](../docs/adr/0012-style-scss.md) / [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) (SCSS + Bootstrap thémé, modale), [0013](../docs/adr/0013-icones-phosphor.md) (icônes Phosphor), [0016](../docs/adr/0016-router-mode-hash-pour-pages.md) (routeur en mode hash — première **route paramétrée** de l'app).
 
 ## 1. Contexte & objectif
 
-La feature `004` a rendu l'équipe modifiable et **initialise `preferences` à `[]`** sur chaque personne, **sans jamais l'éditer** (renvoyé explicitement à `005`, route `/equipe/:id/souhaits`). La feature `005` ouvre cet écran : elle permet au référent (public **peu à l'aise avec l'informatique**) de saisir, pour **une personne donnée**, ses **souhaits et contraintes** de travail — par exemple « ne travaille jamais le mercredi », « souhaite ses repos le week-end », « pas plus de 5 jours d'affilée », « indisponible le mardi matin ».
+La feature `0004` a rendu l'équipe modifiable et **initialise `preferences` à `[]`** sur chaque personne, **sans jamais l'éditer** (renvoyé explicitement à `0005`, route `/equipe/:id/souhaits`). La feature `0005` ouvre cet écran : elle permet au référent (public **peu à l'aise avec l'informatique**) de saisir, pour **une personne donnée**, ses **souhaits et contraintes** de travail — par exemple « ne travaille jamais le mercredi », « souhaite ses repos le week-end », « pas plus de 5 jours d'affilée », « indisponible le mardi matin ».
 
 Chaque souhait est une **`Preference`** attachée à la personne. Deux notions structurent l'expérience :
 
-- **La nature** : une préférence est soit **obligatoire** (contrainte **DURE**, jamais violée par le futur moteur `009`), soit un **souhait** (préférence **SOUPLE**, satisfait *si possible*, avec une **importance**).
+- **La nature** : une préférence est soit **obligatoire** (contrainte **DURE**, jamais violée par le futur moteur `0009`), soit un **souhait** (préférence **SOUPLE**, satisfait *si possible*, avec une **importance**).
 - **Le type** : la forme des informations à saisir dépend du **type** de souhait (un jour, un moment de la journée, un nombre de jours…). C'est un modèle **polymorphe** (`type` + `params`, voir §3).
 
-Ces données sont le carburant du **moteur de planification** (`009`) et de la **génération** (`010`) : plus elles sont fidèles, meilleur est le planning proposé. Chaque enregistrement est **persisté automatiquement** (plugin débouncé de `002`) avec un **retour visuel clair** réutilisant `IndicateurSauvegarde` (`003`).
+Ces données sont le carburant du **moteur de planification** (`0009`) et de la **génération** (`0010`) : plus elles sont fidèles, meilleur est le planning proposé. Chaque enregistrement est **persisté automatiquement** (plugin débouncé de `0002`) avec un **retour visuel clair** réutilisant `IndicateurSauvegarde` (`0003`).
 
-**Hors périmètre `005`** (à ne pas implémenter ici) :
+**Hors périmètre `0005`** (à ne pas implémenter ici) :
 
-- Le type **`PREFERENCE_TOURNEE`** (préférer/éviter une tournée) : il référence des `tourneeIds`, or **les tournées n'existent pas encore** (feature `006`, module `tournees` vide, sans CRUD ni libellés). Ce type est **différé à `006`** — voir §12. Le domaine reste néanmoins **structurellement prêt** (schéma inchangé, extensible), il n'est simplement **pas proposé** dans le sélecteur de type en `005`.
+- Le type **`PREFERENCE_TOURNEE`** (préférer/éviter une tournée) : il référence des `tourneeIds`, or **les tournées n'existent pas encore** (feature `0006`, module `tournees` vide, sans CRUD ni libellés). Ce type est **différé à `0006`** — voir §12. Le domaine reste néanmoins **structurellement prêt** (schéma inchangé, extensible), il n'est simplement **pas proposé** dans le sélecteur de type en `0005`.
 - **Réordonnancement manuel** des souhaits : non pertinent (ordre d'affichage = ordre de saisie, KISS).
-- L'**exploitation** des préférences par le moteur (filtrage dur / optimisation souple) — features `009`/`010`.
-- Les **absences** datées (congés, arrêts) : ce ne sont **pas** des préférences récurrentes — feature `007`.
+- L'**exploitation** des préférences par le moteur (filtrage dur / optimisation souple) — features `0009`/`0010`.
+- Les **absences** datées (congés, arrêts) : ce ne sont **pas** des préférences récurrentes — feature `0007`.
 
 ## 2. Écrans concernés
 
-Première **route paramétrée** de l'application, prévue dès [07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md) et annoncée par `004` :
+Première **route paramétrée** de l'application, prévue dès [07-navigation-et-ecrans](../docs/architecture/07-navigation-et-ecrans.md) et annoncée par `0004` :
 
-| Route | Écran | Changement `005` |
+| Route | Écran | Changement `0005` |
 |---|---|---|
 | `/equipe/:id/souhaits` | **Souhaits** | **Nouvel écran** : souhaits & préférences d'**une** personne (liste + ajout/édition/suppression). |
 | `/equipe` | **Équipe** | **Modifié** : chaque personne **active** gagne un bouton « Souhaits » qui mène à son écran de souhaits. |
@@ -38,7 +38,7 @@ Première **route paramétrée** de l'application, prévue dès [07-navigation-e
 - **Explication d'entrée** en langage humain, une fois, en haut : la différence entre **obligatoire** (« toujours respecté ») et **souhait** (« pris en compte si possible »), sans jargon.
 - **Action principale dominante** : bouton **« Ajouter un souhait »** (`btn btn-primary`, `PhPlus`), toujours visible.
 - **Liste lisible** : chaque souhait est résumé **en une phrase française** (« Ne travaille pas le mercredi », « Souhaite être en repos le samedi et le dimanche — importance : assez important »), avec un **repère de nature non-coloré** (icône + mot « Obligatoire » / « Souhait », jamais la couleur seule) et les actions « Modifier » / « Supprimer ».
-- **Ajout / édition en modale** (au-dessus de `ModaleBase`, comme le formulaire de personne en `004`) : on choisit d'abord le **type de souhait** (liste claire), puis **seuls les champs pertinents** pour ce type apparaissent ; on choisit **Obligatoire** ou **Souhait** (et, pour un souhait, une **importance** en mots) ; « Enregistrer » dominant, « Annuler » toujours disponible ; fermeture au clavier (Échap) et par clic hors fenêtre.
+- **Ajout / édition en modale** (au-dessus de `ModaleBase`, comme le formulaire de personne en `0004`) : on choisit d'abord le **type de souhait** (liste claire), puis **seuls les champs pertinents** pour ce type apparaissent ; on choisit **Obligatoire** ou **Souhait** (et, pour un souhait, une **importance** en mots) ; « Enregistrer » dominant, « Annuler » toujours disponible ; fermeture au clavier (Échap) et par clic hors fenêtre.
 - **Suppression réversible par confirmation** : « Supprimer » ouvre une **demande de confirmation** en langage clair (un souhait supprimé n'est **pas** conservé — geste réfléchi, bouton rouge). En complément, chaque souhait peut être **mis en pause** sans être supprimé (interrupteur « Pris en compte »), pour l'exclure temporairement d'une génération sans perdre sa configuration.
 - **État vide accueillant** : « Aucun souhait pour l'instant. Ajoutez-en un pour guider la création des plannings. » + le même gros bouton d'ajout.
 - **Personne introuvable** (URL saisie à la main / identifiant inconnu) : encart aimable (« Cette personne est introuvable. ») + retour vers l'équipe, plutôt qu'une page cassée.
@@ -49,7 +49,7 @@ Entité **`Preference`**, **imbriquée dans `Personne`** (collection racine `per
 
 **Structure d'une `Preference`** (source de vérité : [02 §Preference](../docs/architecture/02-modele-de-domaine.md)) — polymorphisme par discriminant `type` + sac `params` :
 
-| champ | type | oblig. | rôle `005` |
+| champ | type | oblig. | rôle `0005` |
 |---|---|---|---|
 | `id` | uuid | oui | généré via `genId()` à la création ; **immuable** |
 | `type` | enum `TYPES_PREFERENCE` | oui | discriminant ; pilote les champs de `params` (voir table) |
@@ -62,7 +62,7 @@ Entité **`Preference`**, **imbriquée dans `Personne`** (collection racine `per
 
 **`type` → `params`** (les 8 types du schéma ; le libellé FR est en §5) :
 
-| type | `params` | ce que l'utilisateur saisit | proposé en `005` ? |
+| type | `params` | ce que l'utilisateur saisit | proposé en `0005` ? |
 |---|---|---|---|
 | `JOUR_OFF_RECURRENT` | `{ joursSemaine: number[1..7] }` | 1..n jours (cases) | oui |
 | `JOURS_REPOS_SOUHAITES` | `{ joursSemaine: number[1..7] }` | 1..n jours (cases) | oui |
@@ -71,15 +71,15 @@ Entité **`Preference`**, **imbriquée dans `Personne`** (collection racine `per
 | `MAX_JOURS_CONSECUTIFS` | `{ max: integer>=1 }` | un nombre | oui |
 | `MIN_JOURS_CONSECUTIFS` | `{ min: integer>=1 }` | un nombre | oui |
 | `NB_JOURS_SEMAINE` | `{ min?: integer, max?: integer }` | un mini et/ou un maxi | oui |
-| `PREFERENCE_TOURNEE` | `{ tourneeIds: uuid[], sens: "PREFERE"\|"EVITE" }` | tournée(s) + sens | **non** (différé `006`, §12) |
+| `PREFERENCE_TOURNEE` | `{ tourneeIds: uuid[], sens: "PREFERE"\|"EVITE" }` | tournée(s) + sens | **non** (différé `0006`, §12) |
 
 > **Jours** : ISO 1-7 (Lundi…Dimanche), [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) — réutilise `JOURS_SEMAINE` de `libelles.js`. **Créneaux** : sous-ensemble de `CRENEAUX` (`schema.js`) — réutilise `LIBELLES_CRENEAU`.
 
-**Impact `schemaVersion` / migrations** : **aucun**. `CURRENT_SCHEMA_VERSION` reste `1`. Les préférences sont sérialisées telles quelles dans `personne.preferences` par `toSaveDocument`/`fromSaveDocument` (déjà en place). `verifierIntegrite` ne contrôle pas les `Preference` (objets-valeurs imbriqués, sans référence sortante en `005` ; le contrôle des `tourneeIds` du type `PREFERENCE_TOURNEE` viendra avec `006`/`008`).
+**Impact `schemaVersion` / migrations** : **aucun**. `CURRENT_SCHEMA_VERSION` reste `1`. Les préférences sont sérialisées telles quelles dans `personne.preferences` par `toSaveDocument`/`fromSaveDocument` (déjà en place). `verifierIntegrite` ne contrôle pas les `Preference` (objets-valeurs imbriqués, sans référence sortante en `0005` ; le contrôle des `tourneeIds` du type `PREFERENCE_TOURNEE` viendra avec `0006`/`0008`).
 
 ## 4. Store (Vuex)
 
-Module `personnes` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). On **réutilise intégralement** l'infrastructure de `004` : getter `byId`, **mutation `UPDATE` par fusion immuable** (`{ ...ancien, ...patch }`), persistance débouncée automatique. Les préférences vivant **dans** la personne, éditer une préférence = **mettre à jour la personne** (patch `{ preferences: <nouveau tableau>, updatedAt }`).
+Module `personnes` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-etat-vuex.md), [instructions/etat-vuex.md](../docs/instructions/etat-vuex.md)). On **réutilise intégralement** l'infrastructure de `0004` : getter `byId`, **mutation `UPDATE` par fusion immuable** (`{ ...ancien, ...patch }`), persistance débouncée automatique. Les préférences vivant **dans** la personne, éditer une préférence = **mettre à jour la personne** (patch `{ preferences: <nouveau tableau>, updatedAt }`).
 
 ### 4.1 Getter (ajout)
 
@@ -89,7 +89,7 @@ Module `personnes` ([04-gestion-etat-vuex.md](../docs/architecture/04-gestion-et
 
 ### 4.2 Actions (ajouts)
 
-Les actions **orchestrent** ; la construction/normalisation d'une `Preference` vit dans le **domaine** (§5, `creerPreference`), jamais dans le store (règle d'or #10). Chaque action lit la personne courante via `getters.byId`, recompose son tableau `preferences` **de façon immuable** (spread / `map` / `filter`, jamais de mutation en place), et rafraîchit **`personne.updatedAt`** (ISO UTC, [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)). La mutation `UPDATE` de `004` fait le reste.
+Les actions **orchestrent** ; la construction/normalisation d'une `Preference` vit dans le **domaine** (§5, `creerPreference`), jamais dans le store (règle d'or #10). Chaque action lit la personne courante via `getters.byId`, recompose son tableau `preferences` **de façon immuable** (spread / `map` / `filter`, jamais de mutation en place), et rafraîchit **`personne.updatedAt`** (ISO UTC, [ADR 0010](../docs/adr/0010-conventions-dates-et-jours-iso.md)). La mutation `UPDATE` de `0004` fait le reste.
 
 - `ajouterPreference({ commit, getters }, { personneId, ...champs })` :
   - `const personne = getters.byId(personneId)` ; si absente, ne rien faire ;
@@ -113,15 +113,15 @@ Chaque `commit('personnes/UPDATE', …)` déclenche le **plugin de persistance d
 
 ### 4.4 État racine consommé en lecture seule
 
-L'écran **lit** (sans jamais les muter), comme `003`/`004` : `state.statutSauvegarde` et `state.derniereSauvegarde` (retour visuel via `IndicateurSauvegarde`, dont l'encart `ERREUR_CHARGEMENT`).
+L'écran **lit** (sans jamais les muter), comme `0003`/`0004` : `state.statutSauvegarde` et `state.derniereSauvegarde` (retour visuel via `IndicateurSauvegarde`, dont l'encart `ERREUR_CHARGEMENT`).
 
 ## 5. Domaine (logique pure)
 
-Tout dans `src/domain/`, **sans import Vue/Vuex ni `localStorage`** ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)). Réutilisable par le moteur (`009`) et les écrans planning (`010`+).
+Tout dans `src/domain/`, **sans import Vue/Vuex ni `localStorage`** ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)). Réutilisable par le moteur (`0009`) et les écrans planning (`0010`+).
 
 ### 5.1 `src/domain/preferences.js` (**nouveau**) — fabrique, métadonnées & description d'une Preference
 
-**Décision (§12) : un module dédié**, distinct de `personnes.js`. Justification : le polymorphisme (fabrique + normalisation de `params` par type + métadonnées par type + description en langage humain + échelle d'importance) est **cohésif et volumineux**, sans rapport avec la fabrique `Personne`. On isole cette complexité, exactement comme `003` a isolé `cabinet.js` pour la cohérence des paramètres. `personnes.js` reste focalisé sur la `Personne`.
+**Décision (§12) : un module dédié**, distinct de `personnes.js`. Justification : le polymorphisme (fabrique + normalisation de `params` par type + métadonnées par type + description en langage humain + échelle d'importance) est **cohésif et volumineux**, sans rapport avec la fabrique `Personne`. On isole cette complexité, exactement comme `0003` a isolé `cabinet.js` pour la cohérence des paramètres. `personnes.js` reste focalisé sur la `Personne`.
 
 Exports :
 
@@ -135,7 +135,7 @@ Exports :
   - `createdAt` : `champs.createdAt ?? <ISO UTC>` ; `updatedAt` : `<ISO UTC>`.
   - JSDoc : `@typedef {Object} Preference` (aligné sur [02 §Preference](../docs/architecture/02-modele-de-domaine.md)).
 - **`META_TYPES_PREFERENCE`** (objet gelé, indexé par code de type) : la **description métier** de chaque type, qui pilote le rendu dynamique du formulaire et l'aide contextuelle. Pour chaque type : `{ champs: <'jours' | 'creneaux+jours?' | 'jours+creneaux?' | 'nombreMax' | 'nombreMin' | 'minMax'>, natureParDefaut: 'DURE'|'SOUPLE', aide: <string FR> }`. Défauts de nature suggérés (l'utilisateur peut toujours changer) : `INDISPO_HEBDO`, `CRENEAU_OFF`, `MAX_JOURS_CONSECUTIFS` → `DURE` ; les autres → `SOUPLE`.
-- **`TYPES_PREFERENCE_OFFERTS`** : `TYPES_PREFERENCE` **privé de** `'PREFERENCE_TOURNEE'` (différé `006`). C'est la liste consommée par le sélecteur de type du formulaire.
+- **`TYPES_PREFERENCE_OFFERTS`** : `TYPES_PREFERENCE` **privé de** `'PREFERENCE_TOURNEE'` (différé `0006`). C'est la liste consommée par le sélecteur de type du formulaire.
 - **`natureParDefaut(type)`** → `'DURE'|'SOUPLE'` : lit `META_TYPES_PREFERENCE`.
 - **Échelle d'importance (poids)** — traduit le `poids` (entier 1..10, jargon) en **3 niveaux humains** :
   - `NIVEAUX_IMPORTANCE` : `[{ code:'FAIBLE', libelle:'Peu important', poids:3 }, { code:'MOYENNE', libelle:'Assez important', poids:5 }, { code:'FORTE', libelle:'Très important', poids:8 }]` ;
@@ -151,7 +151,7 @@ Exports :
   - `NB_JOURS_SEMAINE {min:3,max:4}` → « Entre 3 et 4 jours par semaine » (gère aussi « Au moins 3… » / « Au plus 4… » si une seule borne).
   - Helper interne de **jonction FR** (« a, b et c ») pour les listes de jours/créneaux.
 
-> Le module **n'est pas responsable de la validation de saisie** (au bon moment, messages inline) : cela reste au formulaire via Vuelidate (§7), cohérent avec `004` où la cohérence `dateSortie ≥ dateEntree` vivait dans le formulaire. Le domaine garantit en revanche la **normalisation structurelle** (`normaliserParams`) et la **description** — le moteur `009` réutilisera `creerPreference`/`META_TYPES_PREFERENCE`.
+> Le module **n'est pas responsable de la validation de saisie** (au bon moment, messages inline) : cela reste au formulaire via Vuelidate (§7), cohérent avec `0004` où la cohérence `dateSortie ≥ dateEntree` vivait dans le formulaire. Le domaine garantit en revanche la **normalisation structurelle** (`normaliserParams`) et la **description** — le moteur `0009` réutilisera `creerPreference`/`META_TYPES_PREFERENCE`.
 
 ### 5.2 `src/domain/libelles.js` (**modifier**) — libellés de nature & de type
 
@@ -179,7 +179,7 @@ Libellés FR proposés pour `LIBELLES_TYPE_PREFERENCE` (à ajuster à l'impléme
 | `NB_JOURS_SEMAINE` | « Nombre de jours par semaine » |
 | `PREFERENCE_TOURNEE` | « Tournée préférée ou évitée » |
 
-> Le **sélecteur** de type du formulaire n'itère **pas** sur `TYPES_PREFERENCE_OPTIONS` mais sur `TYPES_PREFERENCE_OFFERTS` (§5.1) mappé vers ses libellés, pour **exclure `PREFERENCE_TOURNEE`** en `005`. `LIBELLES_TYPE_PREFERENCE` couvre **tous** les types (y compris `PREFERENCE_TOURNEE`) afin que `decrirePreference` sache décrire une éventuelle donnée importée de ce type sans plantage.
+> Le **sélecteur** de type du formulaire n'itère **pas** sur `TYPES_PREFERENCE_OPTIONS` mais sur `TYPES_PREFERENCE_OFFERTS` (§5.1) mappé vers ses libellés, pour **exclure `PREFERENCE_TOURNEE`** en `0005`. `LIBELLES_TYPE_PREFERENCE` couvre **tous** les types (y compris `PREFERENCE_TOURNEE`) afin que `decrirePreference` sache décrire une éventuelle donnée importée de ce type sans plantage.
 
 ### 5.3 Jours, créneaux & horodatages
 
@@ -199,7 +199,7 @@ Séparation conforme à [06-structure-du-code.md](../docs/architecture/06-struct
 - **Personne courante** (computed) : `byId(id)`. Si `undefined` → **état « personne introuvable »** : encart aimable (icône `PhUserMinus`) + lien « Retour à l'équipe » (`router-link` vers `{ name: 'equipe' }`). Le reste de l'écran n'est pas rendu.
 - **En-tête** : lien de retour « ← Retour à l'équipe » (`router-link`), `<h1>` « Souhaits et contraintes de {prenom} {nom} », et un rappel « Titulaire · 80 % » (réutilise `libelleStatutPersonne`) pour situer la personne.
 - **Texte d'explication** (une fois) : encart discret expliquant **Obligatoire** vs **Souhait** en langage clair.
-- **Indicateur de sauvegarde** : `IndicateurSauvegarde` alimenté par `statutSauvegarde`/`derniereSauvegarde` + `apres-edition="aEdite"` (passe à `true` après le 1er ajout/édition/suppression/bascule) ; encart `ERREUR_CHARGEMENT` comme `004`.
+- **Indicateur de sauvegarde** : `IndicateurSauvegarde` alimenté par `statutSauvegarde`/`derniereSauvegarde` + `apres-edition="aEdite"` (passe à `true` après le 1er ajout/édition/suppression/bascule) ; encart `ERREUR_CHARGEMENT` comme `0004`.
 - **Action principale** : bouton **« Ajouter un souhait »** (`PhPlus`) ⇒ ouvre `FormulairePreference` en création (`preference = null`).
 - **État vide** : si `preferences` est vide → encart accueillant (icône `PhSlidersHorizontal`) + bouton d'ajout.
 - **Liste des souhaits** (`preferences`, dans l'ordre de saisie) : une **liste de cartes/lignes** (pas un tableau). Chaque ligne affiche :
@@ -223,7 +223,7 @@ Formulaire **présentational** d'ajout/édition d'**une** préférence, bâti au
 - **Titre de la modale** : « Ajouter un souhait » (création) / « Modifier le souhait » (édition).
 - **Champs & regroupement** ([08](../docs/architecture/08-principes-ux-ergonomie.md), peu de champs à la fois) :
   1. **Type de souhait** — `form-select` alimenté par `TYPES_PREFERENCE_OFFERTS` → libellés `libelleTypePreference`. `autofocus` à l'ouverture (création). Un **texte d'aide** (`META_TYPES_PREFERENCE[type].aide`) explique le type choisi. Au **changement de type**, réinitialiser proprement `params` (et proposer `natureParDefaut(type)` tant que l'utilisateur n'a pas changé la nature manuellement).
-  2. **Détails (params)** — **section dynamique** rendue **selon le type** (v-if), réutilisant deux patrons de saisie déjà éprouvés dans `ParametresView` (003) :
+  2. **Détails (params)** — **section dynamique** rendue **selon le type** (v-if), réutilisant deux patrons de saisie déjà éprouvés dans `ParametresView` (0003) :
      - jours → **cases à cocher** `JOURS_SEMAINE` (ordre ISO, libellés en toutes lettres, cible ~44 px) ⇒ `params.joursSemaine` ;
      - créneaux → **cases à cocher** `CRENEAUX`/`LIBELLES_CRENEAU` ⇒ `params.creneaux` ;
      - nombres → `<input type="number" min="1" max="7" step="1">` (`v-model.number`) ⇒ `params.max` / `params.min` / bornes de `NB_JOURS_SEMAINE`.
@@ -236,7 +236,7 @@ Formulaire **présentational** d'ajout/édition d'**une** préférence, bâti au
 - **Vuelidate** : voir §7. Pont `setup(){ return { v$: useVuelidate() } }` = seul usage de Composition API (identique à `FormulairePersonne`).
 - **Icônes** : `PhWarning` (erreurs, présentation identique à `FormulairePersonne`).
 
-> **Réutilisation des patrons de cases (jours/créneaux)** : gardés **en ligne** dans ce formulaire (KISS), comme `ParametresView` le fait pour le cabinet. L'extraction éventuelle d'un petit composant `ChoixJoursSemaine` réutilisable (003/005/006) est notée en §12 mais **non requise** ici.
+> **Réutilisation des patrons de cases (jours/créneaux)** : gardés **en ligne** dans ce formulaire (KISS), comme `ParametresView` le fait pour le cabinet. L'extraction éventuelle d'un petit composant `ChoixJoursSemaine` réutilisable (0003/0005/0006) est notée en §12 mais **non requise** ici.
 
 ### 6.3 `src/views/EquipeView.vue` (**modifier**) — point d'entrée « Souhaits »
 
@@ -254,7 +254,7 @@ Ajouter, sur chaque **personne active** (bloc `equipe-actions` de la liste des a
 
 - Importer `PhSlidersHorizontal` (Phosphor) et l'enregistrer dans `components`.
 - **Uniquement** sur les personnes actives (les archivées n'ont pas ce bouton ; l'écran reste toutefois atteignable par URL directe et gère l'affichage).
-- Aucune autre modification (le reste d'`EquipeView` de `004` est conservé).
+- Aucune autre modification (le reste d'`EquipeView` de `0004` est conservé).
 
 ### 6.4 `src/router/index.js` (**modifier**) — route paramétrée
 
@@ -268,7 +268,7 @@ Ajouter la route (importer `SouhaitsView`) :
 
 ### 6.5 Réutilisation & style
 
-- `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `libelles.js`, `dateUtil`, tokens/mixins SCSS, intégration Bootstrap, icônes Phosphor : **déjà en place** (`003`/`004`), réutilisés tels quels.
+- `ModaleBase`, `DialogueConfirmation`, `IndicateurSauvegarde`, `libelles.js`, `dateUtil`, tokens/mixins SCSS, intégration Bootstrap, icônes Phosphor : **déjà en place** (`0003`/`0004`), réutilisés tels quels.
 - **`_bootstrap.scss` : aucun ajout requis.** Les modules `modal`/`close` (modales) et `forms` (dont `form-check`/`form-switch` pour l'interrupteur « Pris en compte ») sont **déjà importés**. Le repère de nature est en **icône + texte** (pas de `badge`), donc aucun module supplémentaire (KISS).
 - Le SCSS `scoped` ne sert qu'au **spécifique** (lignes de souhait, repère de nature, présentation atténuée « en pause », aperçu). Cibles ~44 px (`$cible-cliquable-min`), focus visible, tokens uniquement.
 - La directive `v-debounce` n'est **pas** nécessaire (validation explicite au bouton, pas d'auto-persistance à la frappe).
@@ -307,7 +307,7 @@ Public **peu à l'aise avec l'informatique** ([08-principes-ux-ergonomie.md](../
 - **Pas de cul-de-sac** : lien de retour vers l'équipe permanent ; état « personne introuvable » avec issue claire.
 - **Modale accessible** : focus piégé, fermeture clavier (Échap), retour du focus à l'ouvrant, `autofocus` sur le 1er champ (fournis par `ModaleBase`).
 - **Ergonomie physique** : cibles ~44 px (boutons, cases, interrupteur), `label` associé à chaque champ, focus clavier visible, structure `h1 → h2`.
-- **Cohérence** : mêmes patrons que `003`/`004` (indicateur de sauvegarde, présentation des erreurs, ajout/édition en modale, confirmation destructive).
+- **Cohérence** : mêmes patrons que `0003`/`0004` (indicateur de sauvegarde, présentation des erreurs, ajout/édition en modale, confirmation destructive).
 
 ## 9. Étapes d'implémentation
 
@@ -318,7 +318,7 @@ Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`developpeu
 **Fichiers** :
 - `src/domain/preferences.js` (**créer**) — `creerPreference` (+ `normaliserParams` interne), `META_TYPES_PREFERENCE`, `TYPES_PREFERENCE_OFFERTS`, `natureParDefaut`, `NIVEAUX_IMPORTANCE`, `niveauVersPoids`, `poidsVersNiveau`, `decrirePreference` ; JSDoc `@typedef Preference` (§5.1).
 - `src/domain/libelles.js` (**modifier**) — `LIBELLES_NATURE_PREFERENCE`, `libelleNaturePreference`, `NATURES_PREFERENCE_OPTIONS`, `LIBELLES_TYPE_PREFERENCE`, `libelleTypePreference`, `TYPES_PREFERENCE_OPTIONS` (§5.2). Conserver l'existant.
-- `src/store/modules/personnes.js` (**modifier**) — getter `preferencesDe` ; actions `ajouterPreference`, `modifierPreference`, `supprimerPreference`, `basculerPreference` (§4). Conserver getters/mutations/actions de `004`.
+- `src/store/modules/personnes.js` (**modifier**) — getter `preferencesDe` ; actions `ajouterPreference`, `modifierPreference`, `supprimerPreference`, `basculerPreference` (§4). Conserver getters/mutations/actions de `0004`.
 
 **Critères de sortie** :
 - `creerPreference({ type:'JOUR_OFF_RECURRENT', params:{ joursSemaine:[3] } })` renvoie une préférence **complète** : `id` non vide, `nature === 'SOUPLE'` (défaut du type), `poids === 5`, `actif === true`, `params === { joursSemaine:[3] }`, `libelle === ''`, `createdAt`/`updatedAt` ISO UTC.
@@ -335,7 +335,7 @@ Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`developpeu
 **Fichiers** :
 - `src/components/equipe/FormulairePreference.vue` (**créer**) — formulaire présentational au-dessus de `ModaleBase`, props `visible`/`preference`, événements `enregistrer`/`annuler`, section `params` dynamique par type, nature/importance, aperçu `decrirePreference`, Vuelidate (§6.2, §7).
 
-**Dépend de** : T1 (`preferences.js`, `libelles.js`) et `ModaleBase` (existant `004`).
+**Dépend de** : T1 (`preferences.js`, `libelles.js`) et `ModaleBase` (existant `0004`).
 
 **Critères de sortie** :
 - Mode **création** (`preference=null`) : type par défaut sélectionné, nature = défaut du type, importance « Assez important » (si souple), `params` vides ; `autofocus` sur le type.
@@ -354,7 +354,7 @@ Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`developpeu
 - `src/router/index.js` (**modifier**) — route paramétrée `{ path:'/equipe/:id/souhaits', name:'souhaits', component: SouhaitsView }` (§6.4).
 - `src/views/EquipeView.vue` (**modifier**) — bouton « Souhaits » (`router-link`, `PhSlidersHorizontal`) sur chaque personne **active** (§6.3).
 
-**Dépend de** : T1 (store/getters/domaine), T2 (`FormulairePreference`), briques `DialogueConfirmation`/`IndicateurSauvegarde` (existant `004`).
+**Dépend de** : T1 (store/getters/domaine), T2 (`FormulairePreference`), briques `DialogueConfirmation`/`IndicateurSauvegarde` (existant `0004`).
 
 **Critères de sortie** :
 - Depuis `/equipe`, « Souhaits » sur une personne active ouvre `/#/equipe/<id>/souhaits` (titre « Souhaits et contraintes de {Prénom} {Nom} »).
@@ -386,7 +386,7 @@ Découpage en **3 tâches**, chacune destinée à **un sous-agent** (`developpeu
 
 Parcours manuel (`npm run dev`) :
 
-1. **Pré-requis** — Avoir au moins une personne active (sinon en créer une via `/equipe`, feature `004`).
+1. **Pré-requis** — Avoir au moins une personne active (sinon en créer une via `/equipe`, feature `0004`).
 2. **Accès** — Sur `/equipe`, cliquer « Souhaits » d'une personne : l'écran s'ouvre, titré à son nom, avec l'explication dur/souple et l'état vide accueillant.
 3. **Ajout — jour off** — « Ajouter un souhait », type « Jour non travaillé (chaque semaine) », cocher « Mercredi », nature « Obligatoire », enregistrer : la ligne affiche « Ne travaille pas le mercredi » + repère « Obligatoire ». Indicateur « Modifications enregistrées ». **Recharger** (URL directe) → conservé.
 4. **Ajout — repos souhaités** — Type « Jours de repos souhaités », cocher Samedi + Dimanche, nature « Souhait », importance « Très important » : ligne « Souhaite être en repos le samedi et le dimanche » + « Souhait · Très important ».
@@ -402,13 +402,13 @@ Parcours manuel (`npm run dev`) :
 
 ## 12. Décisions à confirmer / risques
 
-1. **Route dédiée (retenu) + formulaire en modale** — **Retenu** : une **vue routée** `/equipe/:id/souhaits` (conforme à [07](../docs/architecture/07-navigation-et-ecrans.md) et à l'annonce de `004`), car les souhaits sont un **contexte par personne** atteint par navigation (trop riche pour une simple modale sur `/equipe`) ; le **formulaire d'un souhait**, lui, reste **en modale** (réutilise `ModaleBase`, cohérent avec `FormulairePersonne`). C'est la **première route paramétrée** : point de vigilance = rechargement direct sur l'URL (OK car `bootstrap` hydrate avant montage) et identifiant inconnu (géré par l'état « personne introuvable »). **À confirmer**.
+1. **Route dédiée (retenu) + formulaire en modale** — **Retenu** : une **vue routée** `/equipe/:id/souhaits` (conforme à [07](../docs/architecture/07-navigation-et-ecrans.md) et à l'annonce de `0004`), car les souhaits sont un **contexte par personne** atteint par navigation (trop riche pour une simple modale sur `/equipe`) ; le **formulaire d'un souhait**, lui, reste **en modale** (réutilise `ModaleBase`, cohérent avec `FormulairePersonne`). C'est la **première route paramétrée** : point de vigilance = rechargement direct sur l'URL (OK car `bootstrap` hydrate avant montage) et identifiant inconnu (géré par l'état « personne introuvable »). **À confirmer**.
 2. **Structure polymorphe de `Preference`** — **Confirmée** dans `schema.js` (`NATURES_PREFERENCE=['DURE','SOUPLE']`, `TYPES_PREFERENCE`=8 codes, `CRENEAUX`) et [02 §Preference](../docs/architecture/02-modele-de-domaine.md) : `{ id, type, nature, poids(1..10, défaut 5, souple only), actif(défaut true), params(selon type), libelle?, createdAt, updatedAt }`. `params` par type : jours (`JOUR_OFF_RECURRENT`, `JOURS_REPOS_SOUHAITES`), créneaux+jours? (`CRENEAU_OFF`), jours+créneaux? (`INDISPO_HEBDO`), `max` (`MAX_JOURS_CONSECUTIFS`), `min` (`MIN_JOURS_CONSECUTIFS`), `min?`/`max?` (`NB_JOURS_SEMAINE`), `tourneeIds`/`sens` (`PREFERENCE_TOURNEE`). **Aucune migration** (aucun nouveau champ). **À confirmer** : les libellés FR proposés (§5.2) et les phrases de `decrirePreference` (§5.1).
-3. **`PREFERENCE_TOURNEE` différé à `006`** — `005` ne dépend que de `004` ; les tournées (module `tournees`, getters/CRUD/libellés) arrivent en `006`. Ce type **référence des `tourneeIds`** : le proposer sans tournées serait vide et source d'incohérence référentielle. **Retenu** : l'**exclure du sélecteur** en `005` (`TYPES_PREFERENCE_OFFERTS`), tout en gardant le domaine **structurellement prêt** (schéma inchangé, `decrirePreference`/`creerPreference` gèrent le type). `006` l'ajoutera (option de type + sélecteur de tournées + contrôle d'intégrité des `tourneeIds` à l'import). **À confirmer**.
-4. **Emplacement du domaine : `src/domain/preferences.js` (nouveau)** — **Retenu** plutôt que d'alourdir `personnes.js` : la logique polymorphe (fabrique + normalisation par type + métadonnées + description + échelle d'importance) est cohésive et distincte de la `Personne` ; même esprit que `cabinet.js` en `003`. `personnes.js` reste inchangé. **À confirmer**.
-5. **Poids : 3 niveaux humains (retenu) vs échelle brute 1..10** — **Retenu** : exposer « Peu / Assez / Très important » mappés sur `poids` 3 / 5 / 8 ; le schéma reste `integer 1..10` (donc compatible). `poidsVersNiveau` rapproche toute valeur importée du palier le plus proche. Perd la granularité fine 1..10, jugée inutile et jargonneuse pour le public cible et suffisante pour le moteur (`009`). **À confirmer** : accepter 3 paliers (sinon prévoir un curseur 1..10 avec libellés).
+3. **`PREFERENCE_TOURNEE` différé à `0006`** — `0005` ne dépend que de `0004` ; les tournées (module `tournees`, getters/CRUD/libellés) arrivent en `0006`. Ce type **référence des `tourneeIds`** : le proposer sans tournées serait vide et source d'incohérence référentielle. **Retenu** : l'**exclure du sélecteur** en `0005` (`TYPES_PREFERENCE_OFFERTS`), tout en gardant le domaine **structurellement prêt** (schéma inchangé, `decrirePreference`/`creerPreference` gèrent le type). `0006` l'ajoutera (option de type + sélecteur de tournées + contrôle d'intégrité des `tourneeIds` à l'import). **À confirmer**.
+4. **Emplacement du domaine : `src/domain/preferences.js` (nouveau)** — **Retenu** plutôt que d'alourdir `personnes.js` : la logique polymorphe (fabrique + normalisation par type + métadonnées + description + échelle d'importance) est cohésive et distincte de la `Personne` ; même esprit que `cabinet.js` en `0003`. `personnes.js` reste inchangé. **À confirmer**.
+5. **Poids : 3 niveaux humains (retenu) vs échelle brute 1..10** — **Retenu** : exposer « Peu / Assez / Très important » mappés sur `poids` 3 / 5 / 8 ; le schéma reste `integer 1..10` (donc compatible). `poidsVersNiveau` rapproche toute valeur importée du palier le plus proche. Perd la granularité fine 1..10, jugée inutile et jargonneuse pour le public cible et suffisante pour le moteur (`0009`). **À confirmer** : accepter 3 paliers (sinon prévoir un curseur 1..10 avec libellés).
 6. **Mise en pause (`actif`) — interrupteur inclus** — Le champ `actif` existe et doit être initialisé ; un interrupteur « Pris en compte » offre une alternative **non destructive** à la suppression (exclure un souhait d'une génération sans le perdre), à coût quasi nul (réutilise `UPDATE` + `form-switch`). **À confirmer** : garder cet interrupteur ou différer (souhait toujours `actif`).
 7. **Suppression physique (retenu) vs soft-delete** — Contrairement à `Personne`/`Tournee` (protégées par soft-delete car **référencées** par l'historique), une `Preference` est un **objet-valeur imbriqué non référencé** (« suppression en cascade », [02 §Agrégats](../docs/architecture/02-modele-de-domaine.md)) : la **suppression physique** est légitime, protégée par une **confirmation** (geste irréversible). **À confirmer**.
-8. **Validation des `params` au formulaire (Vuelidate) vs domaine** — **Retenu** : règles de saisie (≥ 1 jour, `min ≤ max`, bornes 1–7) dans le **formulaire** (Vuelidate, dérivées de `META_TYPES_PREFERENCE`), comme la cohérence de dates de `004` ; le **domaine** garantit la **normalisation structurelle** (`normaliserParams`) et la **description**. Évite la duplication d'un `validerPreference`. **À confirmer** : suffisant pour `005` (le moteur `009` ajoutera l'évaluation métier).
-9. **Éditeurs jours/créneaux en ligne (retenu) vs composant extrait** — Les cases « jours » (4 types) et « créneaux » (2 types) sont gardées **en ligne** dans le formulaire (KISS, comme `ParametresView`). Extraction possible d'un `ChoixJoursSemaine` réutilisable (003/005/006) si la duplication devient gênante — **différée**, à acter avec le mainteneur.
+8. **Validation des `params` au formulaire (Vuelidate) vs domaine** — **Retenu** : règles de saisie (≥ 1 jour, `min ≤ max`, bornes 1–7) dans le **formulaire** (Vuelidate, dérivées de `META_TYPES_PREFERENCE`), comme la cohérence de dates de `0004` ; le **domaine** garantit la **normalisation structurelle** (`normaliserParams`) et la **description**. Évite la duplication d'un `validerPreference`. **À confirmer** : suffisant pour `0005` (le moteur `0009` ajoutera l'évaluation métier).
+9. **Éditeurs jours/créneaux en ligne (retenu) vs composant extrait** — Les cases « jours » (4 types) et « créneaux » (2 types) sont gardées **en ligne** dans le formulaire (KISS, comme `ParametresView`). Extraction possible d'un `ChoixJoursSemaine` réutilisable (0003/0005/0006) si la duplication devient gênante — **différée**, à acter avec le mainteneur.
 10. **Point de vigilance — réinitialisation de `params` au changement de type** : bien vider/rebâtir `params` (et proposer `natureParDefaut`) quand l'utilisateur change de type en cours d'édition, sinon des clés d'un ancien type pourraient subsister dans le brouillon (le domaine les filtre à l'enregistrement via `normaliserParams`, mais l'aperçu et la validation doivent rester cohérents à l'écran).

@@ -1,5 +1,5 @@
 /**
- * Scoring des violations et coût marginal agrégé (§5.11 du plan `009`).
+ * Scoring des violations et coût marginal agrégé (§5.11 du plan `0009`).
  *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */

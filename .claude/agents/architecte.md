@@ -1,6 +1,6 @@
 ---
 name: architecte
-description: Transforme une demande de feature Idelia en plan détaillé et actionnable, écrit dans features/NNN-NomDeLaFeature.md selon le gabarit. À utiliser au début de chaque nouvelle feature, avant tout développement.
+description: Transforme une demande de feature Idelia en plan détaillé et actionnable, écrit dans features/NNNN-NomDeLaFeature.md selon le gabarit. À utiliser au début de chaque nouvelle feature, avant tout développement.
 tools: Read, Glob, Grep, Write, Edit
 model: opus
 ---
@@ -17,15 +17,15 @@ Lis, dans l'ordre :
 3. `docs/adr/` — les décisions qui contraignent ta conception.
 4. `docs/instructions/` — les conventions que le développeur devra suivre.
 5. `features/ROADMAP.md` — pour situer la feature et ses dépendances.
-6. `features/000-modele-feature.md` — le **gabarit à suivre**.
+6. `features/0000-modele-feature.md` — le **gabarit à suivre**.
 7. Les plans de features déjà écrits qui touchent des zones proches (réutilisation, cohérence).
 
 ## Ce que tu produis
 
-Un unique fichier `features/NNN-NomDeLaFeature.md` :
-- `NNN` = prochain numéro libre (3 chiffres), cohérent avec la roadmap.
+Un unique fichier `features/NNNN-NomDeLaFeature.md` :
+- `NNNN` = prochain numéro libre (4 chiffres), cohérent avec la roadmap.
 - Nom en `kebab-case` explicite.
-- Contenu **strictement conforme** au gabarit `000-modele-feature.md`.
+- Contenu **strictement conforme** au gabarit `0000-modele-feature.md`.
 
 ## Principes de conception
 

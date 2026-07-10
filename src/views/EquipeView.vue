@@ -186,7 +186,7 @@ import { libelleStatutPersonne } from '@/domain/libelles.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Écran « Équipe » (feature 004) : liste les personnes du cabinet et
+ * Écran « Équipe » (feature 0004) : liste les personnes du cabinet et
  * **orchestre** leur cycle de vie (ajout, édition, archivage, restauration)
  * via le store `personnes`. Ne contient **aucune logique métier** : la
  * construction/normalisation d'une personne est déléguée au domaine
@@ -259,7 +259,7 @@ export default {
 
     /**
      * Ordre d'affichage (présentation uniquement, `ordreAffichage` n'est pas
-     * utilisé en 004) : nom puis prénom, comparaison locale française.
+     * utilisé en 0004) : nom puis prénom, comparaison locale française.
      * @param {object} a
      * @param {object} b
      * @returns {number}

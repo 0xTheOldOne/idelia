@@ -1,10 +1,10 @@
 /**
- * Moteur de planification — API PUBLIQUE (§5.15 du plan `009`, amendée par
- * `010` §5.3), seul point d'entrée pour `010`/`011` (jamais un import d'un
+ * Moteur de planification — API PUBLIQUE (§5.15 du plan `0009`, amendée par
+ * `0010` §5.3), seul point d'entrée pour `0010`/`0011` (jamais un import d'un
  * sous-fichier interne directement) : surface stable, réorganisation
  * interne possible sans casser les appelants.
  *
- * Surface **actuelle** (8 entrées, après amendement `010`) :
+ * Surface **actuelle** (8 entrées, après amendement `0010`) :
  * `genererPlanning`, `validerPlanning`, `creerContraintes`,
  * `TYPES_CONTRAINTE`, `calculerScore`, `indexer`, `appliquerChangement`,
  * `diagnostiquer`.

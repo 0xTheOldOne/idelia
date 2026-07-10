@@ -2,7 +2,7 @@
  * Module Vuex — ui.
  *
  * État d'interface **volatile**, non persisté (contrairement aux autres
- * modules, voir ADR 0005 et §4.2/4.3 de la feature 002). State minimal
+ * modules, voir ADR 0005 et §4.2/4.3 de la feature 0002). State minimal
  * pour l'instant : sera enrichi par les features consommatrices (mode
  * d'affichage, filtres, drag & drop, ouverture de panneaux…).
  *
@@ -11,12 +11,12 @@
  * (voir `src/store/index.js`), et le plugin de persistance ignore toute
  * mutation `ui/*`.
  *
- * `dernierExportLe` (feature 008) : suivi **volatil** du dernier export
+ * `dernierExportLe` (feature 0008) : suivi **volatil** du dernier export
  * (« Enregistrer une sauvegarde ») lancé durant la session courante, pour
  * alimenter le rappel de sauvegarde de `BlocSauvegarde`. Distinct de
  * `derniereSauvegarde` (racine, dernière écriture locale automatique) :
  * confondre les deux tromperait l'utilisateur. `null` au démarrage et
- * après chaque rechargement (assumé, voir feature 008 §12) ; jamais
+ * après chaque rechargement (assumé, voir feature 0008 §12) ; jamais
  * persisté, jamais inclus dans le fichier exporté.
  */
 export default {

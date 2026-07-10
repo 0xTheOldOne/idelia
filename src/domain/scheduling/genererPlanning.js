@@ -1,5 +1,5 @@
 /**
- * Orchestrateur de génération d'un planning (§5.14 du plan `009`), fidèle au
+ * Orchestrateur de génération d'un planning (§5.14 du plan `0009`), fidèle au
  * pseudocode de `docs/architecture/05-moteur-de-planification.md` §3.
  * Construit le catalogue de contraintes et les demandes, lance le glouton
  * MRV puis la recherche locale, valide le résultat (**même** validateur que
@@ -64,7 +64,7 @@ export function genererPlanning(entree, options = {}) {
   let affectations = constructionGloutonne(demandes, contraintes, ctx, rng);
   affectations = ameliorerLocalement(affectations, contraintes, ctx, rng, options.budgetMs ?? 200);
 
-  // MÊME diagnostic que celui recalculé au rechargement (010 §4.3), aucune règle dupliquée.
+  // MÊME diagnostic que celui recalculé au rechargement (0010 §4.3), aucune règle dupliquée.
   const { violations, tourneesNonCouvertes, score } = diagnostiquer(affectations, entree);
 
   return {

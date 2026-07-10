@@ -203,14 +203,14 @@ import { libelleTypeAbsence, libelleStatutAbsence, libelleCreneau } from '@/doma
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
- * Écran « Absences & congés » (feature 007) : liste **toutes** les absences
+ * Écran « Absences & congés » (feature 0007) : liste **toutes** les absences
  * de l'équipe et **orchestre** leur cycle de vie (ajout, édition, décision,
  * suppression) via le store `absences`. Ne contient **aucune logique
  * métier** : la construction/normalisation d'une absence est déléguée au
  * domaine (`creerAbsence`, appelé par l'action `absences/ajouter`), les
  * libellés à `libelles.js`, les dates à `dateUtil` ; le tri et le filtre par
  * statut ne sont que des choix de présentation locaux à l'écran (calqué sur
- * `TourneesView`, feature 006).
+ * `TourneesView`, feature 0006).
  */
 export default {
   name: 'AbsencesView',

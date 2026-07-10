@@ -1,30 +1,30 @@
-# Feature 011 — Éditeur de planning
+# Feature 0011 — Éditeur de planning
 
 - **Statut** : En cours
-- **Dépend de** : `010` (génération + visualisation en lecture seule : écran `/planning` → `PlanningView`, composants `GrillePlanning`/`CellulePlanning`/`ControlesGrille`/`PanneauConflits`, store `plannings` avec `genererPropose`/`evaluerCourant`/`assemblerEntree`, fabrique `creerPlanning`). Transitivement : `002` (`schema.js`, store racine + plugin de persistance), `005`/`006`/`007` (données de référence lues par le moteur), `009` (moteur pur `@/domain/scheduling` : `genererPlanning`, `diagnostiquer`, `appliquerChangement`, `indexer` ; typedef `Changement`, fabrique `creerAffectationAuto`). `011` **n'amende pas** le moteur `009` : il réutilise sa surface publique telle quelle.
-- **ADR liés** : [0007](../docs/adr/0007-generation-planning-hybride.md) (**décision fondatrice** : l'humain ajuste la proposition du moteur ; `origine` `AUTO`/`MANUEL` et `verrouillee` matérialisent le mode hybride — une régénération **préserve à l'identique** ce qui est verrouillé), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (le moteur reste pur : **toute** mutation d'affectation passe par une **action du store** qui appelle le domaine/moteur, **jamais** un appel moteur depuis un composant), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (jours ISO 1-7, dates `"YYYY-MM-DD"`, aucun objet `Date` hors `dateUtil`), [0004](../docs/adr/0004-pas-de-typescript-js-jsdoc.md) (JS + JSDoc), [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance via le store + plugin, jamais `localStorage` direct ; les affectations sont persistées, les diagnostics et l'historique d'annulation jamais), [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) / [0012](../docs/adr/0012-style-scss.md) (Bootstrap 5 thémé par tokens, SCSS), [0013](../docs/adr/0013-icones-phosphor.md) (icônes Phosphor exclusivement), [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) (Vuelidate/vue-debounce — **aucun nouveau formulaire validé** n'est introduit ici : le sélecteur de personne est une liste de choix, pas un formulaire ; voir §7), [0009](../docs/adr/0009-workflow-referent-diffusion-lecture.md) (diffusion/impression : différée à `012`).
+- **Dépend de** : `0010` (génération + visualisation en lecture seule : écran `/planning` → `PlanningView`, composants `GrillePlanning`/`CellulePlanning`/`ControlesGrille`/`PanneauConflits`, store `plannings` avec `genererPropose`/`evaluerCourant`/`assemblerEntree`, fabrique `creerPlanning`). Transitivement : `0002` (`schema.js`, store racine + plugin de persistance), `0005`/`0006`/`0007` (données de référence lues par le moteur), `0009` (moteur pur `@/domain/scheduling` : `genererPlanning`, `diagnostiquer`, `appliquerChangement`, `indexer` ; typedef `Changement`, fabrique `creerAffectationAuto`). `0011` **n'amende pas** le moteur `0009` : il réutilise sa surface publique telle quelle.
+- **ADR liés** : [0007](../docs/adr/0007-generation-planning-hybride.md) (**décision fondatrice** : l'humain ajuste la proposition du moteur ; `origine` `AUTO`/`MANUEL` et `verrouillee` matérialisent le mode hybride — une régénération **préserve à l'identique** ce qui est verrouillé), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (le moteur reste pur : **toute** mutation d'affectation passe par une **action du store** qui appelle le domaine/moteur, **jamais** un appel moteur depuis un composant), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (jours ISO 1-7, dates `"YYYY-MM-DD"`, aucun objet `Date` hors `dateUtil`), [0004](../docs/adr/0004-pas-de-typescript-js-jsdoc.md) (JS + JSDoc), [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance via le store + plugin, jamais `localStorage` direct ; les affectations sont persistées, les diagnostics et l'historique d'annulation jamais), [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md) / [0012](../docs/adr/0012-style-scss.md) (Bootstrap 5 thémé par tokens, SCSS), [0013](../docs/adr/0013-icones-phosphor.md) (icônes Phosphor exclusivement), [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) (Vuelidate/vue-debounce — **aucun nouveau formulaire validé** n'est introduit ici : le sélecteur de personne est une liste de choix, pas un formulaire ; voir §7), [0009](../docs/adr/0009-workflow-referent-diffusion-lecture.md) (diffusion/impression : différée à `0012`).
 
 ## 1. Contexte & objectif
 
-`010` sait **générer et montrer** une proposition de planning, mais la grille est en **lecture seule** : le référent subit la proposition du moteur sans pouvoir la corriger. `011` livre le cœur du mode hybride ([ADR 0007](../docs/adr/0007-generation-planning-hybride.md)) : **rendre la grille de `010` éditable**, sur le **même écran `/planning`**, pour qu'un utilisateur non-informaticien puisse ajuster la proposition à la main — ajouter, retirer, déplacer une personne sur une tournée — **verrouiller** ce qui lui convient, voir **immédiatement** l'effet sur les conflits, et **regénérer** (à l'identique ou en variante) en conservant ses choix verrouillés. Un filet de sécurité simple — **« Annuler la dernière action »** — protège chaque geste.
+`0010` sait **générer et montrer** une proposition de planning, mais la grille est en **lecture seule** : le référent subit la proposition du moteur sans pouvoir la corriger. `0011` livre le cœur du mode hybride ([ADR 0007](../docs/adr/0007-generation-planning-hybride.md)) : **rendre la grille de `0010` éditable**, sur le **même écran `/planning`**, pour qu'un utilisateur non-informaticien puisse ajuster la proposition à la main — ajouter, retirer, déplacer une personne sur une tournée — **verrouiller** ce qui lui convient, voir **immédiatement** l'effet sur les conflits, et **regénérer** (à l'identique ou en variante) en conservant ses choix verrouillés. Un filet de sécurité simple — **« Annuler la dernière action »** — protège chaque geste.
 
-`011` **ne réécrit pas** la grille : il **greffe une couche d'édition** sur les composants existants (`GrillePlanning`, `CellulePlanning`, `ControlesGrille`, `PanneauConflits`), dont la surface d'extension a été pensée dès `010` (§6.3 de `010` : slot scopé `cellule`, événements `@ajouter`/`@retirer`/`@deplacer`/`@verrouiller` documentés, non émis). Le geste **principal est le clic** (fiable, tactile, entièrement réalisable au clavier) ; le **glisser-déposer** est une **surcouche de confort** (API HTML5 native, **aucune dépendance ajoutée**), jamais l'unique moyen d'agir.
+`0011` **ne réécrit pas** la grille : il **greffe une couche d'édition** sur les composants existants (`GrillePlanning`, `CellulePlanning`, `ControlesGrille`, `PanneauConflits`), dont la surface d'extension a été pensée dès `0010` (§6.3 de `0010` : slot scopé `cellule`, événements `@ajouter`/`@retirer`/`@deplacer`/`@verrouiller` documentés, non émis). Le geste **principal est le clic** (fiable, tactile, entièrement réalisable au clavier) ; le **glisser-déposer** est une **surcouche de confort** (API HTML5 native, **aucune dépendance ajoutée**), jamais l'unique moyen d'agir.
 
-**Hors périmètre `011`** (voir §12 pour le détail) :
+**Hors périmètre `0011`** (voir §12 pour le détail) :
 
-- **Diffusion / impression / export PDF**, passage en statut `VALIDE`/`PUBLIE`, snapshot d'affichage figé, styles `@media print` → `012`.
-- **Tableau de bord d'accueil**, gestion avancée d'un catalogue de plannings (renommage, choix du référent) → `013`.
-- **Validation incrémentale** (recalcul partiel après un geste) → hors v1 : `011` recalcule **complètement** les diagnostics après chaque modification (décision KISS de `009`/`010`, volumes faibles → quelques ms).
-- **Annulation multi-niveaux et rétablissement (redo)** → hors v1 : `011` implémente un **undo à un seul niveau**, sans redo (§7, décision arrêtée).
+- **Diffusion / impression / export PDF**, passage en statut `VALIDE`/`PUBLIE`, snapshot d'affichage figé, styles `@media print` → `0012`.
+- **Tableau de bord d'accueil**, gestion avancée d'un catalogue de plannings (renommage, choix du référent) → `0013`.
+- **Validation incrémentale** (recalcul partiel après un geste) → hors v1 : `0011` recalcule **complètement** les diagnostics après chaque modification (décision KISS de `0009`/`0010`, volumes faibles → quelques ms).
+- **Annulation multi-niveaux et rétablissement (redo)** → hors v1 : `0011` implémente un **undo à un seul niveau**, sans redo (§7, décision arrêtée).
 - **Toute bibliothèque de glisser-déposer tierce** (`vuedraggable`, `SortableJS`…) → exclue : le DnD passe par l'API HTML5 native (KISS).
 
 ## 2. Écrans concernés
 
-Un seul écran, la route existante **`/planning`** → `PlanningView.vue` ([architecture 07](../docs/architecture/07-navigation-et-ecrans.md), § Écran Planning, points 2-3-4). **Aucune nouvelle route.** `011` enrichit `PlanningView` d'un **mode édition** et de deux modales légères (sélecteur de personne, confirmation de régénération).
+Un seul écran, la route existante **`/planning`** → `PlanningView.vue` ([architecture 07](../docs/architecture/07-navigation-et-ecrans.md), § Écran Planning, points 2-3-4). **Aucune nouvelle route.** `0011` enrichit `PlanningView` d'un **mode édition** et de deux modales légères (sélecteur de personne, confirmation de régénération).
 
 Expérience visée pour un utilisateur non-technique :
 
-- **La lecture d'abord, l'édition sur demande.** À l'ouverture, le planning s'affiche comme en `010` (propre, non modifiable). Un bouton clair **« Modifier le planning »** bascule en mode édition ; **« Terminer la modification »** en ressort. Ce mode explicite évite les modifications accidentelles et garde des affordances d'édition **toujours visibles** (jamais cachées derrière un survol, inutilisable au tactile).
+- **La lecture d'abord, l'édition sur demande.** À l'ouverture, le planning s'affiche comme en `0010` (propre, non modifiable). Un bouton clair **« Modifier le planning »** bascule en mode édition ; **« Terminer la modification »** en ressort. Ce mode explicite évite les modifications accidentelles et garde des affordances d'édition **toujours visibles** (jamais cachées derrière un survol, inutilisable au tactile).
 - **Un seul geste à comprendre : cliquer une case.** En mode édition, chaque case de tournée montre un bouton **« Ajouter une personne »**. Un clic ouvre une petite fenêtre listant l'équipe ; on choisit un nom, c'est affecté. Chaque personne déjà présente porte deux petits boutons explicites : **retirer** (croix) et **verrouiller** (cadenas). Tout est atteignable et actionnable **au clavier**.
 - **Le déplacement en bonus.** Qui le souhaite peut **faire glisser** une personne d'une case à une autre (souris). Ceux qui préfèrent — ou sont au tactile / au clavier — obtiennent le même résultat en retirant puis rajoutant, ou via le sélecteur. Le glisser-déposer n'est **jamais** requis.
 - **Retour immédiat et honnête.** Après **chaque** geste, la grille se re-surligne et le panneau de conflits se met à jour instantanément (« Claire Martin est en congé le mercredi 12/08 »). Erreurs dures et avertissements souples restent distingués par icône + libellé, jamais par la seule couleur.
@@ -33,16 +33,16 @@ Expérience visée pour un utilisateur non-technique :
 
 ## 3. Modèle de données touché
 
-**Aucun nouveau champ, aucun impact sur `schemaVersion`** (reste `1`). `011` **écrit** des champs déjà définis ([02](../docs/architecture/02-modele-de-domaine.md) §Affectation/§Planning) :
+**Aucun nouveau champ, aucun impact sur `schemaVersion`** (reste `1`). `0011` **écrit** des champs déjà définis ([02](../docs/architecture/02-modele-de-domaine.md) §Affectation/§Planning) :
 
-- **`Affectation.origine`** : une affectation posée à la main porte **`'MANUEL'`** (vs `'AUTO'` pour le moteur). `011` introduit la fabrique domaine `creerAffectationManuelle` (§5.1).
-- **`Affectation.verrouillee`** : basculé `true`/`false` par le verrouillage (§4.3). Une affectation `verrouillee: true` est **préservée à l'identique** lors d'une régénération (passée en `entree.affectationsVerrouillees` au moteur — [ADR 0007](../docs/adr/0007-generation-planning-hybride.md), 009 §5.2/§5.12).
+- **`Affectation.origine`** : une affectation posée à la main porte **`'MANUEL'`** (vs `'AUTO'` pour le moteur). `0011` introduit la fabrique domaine `creerAffectationManuelle` (§5.1).
+- **`Affectation.verrouillee`** : basculé `true`/`false` par le verrouillage (§4.3). Une affectation `verrouillee: true` est **préservée à l'identique** lors d'une régénération (passée en `entree.affectationsVerrouillees` au moteur — [ADR 0007](../docs/adr/0007-generation-planning-hybride.md), 0009 §5.2/§5.12).
 - **`Affectation.updatedAt`** : re-horodaté lorsqu'une affectation change (verrouillage, déplacement).
 - **`Planning.affectations`** : remplacé **immuablement** à chaque geste (jamais muté en place).
 - **`Planning.parametresGeneration`** : mis à jour (nouveau `Resultat.meta` : `seed`/`variante`) lors d'une **régénération en place**.
 - **`Planning.updatedAt`** : re-horodaté à chaque modification du planning.
 
-**Jamais persisté** (02 : « les diagnostics ne sont jamais stockés ») : les diagnostics (`violations`, `tourneesNonCouvertes`, `score`), recalculés à la demande via `diagnostiquer`/`evaluerCourant` (inchangé depuis `010`). **Volatil de session, jamais sérialisé** : le **snapshot d'annulation** (§4.4) — un unique instantané des affectations pris avant chaque geste. Il vit dans l'état du module `plannings` mais **n'entre pas** dans le `SaveDocument` (`toSaveDocument` ne sérialise que `plannings.items`, voir `src/domain/schema.js`) ; au rechargement, l'undo repart donc de zéro. Volatils aussi (état de la vue) : le **mode édition**, les réglages d'affichage (orientation/échelle/date de référence), l'état des deux modales.
+**Jamais persisté** (02 : « les diagnostics ne sont jamais stockés ») : les diagnostics (`violations`, `tourneesNonCouvertes`, `score`), recalculés à la demande via `diagnostiquer`/`evaluerCourant` (inchangé depuis `0010`). **Volatil de session, jamais sérialisé** : le **snapshot d'annulation** (§4.4) — un unique instantané des affectations pris avant chaque geste. Il vit dans l'état du module `plannings` mais **n'entre pas** dans le `SaveDocument` (`toSaveDocument` ne sérialise que `plannings.items`, voir `src/domain/schema.js`) ; au rechargement, l'undo repart donc de zéro. Volatils aussi (état de la vue) : le **mode édition**, les réglages d'affichage (orientation/échelle/date de référence), l'état des deux modales.
 
 ## 4. Store (Vuex)
 
@@ -63,7 +63,7 @@ state: () => ({ items: [], selectionId: null, snapshotEdition: null })
   peutAnnuler: (state, getters) =>
     !!state.snapshotEdition && !!getters.courant && state.snapshotEdition.planningId === getters.courant.id
   ```
-  La comparaison `planningId === courant.id` invalide **automatiquement** un snapshot devenu obsolète (nouvelle génération `010` qui sélectionne un autre planning, import `008` qui remplace tout) : le bouton « Annuler » se désactive de lui-même, sans code de nettoyage transverse. Après une génération **en place** (§4.5, même `id`), le snapshot reste valide (undo d'une régénération possible).
+  La comparaison `planningId === courant.id` invalide **automatiquement** un snapshot devenu obsolète (nouvelle génération `0010` qui sélectionne un autre planning, import `0008` qui remplace tout) : le bouton « Annuler » se désactive de lui-même, sans code de nettoyage transverse. Après une génération **en place** (§4.5, même `id`), le snapshot reste valide (undo d'une régénération possible).
 
 ### 4.3 Mutations ajoutées (fines, immuables, `updatedAt` posé ici)
 
@@ -91,7 +91,7 @@ state: () => ({ items: [], selectionId: null, snapshotEdition: null })
 
 ### 4.4 Actions d'édition manuelle (appliquent `appliquerChangement`, ne recalculent pas les diagnostics)
 
-Toutes suivent le **même protocole** : (1) lire `getters.courant`, no-op si absent ; (2) `commit('CAPTURER_SNAPSHOT', …)` avec les affectations **actuelles** ; (3) construire la nouvelle liste d'affectations ; (4) `commit('UPDATE_AFFECTATIONS', …)`. Elles **ne recalculent pas** les diagnostics (la vue rafraîchit ensuite via `evaluerCourant`, cohérent `010` §4.3) et n'appellent **jamais** `localStorage`.
+Toutes suivent le **même protocole** : (1) lire `getters.courant`, no-op si absent ; (2) `commit('CAPTURER_SNAPSHOT', …)` avec les affectations **actuelles** ; (3) construire la nouvelle liste d'affectations ; (4) `commit('UPDATE_AFFECTATIONS', …)`. Elles **ne recalculent pas** les diagnostics (la vue rafraîchit ensuite via `evaluerCourant`, cohérent `0010` §4.3) et n'appellent **jamais** `localStorage`.
 
 - **`ajouterAffectation({ commit, getters }, { tourneeId, personneId, date, creneau })`** : crée une affectation `MANUEL` via `creerAffectationManuelle(personneId, tourneeId, date, creneau)` (domaine, §5.1), puis `appliquerChangement(courant.affectations, { type: 'AJOUTER', affectation })`.
 - **`retirerAffectation({ commit, getters }, { affectationId })`** : `appliquerChangement(courant.affectations, { type: 'RETIRER', affectationId })`.
@@ -118,15 +118,15 @@ Toutes suivent le **même protocole** : (1) lire `getters.courant`, no-op si abs
   ```
   Comme les autres gestes, capture un snapshot au préalable (le verrouillage est annulable).
 
-### 4.5 Action `regenerer` — régénération EN PLACE (complément de `010`)
+### 4.5 Action `regenerer` — régénération EN PLACE (complément de `0010`)
 
-`010` créait un **nouveau** `Planning` à chaque génération (`ADD` + `SELECT`). `011` ajoute la régénération **en place**, qui **remplace les affectations du planning courant** (mutation `UPDATE_AFFECTATIONS`, **pas** un nouveau `Planning`) tout en **préservant les affectations verrouillées**.
+`0010` créait un **nouveau** `Planning` à chaque génération (`ADD` + `SELECT`). `0011` ajoute la régénération **en place**, qui **remplace les affectations du planning courant** (mutation `UPDATE_AFFECTATIONS`, **pas** un nouveau `Planning`) tout en **préservant les affectations verrouillées**.
 
 `regenerer({ commit, getters, rootGetters, rootState }, { variante = false } = {})` :
 
 1. `const planning = getters.courant` ; no-op si absent.
 2. `commit('CAPTURER_SNAPSHOT', { planningId: planning.id, affectations: planning.affectations })` (une régénération est annulable).
-3. **Calculer les options de seed/variante** à partir de `planning.parametresGeneration` (= `Resultat.meta` de `009` : `meta.seed` = graine **effective** = `base + variante`, `meta.variante` = variante). On reconstruit la graine de base et on choisit la variante :
+3. **Calculer les options de seed/variante** à partir de `planning.parametresGeneration` (= `Resultat.meta` de `0009` : `meta.seed` = graine **effective** = `base + variante`, `meta.variante` = variante). On reconstruit la graine de base et on choisit la variante :
    ```js
    const pg = planning.parametresGeneration ?? { seed: 0, variante: 0 };
    const base = (pg.seed ?? 0) - (pg.variante ?? 0);
@@ -134,7 +134,7 @@ Toutes suivent le **même protocole** : (1) lire `getters.courant`, no-op si abs
      ? { seed: base, variante: (pg.variante ?? 0) + 1 }   // « Essayer une variante » : répartition différente
      : { seed: base, variante: pg.variante ?? 0 };         // « Regénérer à l'identique » : même graine effective
    ```
-   Le déterminisme du moteur (009 §6) garantit qu'« à l'identique » reproduit la même répartition (données + verrouillées inchangées), et qu'une « variante » est reproductible et progressive.
+   Le déterminisme du moteur (0009 §6) garantit qu'« à l'identique » reproduit la même répartition (données + verrouillées inchangées), et qu'une « variante » est reproductible et progressive.
 4. **Assembler l'`Entree`** sur la **période du planning**, en y injectant les **affectations verrouillées courantes** :
    ```js
    const entree = assemblerEntree(rootGetters, rootState, { debut: planning.dateDebut, fin: planning.dateFin });
@@ -151,11 +151,11 @@ Toutes suivent le **même protocole** : (1) lire `getters.courant`, no-op si abs
 ### 4.7 Persisté vs volatil (récapitulatif)
 
 - **Persisté** : `plannings.items` (les `Planning`, dont `affectations`, `origine`, `verrouillee`, `parametresGeneration`, `updatedAt`).
-- **Volatil (jamais sérialisé)** : `plannings.selectionId` (déjà `010`), `plannings.snapshotEdition` (undo), l'état de `PlanningView` (mode édition, diagnostics `{ violations, tourneesNonCouvertes, score }`, orientation/échelle/date de référence, modales).
+- **Volatil (jamais sérialisé)** : `plannings.selectionId` (déjà `0010`), `plannings.snapshotEdition` (undo), l'état de `PlanningView` (mode édition, diagnostics `{ violations, tourneesNonCouvertes, score }`, orientation/échelle/date de référence, modales).
 
 ## 5. Domaine (logique pure)
 
-Aucune logique métier dans les composants ni dans le store (le store orchestre). Un seul ajout pur ; tout le reste réutilise l'existant `009`/`010`.
+Aucune logique métier dans les composants ni dans le store (le store orchestre). Un seul ajout pur ; tout le reste réutilise l'existant `0009`/`0010`.
 
 ### 5.1 `src/domain/planning.js` (modifier) — fabrique `creerAffectationManuelle`
 
@@ -177,39 +177,39 @@ export function creerAffectationManuelle(personneId, tourneeId, date, creneau) {
 
 Réutilise le `@typedef Affectation` déjà défini dans `scheduling/modele/affectation.js` (aucune duplication). Aucun import Vue/Vuex.
 
-### 5.2 Réutilisation stricte de `009`/`010` (aucun nouvel ajout)
+### 5.2 Réutilisation stricte de `0009`/`0010` (aucun nouvel ajout)
 
-- **`appliquerChangement(affectations, changement)`** (`scheduling/modele/planning.js`, exporté par `@/domain/scheduling`) : déjà livré `009`, immuable, gère `AJOUTER`/`RETIRER`/`DEPLACER` (typedef `Changement`). `011` en est le **premier consommateur réel**.
-- **`genererPlanning(entree, options)`** : réutilisé tel quel pour la régénération, avec `entree.affectationsVerrouillees` (préservation hybride, déjà géré par le glouton 009 §5.12).
+- **`appliquerChangement(affectations, changement)`** (`scheduling/modele/planning.js`, exporté par `@/domain/scheduling`) : déjà livré `0009`, immuable, gère `AJOUTER`/`RETIRER`/`DEPLACER` (typedef `Changement`). `0011` en est le **premier consommateur réel**.
+- **`genererPlanning(entree, options)`** : réutilisé tel quel pour la régénération, avec `entree.affectationsVerrouillees` (préservation hybride, déjà géré par le glouton 0009 §5.12).
 - **`diagnostiquer` / action `evaluerCourant`** : réutilisés tels quels pour le recalcul temps réel après chaque geste.
 - **`dateUtil`** (`debutSemaine`/`debutMois`/`finMois`/`moisSuivant`/`moisPrecedent`/`addDays`…) et **`libelles.js`** (`libelleCreneau`, `libelleJour`) : réutilisés pour les libellés du sélecteur et des contrôles. **Aucun objet `Date` hors `dateUtil`.**
 
 ## 6. Composants
 
-`views/` orchestre, `components/planning/` présente. Aucune logique métier dans les composants ; l'appel moteur **toujours** via une action du store. `011` **modifie** 3 composants existants (surface d'extension `010` §6.3), **crée** 1 composant (sélecteur), et **réutilise** `DialogueConfirmation`/`ModaleBase` (`@/components/communs`).
+`views/` orchestre, `components/planning/` présente. Aucune logique métier dans les composants ; l'appel moteur **toujours** via une action du store. `0011` **modifie** 3 composants existants (surface d'extension `0010` §6.3), **crée** 1 composant (sélecteur), et **réutilise** `DialogueConfirmation`/`ModaleBase` (`@/components/communs`).
 
 | Fichier | Type | Responsabilité |
 |---|---|---|
-| `src/views/PlanningView.vue` | **modifier** | **Orchestrateur d'édition.** Détient l'état volatil `modeEdition` (bascule lecture/édition), l'état du sélecteur (`selecteurVisible`, contexte du slot ciblé), l'état de la confirmation de régénération, et `chargement` (régénération). Câble la barre d'actions du planning (Modifier/Terminer, Annuler, Regénérer à l'identique, Essayer une variante), écoute les événements d'édition de `GrillePlanning`, dispatche les actions du store, puis **rafraîchit les diagnostics** (`evaluerCourant`) après chaque geste manuel (et depuis le `Resultat` retourné après une régénération). Réutilise tout l'existant `010` (formulaire, contrôles, grille, panneau, `IndicateurSauvegarde`, région `aria-live`). |
-| `src/components/planning/GrillePlanning.vue` | **modifier** | **Passe une prop `editable`** (défaut `false` → comportement `010` strictement inchangé). Quand `editable`, transmet l'édition à `CellulePlanning` (via le slot par défaut) et **coordonne la géométrie** : résout le contexte de chaque case (tournée/date/créneau), tient l'état de glisser-déposer (id de l'affectation en cours de glisse), gère les zones de dépôt sur les `<td>`. **Reste présentational** : n'appelle ni store ni moteur ; **émet** des événements sémantiques vers `PlanningView`. Enrichit chaque élément de cellule de `verrouillee` (pour l'affichage du cadenas). |
-| `src/components/planning/CellulePlanning.vue` | **modifier** | **Passe une prop `editable`** (défaut `false` → rendu `010` inchangé). Quand `editable`, ajoute par élément deux boutons (retirer, verrouiller/déverrouiller) et un repère **cadenas + libellé** pour les verrouillées, rend les éléments `draggable`, et affiche un bouton **« Ajouter une personne »** quand la case est éditable. **Purement présentational** : émet des événements élémentaires (`retirer`, `verrouiller`, `ajouter-ici`, `debut-glisser`, `fin-glisser`), remontés par `GrillePlanning`. |
+| `src/views/PlanningView.vue` | **modifier** | **Orchestrateur d'édition.** Détient l'état volatil `modeEdition` (bascule lecture/édition), l'état du sélecteur (`selecteurVisible`, contexte du slot ciblé), l'état de la confirmation de régénération, et `chargement` (régénération). Câble la barre d'actions du planning (Modifier/Terminer, Annuler, Regénérer à l'identique, Essayer une variante), écoute les événements d'édition de `GrillePlanning`, dispatche les actions du store, puis **rafraîchit les diagnostics** (`evaluerCourant`) après chaque geste manuel (et depuis le `Resultat` retourné après une régénération). Réutilise tout l'existant `0010` (formulaire, contrôles, grille, panneau, `IndicateurSauvegarde`, région `aria-live`). |
+| `src/components/planning/GrillePlanning.vue` | **modifier** | **Passe une prop `editable`** (défaut `false` → comportement `0010` strictement inchangé). Quand `editable`, transmet l'édition à `CellulePlanning` (via le slot par défaut) et **coordonne la géométrie** : résout le contexte de chaque case (tournée/date/créneau), tient l'état de glisser-déposer (id de l'affectation en cours de glisse), gère les zones de dépôt sur les `<td>`. **Reste présentational** : n'appelle ni store ni moteur ; **émet** des événements sémantiques vers `PlanningView`. Enrichit chaque élément de cellule de `verrouillee` (pour l'affichage du cadenas). |
+| `src/components/planning/CellulePlanning.vue` | **modifier** | **Passe une prop `editable`** (défaut `false` → rendu `0010` inchangé). Quand `editable`, ajoute par élément deux boutons (retirer, verrouiller/déverrouiller) et un repère **cadenas + libellé** pour les verrouillées, rend les éléments `draggable`, et affiche un bouton **« Ajouter une personne »** quand la case est éditable. **Purement présentational** : émet des événements élémentaires (`retirer`, `verrouiller`, `ajouter-ici`, `debut-glisser`, `fin-glisser`), remontés par `GrillePlanning`. |
 | `src/components/planning/SelecteurPersonne.vue` | **créer** | **Mini-sélecteur de personne**, bâti sur `ModaleBase` (`@/components/communs`) pour l'accessibilité clé en main (focus piégé, Échap, retour du focus). Titre contextualisé (« Ajouter une personne — Tournée Nord, mercredi 12/08/2026 (Matin) »). Liste les **personnes actives** (pastille + Prénom Nom), chacune un bouton ; filtre texte simple si l'équipe est grande ; note informative discrète « déjà N ce jour-là » (lecture présentationnelle des affectations du planning, **aucune règle métier**) ; masque les personnes **déjà présentes sur ce créneau exact** (dé-doublonnage). N'accède au store que pour lister les personnes/pastilles. **Émet** `choisir(personneId)` / `annuler`. |
 | `src/components/communs/DialogueConfirmation.vue` | **réutiliser** | Confirmation avant une **régénération** qui écraserait des ajustements manuels non verrouillés (§8). Aucune modification. |
 
 ### 6.1 Contrat d'interaction de la grille éditable
 
-**Activation** : prop `editable: { type: Boolean, default: false }` sur `GrillePlanning`. `PlanningView` la pilote par `:editable="modeEdition"`. À `false`, la grille est **exactement** celle de `010` (aucun événement, aucun bouton, slot par défaut inchangé).
+**Activation** : prop `editable: { type: Boolean, default: false }` sur `GrillePlanning`. `PlanningView` la pilote par `:editable="modeEdition"`. À `false`, la grille est **exactement** celle de `0010` (aucun événement, aucun bouton, slot par défaut inchangé).
 
 **Ancrage de l'édition = orientation `TOURNEES`** (décision de conception, §12). Une case y représente **(tournée, date)** ; le **créneau** est celui de la tournée (dénormalisé, 02 §Affectation). Le sélecteur liste donc toujours des **personnes** (« qui couvre cette tournée ce jour ? ») — modèle mental unique et conforme à la consigne. En orientation `PERSONNES`, la grille reste **en lecture seule même en mode édition** (les cases n'ont pas de créneau propre : y « ajouter » demanderait de choisir une tournée, un second flux qu'on écarte par KISS) ; un message discret invite à basculer sur « Tournées » pour modifier. Entrer en mode édition **force l'orientation `TOURNEES`** (`PlanningView`).
 
 **Affordances d'édition** (uniquement quand `editable` **et** orientation `TOURNEES` **et** case ni fermée ni hors période) :
 
 - **Ajouter (clic)** : bouton « Ajouter une personne » dans la case → `GrillePlanning` émet **`ajouter { tourneeId, date, creneau }`** (créneau résolu via `tournees/byId`).
-- **Retirer (clic)** : bouton croix par élément → **`retirer { affectationId }`** (`element.id` porte déjà l'id de l'affectation, `010`).
+- **Retirer (clic)** : bouton croix par élément → **`retirer { affectationId }`** (`element.id` porte déjà l'id de l'affectation, `0010`).
 - **Verrouiller (clic)** : bouton cadenas par élément → **`verrouiller { affectationId }`** (bascule côté store).
 - **Déplacer (glisser-déposer)** : glisser un élément d'une case-tournée à une autre → **`deplacer { affectationId, versTourneeId, versDate, versCreneau }`**. L'événement identifie l'affectation par son `affectationId` ; c'est l'**action store** qui reconstruit l'affectation à destination **en préservant son identité** (même `id`, `verrouillee`, `commentaire`) — voir §4.4. Une affectation **verrouillée** peut donc être déplacée et **reste verrouillée** à destination.
 
-**Répartition présentational** : `CellulePlanning` porte les contrôles par élément et le bouton « Ajouter » (il ne connaît qu'une case) et émet des événements **élémentaires** ; `GrillePlanning` connaît les **coordonnées** (ligne = tournée, colonne = date), l'état de glisse global et les zones de dépôt, et **traduit** ces événements élémentaires en événements **sémantiques** enrichis du contexte, réémis vers `PlanningView`. `PlanningView` **seule** dispatche vers le store. Ainsi le moteur n'est jamais appelé depuis un composant ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)), et la grille demeure aussi présentationnelle qu'en `010`.
+**Répartition présentational** : `CellulePlanning` porte les contrôles par élément et le bouton « Ajouter » (il ne connaît qu'une case) et émet des événements **élémentaires** ; `GrillePlanning` connaît les **coordonnées** (ligne = tournée, colonne = date), l'état de glisse global et les zones de dépôt, et **traduit** ces événements élémentaires en événements **sémantiques** enrichis du contexte, réémis vers `PlanningView`. `PlanningView` **seule** dispatche vers le store. Ainsi le moteur n'est jamais appelé depuis un composant ([ADR 0008](../docs/adr/0008-moteur-planification-module-pur.md)), et la grille demeure aussi présentationnelle qu'en `0010`.
 
 ### 6.2 UX du sélecteur de personne (tranché)
 
@@ -223,16 +223,16 @@ Réutilise le `@typedef Affectation` déjà défini dans `scheduling/modele/affe
 
 ### 6.3 Feedback temps réel et repères visuels
 
-- Après **chaque** geste (ajout/retrait/déplacement/verrouillage/régénération/annulation), `PlanningView` remet à jour ses diagnostics volatils → `GrillePlanning` (surlignage des cellules concernées) et `PanneauConflits` (liste erreurs/avertissements + tournées non couvertes) **réagissent immédiatement**. Réutilise **intégralement** le mapping présentational de `010` (§6.2 de `010`) : rien de nouveau côté surlignage.
-- **Erreurs dures vs avertissements souples** : distinction déjà multi-canal en `010` (icône `PhWarningOctagon` vs `PhWarning`, bordure pleine vs pointillée, teinte), réutilisée telle quelle.
+- Après **chaque** geste (ajout/retrait/déplacement/verrouillage/régénération/annulation), `PlanningView` remet à jour ses diagnostics volatils → `GrillePlanning` (surlignage des cellules concernées) et `PanneauConflits` (liste erreurs/avertissements + tournées non couvertes) **réagissent immédiatement**. Réutilise **intégralement** le mapping présentational de `0010` (§6.2 de `0010`) : rien de nouveau côté surlignage.
+- **Erreurs dures vs avertissements souples** : distinction déjà multi-canal en `0010` (icône `PhWarningOctagon` vs `PhWarning`, bordure pleine vs pointillée, teinte), réutilisée telle quelle.
 - **Verrouillage** : repère **cadenas (`PhLockSimple`) + libellé** « Verrouillée » sur l'élément (jamais la seule couleur). Le bouton de bascule utilise `PhLockSimpleOpen` (déverrouillée → cliquer pour verrouiller) / `PhLockSimple` (verrouillée → cliquer pour déverrouiller), avec `aria-label` explicite. Une affectation verrouillée **reste déplaçable** (glisser-déposer ou clic) et **conserve son verrou à destination** : le cadenas suit l'affectation (§4.4, §12 #7). Un déplacement ne déverrouille **jamais**.
 - **Cible de dépôt (DnD)** : la case survolée pendant une glisse reçoit un contour marqué (bordure + fond léger), retiré à la fin de la glisse ; les cases fermées / hors période ne sont **pas** des cibles.
 
 ## 7. Règles de validation
 
-**Aucun nouveau formulaire validé** n'est introduit par `011` : le seul formulaire de l'écran reste `FormulaireGeneration` (période, `010`, inchangé). Le **sélecteur de personne** est une **liste de choix**, pas un formulaire à valider → **pas de Vuelidate** ([ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) s'applique « si un formulaire/sélecteur structuré apparaît » — ce n'est pas le cas). Le filtre texte du sélecteur est un simple champ de recherche local ; `vue-debounce` reste disponible si l'on souhaite lisser la frappe sur de grandes équipes (facultatif, non requis en v1).
+**Aucun nouveau formulaire validé** n'est introduit par `0011` : le seul formulaire de l'écran reste `FormulaireGeneration` (période, `0010`, inchangé). Le **sélecteur de personne** est une **liste de choix**, pas un formulaire à valider → **pas de Vuelidate** ([ADR 0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) s'applique « si un formulaire/sélecteur structuré apparaît » — ce n'est pas le cas). Le filtre texte du sélecteur est un simple champ de recherche local ; `vue-debounce` reste disponible si l'on souhaite lisser la frappe sur de grandes équipes (facultatif, non requis en v1).
 
-La « validation » propre à `011` est **métier**, portée par le moteur : après chaque geste, `diagnostiquer` recalcule l'intégralité des `violations`/`tourneesNonCouvertes` (contraintes dures et souples de `009`). Aucune règle métier n'est réécrite dans l'UI (ADR 0008).
+La « validation » propre à `0011` est **métier**, portée par le moteur : après chaque geste, `diagnostiquer` recalcule l'intégralité des `violations`/`tourneesNonCouvertes` (contraintes dures et souples de `0009`). Aucune règle métier n'est réécrite dans l'UI (ADR 0008).
 
 **Garde-fous non bloquants (UI)**, cohérents avec le principe « le moteur ne bloque jamais » :
 
@@ -244,14 +244,14 @@ La « validation » propre à `011` est **métier**, portée par le moteur : apr
 
 Public non-technique ([08](../docs/architecture/08-principes-ux-ergonomie.md), [checklist](../docs/instructions/accessibilite-ergonomie.md)) :
 
-- **Une chose à la fois** : lecture par défaut, édition sur bascule explicite ; l'action principale de l'écran reste « Générer » (`010`), les actions d'édition sont regroupées dans une **barre d'actions du planning** claire.
-- **Langage humain, zéro jargon** : « Modifier le planning », « Ajouter une personne », « Retirer », « Verrouiller cette affectation », « Annuler la dernière action », « Regénérer à l'identique », « Essayer une variante ». Les messages de conflit restent **ceux du moteur** (FR, non reformulés, `010`).
-- **Feedback immédiat** : chaque geste déclenche un re-surlignage + une mise à jour du panneau ; une **annonce `aria-live`** (région existante `010`) résume le résultat (« Personne ajoutée. 1 point d'attention. », « Dernière action annulée. »).
+- **Une chose à la fois** : lecture par défaut, édition sur bascule explicite ; l'action principale de l'écran reste « Générer » (`0010`), les actions d'édition sont regroupées dans une **barre d'actions du planning** claire.
+- **Langage humain, zéro jargon** : « Modifier le planning », « Ajouter une personne », « Retirer », « Verrouiller cette affectation », « Annuler la dernière action », « Regénérer à l'identique », « Essayer une variante ». Les messages de conflit restent **ceux du moteur** (FR, non reformulés, `0010`).
+- **Feedback immédiat** : chaque geste déclenche un re-surlignage + une mise à jour du panneau ; une **annonce `aria-live`** (région existante `0010`) résume le résultat (« Personne ajoutée. 1 point d'attention. », « Dernière action annulée. »).
 - **Tolérance à l'erreur / réversibilité** :
   - **Undo 1-niveau** (« Annuler la dernière action », icône `PhArrowCounterClockwise`) : filet principal, couvre édition **et** régénération. Bouton **désactivé** quand rien n'est annulable (`peutAnnuler`). Aucun bouton « Rétablir » (pas de redo, §7-contexte).
   - **Confirmation avant régénération destructrice** : la régénération remplace toutes les affectations non verrouillées. On demande confirmation (`DialogueConfirmation`) **uniquement** s'il existe au moins une affectation `origine: 'MANUEL' && !verrouillee` (ajustement manuel qui serait perdu) ; sinon (planning encore « brut », exploration de variantes) la régénération est directe et sans friction. Message clair : « Cela remplacera les affectations actuelles. Les affectations verrouillées seront conservées. Vous pourrez annuler cette action. »
   - **Aucune saisie perdue** : les gestes sont atomiques et persistés ; l'undo restaure l'état exact d'avant.
-- **Jamais l'information par la seule couleur** : pastille **+ nom** (héritage `010`), cadenas **+ libellé**, conflit = icône/motif **+ libellé**.
+- **Jamais l'information par la seule couleur** : pastille **+ nom** (héritage `0010`), cadenas **+ libellé**, conflit = icône/motif **+ libellé**.
 - **Accessibilité — critère de sortie** : l'édition est **entièrement réalisable au clavier et au clic** (ajouter via bouton → modale navigable au clavier ; retirer/verrouiller via boutons focusables avec `aria-label` ; déplacer sans DnD via retrait + ajout par le sélecteur — en re-verrouillant au besoin, l'ajout au clic créant une affectation manuelle non verrouillée, là où un glisser-déposer préserve le verrou, §4.4). Le **glisser-déposer natif est une commodité en plus**, jamais l'unique moyen (il ne fonctionne pas au tactile — raison même pour laquelle le clic est principal). Cibles cliquables ≥ `$cible-cliquable-min` ; focus visible ; boutons d'action jamais réduits à une icône nue.
 - **Cohérence des icônes** (Phosphor uniquement) : `PhPencilSimple` (modifier), `PhUserPlus` (ajouter une personne), `PhX` (retirer), `PhLockSimple`/`PhLockSimpleOpen` (verrouiller/déverrouiller), `PhArrowCounterClockwise` (annuler), `PhArrowsClockwise` (regénérer à l'identique), `PhShuffle` (essayer une variante), `PhCheck` (terminer la modification).
 
@@ -265,14 +265,14 @@ Public non-technique ([08](../docs/architecture/08-principes-ux-ergonomie.md), [
 - `src/domain/planning.js` (**modifier**) — ajouter `creerAffectationManuelle(personneId, tourneeId, date, creneau)` (§5.1).
 - `src/store/modules/plannings.js` (**modifier**) — state `snapshotEdition: null` (§4.1) ; mutations `UPDATE_AFFECTATIONS` et `CAPTURER_SNAPSHOT` (§4.3) ; actions `ajouterAffectation`/`retirerAffectation`/`deplacerAffectation`/`basculerVerrouillage` (§4.4). `REPLACE`/`ADD`/`SELECT`/`REMOVE`/`genererPropose`/`evaluerCourant`/`assemblerEntree` **inchangés**.
 
-**Dépend de** : `010` (store `plannings`, `creerPlanning`), `009` (`appliquerChangement`, importé depuis `@/domain/scheduling`).
+**Dépend de** : `0010` (store `plannings`, `creerPlanning`), `0009` (`appliquerChangement`, importé depuis `@/domain/scheduling`).
 
-**Critères de sortie** (console, `npm run dev`, avec un planning courant généré via `010`) :
+**Critères de sortie** (console, `npm run dev`, avec un planning courant généré via `0010`) :
 - `creerAffectationManuelle('p1','t1','2026-07-13','MATIN')` renvoie un objet avec **tous** les champs de 02 §Affectation, `origine === 'MANUEL'`, `verrouillee === false`, `commentaire === ''`, `id` non vide, `createdAt`/`updatedAt` ISO.
 - `store.dispatch('plannings/ajouterAffectation', { tourneeId, personneId, date, creneau })` ajoute **une** affectation `MANUEL` à `courant.affectations` (nouveau tableau, `updatedAt` du planning bump), **sans muter** l'ancien tableau ; `store.state.plannings.snapshotEdition` contient l'état **d'avant** (mêmes affectations qu'avant l'ajout).
 - `retirerAffectation({ affectationId })` retire l'affectation ciblée (immuable) ; `deplacerAffectation({ affectationId, versTourneeId, versDate, versCreneau })` retire l'ancienne et ajoute une affectation `MANUEL` à la position cible conservant la **même `personneId`** ; `basculerVerrouillage({ affectationId })` inverse `verrouillee` et bump l'`updatedAt` de l'affectation.
 - Chaque action capture un **snapshot** juste avant (vérifier `snapshotEdition.planningId === courant.id` et `snapshotEdition.affectations` = état antérieur). Les diagnostics ne sont **pas** touchés par le store (aucune propriété diagnostics dans le state).
-- La persistance se déclenche (rechargement : les affectations manuelles/verrouillées demeurent) ; **aucun** accès `localStorage` ; `snapshotEdition` **absent** du JSON exporté (`008`).
+- La persistance se déclenche (rechargement : les affectations manuelles/verrouillées demeurent) ; **aucun** accès `localStorage` ; `snapshotEdition` **absent** du JSON exporté (`0008`).
 - Aucun import Vue/Vuex dans le domaine ; aucun appel moteur direct hors store ; `npm run build` réussit.
 
 ### Tâche 2 — Undo simple (1 niveau, sans redo)
@@ -287,21 +287,21 @@ Public non-technique ([08](../docs/architecture/08-principes-ux-ergonomie.md), [
 - Après un geste d'édition (console : `dispatch('plannings/ajouterAffectation', …)`), `getters['plannings/peutAnnuler']` est `true` et le bouton « Annuler » est **actif**.
 - `dispatch('plannings/annulerDerniereEdition')` restaure **exactement** les affectations d'avant le geste ; puis `peutAnnuler` repasse à `false` et le bouton se **désactive** (undo 1-niveau, pas de redo).
 - **Rechargement (F5)** : `peutAnnuler` est `false` (snapshot volatil, non persisté) — le bouton est désactivé tant qu'un nouveau geste n'a pas eu lieu.
-- Générer un **nouveau** planning (`010`, autre période) puis vérifier que le bouton est désactivé (snapshot devenu obsolète : `planningId` ≠ `courant.id`).
+- Générer un **nouveau** planning (`0010`, autre période) puis vérifier que le bouton est désactivé (snapshot devenu obsolète : `planningId` ≠ `courant.id`).
 - Aucun bouton « Rétablir » présent ; `npm run build` réussit.
 
 ### Tâche 3 — Grille éditable au clic + sélecteur de personne
 
 **Fichiers** :
 - `src/components/planning/CellulePlanning.vue` (**modifier**) — prop `editable` (défaut `false`) ; quand éditable : bouton « Ajouter une personne » (case addable), bouton « Retirer » par élément, émissions `ajouter-ici` / `retirer({ affectationId })`. Rendu lecture seule **strictement inchangé** quand `editable === false`.
-- `src/components/planning/GrillePlanning.vue` (**modifier**) — prop `editable` (défaut `false`) ; transmet `editable`/`ajoutable` à `CellulePlanning` (uniquement orientation `TOURNEES`, case ni fermée ni hors période), enrichit les éléments de `verrouillee` ; réémet **`ajouter { tourneeId, date, creneau }`** et **`retirer { affectationId }`** vers le parent (créneau résolu via `tournees/byId`). Aucun événement quand `editable === false` (comportement `010`).
+- `src/components/planning/GrillePlanning.vue` (**modifier**) — prop `editable` (défaut `false`) ; transmet `editable`/`ajoutable` à `CellulePlanning` (uniquement orientation `TOURNEES`, case ni fermée ni hors période), enrichit les éléments de `verrouillee` ; réémet **`ajouter { tourneeId, date, creneau }`** et **`retirer { affectationId }`** vers le parent (créneau résolu via `tournees/byId`). Aucun événement quand `editable === false` (comportement `0010`).
 - `src/components/planning/SelecteurPersonne.vue` (**créer**) — modale sur `ModaleBase` (§6.2) : titre contextualisé, liste des personnes actives (pastille + nom), filtre texte, masquage des déjà-présents sur le slot, note « déjà N ce jour » ; émet `choisir(personneId)` / `annuler`.
 - `src/views/PlanningView.vue` (**modifier**) — état `modeEdition` + bascule « Modifier le planning » / « Terminer la modification » (`PhPencilSimple`/`PhCheck`) ; entrer en édition **force l'orientation `TOURNEES`** ; passe `:editable="modeEdition"` à `GrillePlanning` ; sur `@ajouter` ouvre `SelecteurPersonne` (mémorise le slot) ; sur `choisir` dispatche `ajouterAffectation` puis `rafraichirDiagnostics()` + annonce ; sur `@retirer` dispatche `retirerAffectation` puis rafraîchit ; message discret en orientation `PERSONNES` invitant à passer sur « Tournées » pour modifier.
 
-**Dépend de** : T1 (actions `ajouterAffectation`/`retirerAffectation`), `010` (grille, cellule, `ModaleBase`).
+**Dépend de** : T1 (actions `ajouterAffectation`/`retirerAffectation`), `0010` (grille, cellule, `ModaleBase`).
 
 **Critères de sortie** (parcours écran, `npm run dev`) :
-- **Non-régression `010`** : hors mode édition (`editable` absent/`false`), la grille et la cellule sont **identiques** à `010` (aucun bouton, aucun événement, slot par défaut inchangé) dans les 2 orientations et les 3 échelles.
+- **Non-régression `0010`** : hors mode édition (`editable` absent/`false`), la grille et la cellule sont **identiques** à `0010` (aucun bouton, aucun événement, slot par défaut inchangé) dans les 2 orientations et les 3 échelles.
 - « Modifier le planning » bascule en édition et **force l'affichage « Tournées »** ; « Terminer » revient en lecture. En « Personnes », un message invite à repasser sur « Tournées » (grille non éditable).
 - En édition (Tournées), une case ouverte affiche « Ajouter une personne » ; un clic ouvre la modale listant les personnes actives ; choisir un nom **ajoute l'affectation** (visible aussitôt dans la case) et **ferme** la modale ; le panneau et le surlignage se **mettent à jour immédiatement**.
 - La modale masque une personne **déjà présente sur ce créneau exact** ; le filtre texte réduit la liste ; navigation et choix **au clavier** possibles (focus piégé, Échap = Annuler).
@@ -345,7 +345,7 @@ Public non-technique ([08](../docs/architecture/08-principes-ux-ergonomie.md), [
 - `src/store/modules/plannings.js` (**modifier**) — action `regenerer({ variante })` en place (§4.5) : capture snapshot, calcule seed/variante depuis `parametresGeneration`, assemble l'`Entree` + `affectationsVerrouillees`, `genererPlanning`, `UPDATE_AFFECTATIONS` (avec `parametresGeneration`), retourne le `Resultat`.
 - `src/views/PlanningView.vue` (**modifier**) — dans la barre d'actions : boutons **« Regénérer à l'identique »** (`PhArrowsClockwise`) et **« Essayer une variante »** (`PhShuffle`) ; confirmation (`DialogueConfirmation`) **conditionnelle** (existence d'une affectation `MANUEL && !verrouillee`, §8) ; état `chargement` pendant la régénération (comme `onGenerer` : bascule + `await $nextTick()`), alimente les diagnostics depuis le `Resultat` retourné + annonce ; **vérifie** que chaque chemin d'édition (T3/T4/T5) rafraîchit bien les diagnostics.
 
-**Dépend de** : T1–T5 (édition, undo, verrouillage), `010` (`genererPropose`/`evaluerCourant`, `assemblerEntree`).
+**Dépend de** : T1–T5 (édition, undo, verrouillage), `0010` (`genererPropose`/`evaluerCourant`, `assemblerEntree`).
 
 **Critères de sortie** (parcours écran complet) :
 - **« Regénérer à l'identique »** : sur un planning inchangé (mêmes données, mêmes verrouillées), reproduit la **même répartition** (mêmes affectations aux mêmes places) ; **même `id` de planning** (mutation `UPDATE`, `items.length` inchangé, `updatedAt` bump), pas un nouveau `Planning`.
@@ -358,7 +358,7 @@ Public non-technique ([08](../docs/architecture/08-principes-ux-ergonomie.md), [
 
 ## 10. Critères d'acceptation
 
-- [ ] Depuis `/planning` avec un planning courant, « Modifier le planning » rend la grille éditable (orientation Tournées) ; « Terminer » revient à la lecture seule identique à `010`.
+- [ ] Depuis `/planning` avec un planning courant, « Modifier le planning » rend la grille éditable (orientation Tournées) ; « Terminer » revient à la lecture seule identique à `0010`.
 - [ ] **Ajouter** au clic : une case de tournée ouvre un sélecteur de personnes ; choisir un nom affecte la personne, visible immédiatement.
 - [ ] **Retirer** et **verrouiller** au clic : chaque affectation offre un bouton retirer et un bouton cadenas ; le verrouillage affiche un repère **icône + libellé** (jamais la seule couleur) et est **persisté**.
 - [ ] **Déplacer** par **glisser-déposer** natif fonctionne (souris), **sans dépendance ajoutée**, mais n'est **jamais** l'unique moyen : tout est réalisable au **clic et au clavier** (critère de sortie accessibilité). Un déplacement **préserve l'identité** de l'affectation (même `id`, `commentaire`) et son **verrou** (`verrouillee`) : une affectation verrouillée déplacée reste verrouillée à destination.
@@ -374,26 +374,26 @@ Public non-technique ([08](../docs/architecture/08-principes-ux-ergonomie.md), [
 
 Parcours de bout en bout (`npm run dev`) :
 
-1. **Pré-requis** : via `010`, générer un planning sur une semaine (≥ 2 personnes actives, ≥ 1 tournée active). Idéalement provoquer 1 conflit (une absence `VALIDE` recoupant une affectation, ou une tournée sous-couverte) pour observer le temps réel.
+1. **Pré-requis** : via `0010`, générer un planning sur une semaine (≥ 2 personnes actives, ≥ 1 tournée active). Idéalement provoquer 1 conflit (une absence `VALIDE` recoupant une affectation, ou une tournée sous-couverte) pour observer le temps réel.
 2. **Mode édition** : « Modifier le planning » → l'affichage bascule sur « Tournées », les affordances apparaissent. « Personnes » affiche un message invitant à repasser sur « Tournées ». « Terminer » revient en lecture.
 3. **Ajouter** : cliquer « Ajouter une personne » sur une case → sélectionner un nom (au clavier aussi) → l'affectation apparaît ; le panneau/surlignage se mettent à jour. Vérifier qu'une personne déjà sur ce créneau est masquée.
 4. **Retirer / Verrouiller** : retirer une affectation (diagnostics à jour). Verrouiller une affectation (cadenas + libellé) ; recharger (F5) → toujours verrouillée.
 5. **Déplacer (DnD)** : glisser une personne d'une case-tournée à une autre → déplacement effectif (même `id`, verrou conservé si elle était verrouillée), diagnostics à jour. Vérifier qu'aucun dépôt n'est accepté sur une case fermée / hors période / la source. Vérifier que la couverture équivalente reste atteignable **sans** glisser, au clic (retrait puis ajout via le sélecteur — en re-verrouillant si besoin, l'ajout créant une affectation manuelle non verrouillée).
-6. **Régénération** : verrouiller 1-2 affectations, faire un ajustement manuel non verrouillé, puis « Essayer une variante » → **confirmation** demandée ; après confirmation, les verrouillées sont conservées, le reste change ; même `id` de planning (l'export `008` montre un seul planning, affectations modifiées). « Regénérer à l'identique » → répartition reproduite. Vérifier que `items.length` n'augmente pas.
+6. **Régénération** : verrouiller 1-2 affectations, faire un ajustement manuel non verrouillé, puis « Essayer une variante » → **confirmation** demandée ; après confirmation, les verrouillées sont conservées, le reste change ; même `id` de planning (l'export `0008` montre un seul planning, affectations modifiées). « Regénérer à l'identique » → répartition reproduite. Vérifier que `items.length` n'augmente pas.
 7. **Undo** : après un geste (ajout / retrait / déplacement / verrouillage) puis après une régénération, « Annuler la dernière action » restaure l'état précédent ; le bouton se désactive ensuite ; recharger (F5) → bouton désactivé.
 8. **Temps réel & cohérence** : à chaque étape, vérifier que les cellules surlignées correspondent aux violations listées et que les tournées non couvertes du panneau correspondent aux marqueurs de la grille.
-9. **Persistance** : recharger la page ; affectations manuelles + verrouillées présentes ; diagnostics recalculés ; export JSON (`008`) sans diagnostics ni snapshot d'annulation.
+9. **Persistance** : recharger la page ; affectations manuelles + verrouillées présentes ; diagnostics recalculés ; export JSON (`0008`) sans diagnostics ni snapshot d'annulation.
 10. **Build** : `npm run build` réussit après chaque tâche.
 
 ## 12. Décisions à confirmer / risques
 
 1. **Édition ancrée sur l'orientation « Tournées » ; « Personnes » reste en lecture seule même en mode édition (retenu)** — Une case-tournée a un créneau propre → le sélecteur liste des **personnes** (modèle mental unique, conforme à la consigne « liste des personnes actives »). Éditer en orientation Personnes exigerait un second flux « choisir une tournée » : écarté par KISS. Entrer en édition force l'affichage « Tournées ». **À confirmer** ; alternative future : édition symétrique côté personnes.
-2. **Mode édition explicite (bascule) plutôt que grille toujours éditable (retenu)** — Pour un public non-technique : évite les modifications accidentelles, garde la lecture propre (`010`), et rend les affordances **toujours visibles** (pas de survol, inutilisable au tactile). Se mappe directement sur la prop `editable`. **À confirmer** ; alternative : édition permanente avec contrôles au survol (rejetée : tactile/accessibilité).
+2. **Mode édition explicite (bascule) plutôt que grille toujours éditable (retenu)** — Pour un public non-technique : évite les modifications accidentelles, garde la lecture propre (`0010`), et rend les affordances **toujours visibles** (pas de survol, inutilisable au tactile). Se mappe directement sur la prop `editable`. **À confirmer** ; alternative : édition permanente avec contrôles au survol (rejetée : tactile/accessibilité).
 3. **Sélecteur de personne = modale (`ModaleBase`) (retenu)** — Accessibilité clé en main (focus piégé, Échap, retour du focus), robustesse de position dans un tableau large à colonne figée, cohérence avec les autres modales. **À confirmer** ; alternatives (popover ancré, panneau latéral) rejetées pour fragilité de position / largeur.
 4. **Pas de prédiction de légalité par le moteur dans le sélecteur (retenu, KISS + ADR 0008)** — Le sélecteur n'affiche que des repères **présentationnels** (déjà-présents masqués, note « déjà N ce jour »), sans réimplémenter de règle métier. Le contrôle qui fait foi est la **revalidation temps réel** après le choix. **À confirmer** ; alternative : action moteur `candidatsPour(slot)` (surface moteur élargie, différée).
 5. **Confirmation de régénération conditionnelle (retenu)** — Confirmée uniquement s'il existe un ajustement `MANUEL && !verrouillee` (donc réellement à perdre) ; sinon régénération directe pour fluidifier l'exploration de variantes. Undo reste le filet dans tous les cas. **À confirmer** ; alternative : confirmer systématiquement (plus lourd) ou jamais (moins sûr).
-6. **Sémantique de `regenerer({ variante })` et calcul du seed (retenu)** — `variante: false` = « à l'identique » (graine effective conservée), `variante: true` = « essayer une variante » (variante incrémentée, base conservée). Le calcul `base = meta.seed - meta.variante` s'appuie sur le contrat `meta` de `009` (graine effective = base + variante). **Risque** : si `parametresGeneration` est absent/altéré (import ancien), repli sur `{ seed: 0, variante: 0 }` — dégradé mais sans plantage. **À confirmer.**
+6. **Sémantique de `regenerer({ variante })` et calcul du seed (retenu)** — `variante: false` = « à l'identique » (graine effective conservée), `variante: true` = « essayer une variante » (variante incrémentée, base conservée). Le calcul `base = meta.seed - meta.variante` s'appuie sur le contrat `meta` de `0009` (graine effective = base + variante). **Risque** : si `parametresGeneration` est absent/altéré (import ancien), repli sur `{ seed: 0, variante: 0 }` — dégradé mais sans plantage. **À confirmer.**
 7. **Déplacement (DEPLACER) préserve l'identité de l'affectation — RÉSOLU (arbitrage du porteur)** — Déplacer une affectation **conserve** son **`id`**, son drapeau **`verrouillee`** et son `commentaire` ; on met à jour uniquement `tourneeId`/`date`/`creneau` (créneau dénormalisé depuis la tournée cible) et `updatedAt`, et `origine` passe à `'MANUEL'` (placement fait à la main). Le **verrou suit** l'affectation à destination : une affectation verrouillée déplacée **reste verrouillée** (le cadenas suit), un déplacement ne déverrouille jamais. L'action `deplacerAffectation` reconstruit donc la destination **par spread de la source** (pas de `creerAffectationManuelle`, pas de nouvel `id`) — voir §4.4/§6.1. **Résolu.**
-8. **Recalcul complet des diagnostics après chaque geste (retenu, KISS)** — Pas de validation incrémentale (hors v1) : `evaluerCourant`/`diagnostiquer` recalcule tout (quelques ms aux volumes visés). Cohérent `009`/`010`. **À confirmer** ; la validation incrémentale reste un chantier hors v1 documenté (05 §4, 009 §12).
+8. **Recalcul complet des diagnostics après chaque geste (retenu, KISS)** — Pas de validation incrémentale (hors v1) : `evaluerCourant`/`diagnostiquer` recalcule tout (quelques ms aux volumes visés). Cohérent `0009`/`0010`. **À confirmer** ; la validation incrémentale reste un chantier hors v1 documenté (05 §4, 0009 §12).
 9. **Snapshot d'annulation dans l'état volatil du module `plannings` (retenu)** — `snapshotEdition` n'est pas sérialisé (`toSaveDocument` ne renvoie que `plannings.items`) et repart de zéro au rechargement ; l'obsolescence (nouvelle génération, import) est neutralisée par le getter `peutAnnuler` (comparaison `planningId`). **À confirmer.**
 10. **Undo 1-niveau sans redo (arrêté par le porteur)** — Choix explicite (§7 du contexte). L'annulation multi-niveaux et le redo sont **hors v1**. Non rediscuté ici ; mentionné pour mémoire.
