@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 3,
+  "meta": {
+    "app": "Idelia",
+    "appVersion": "1.0.0",
+    "exportedAt": "2026-10-07T08:00:00.000Z",
+    "generator": "idelia-web"
+  },
+  "cabinet": {
+    "nomCabinet": "Cabinet de test",
+    "joursOuverture": [1, 2, 3, 4, 5, 6, 7],
+    "creneauxActifs": ["MATIN", "APRES_MIDI", "JOURNEE"],
+    "reposHebdoMin": 2,
+    "maxJoursConsecutifs": 5,
+    "premierJourSemaine": 1,
+    "couleursParDefaut": ["#0E8A8F", "#2E7CB8", "#5B5BD6", "#8E4EC6", "#C43E8E", "#D14D5A", "#E0713C", "#D99A26", "#8A9A2E", "#2E9E5B", "#96603A", "#5E7387"],
+    "updatedAt": "2026-10-07T08:00:00.000Z"
+  },
+  "personnes": [
+    {
+      "id": "p-camille-durand",
+      "prenom": "Camille",
+      "nom": "Durand",
+      "statut": "TITULAIRE",
+      "actif": true,
+      "couleur": "#2E7CB8",
+      "quotite": 100,
+      "dateEntree": "2018-03-01",
+      "dateSortie": null,
+      "contact": { "email": null, "telephone": null },
+      "notes": "Titulaire à 100 %, sans préférence de jour de travail.",
+      "ordreAffichage": 1,
+      "preferences": [],
+      "createdAt": "2026-10-07T08:00:00.000Z",
+      "updatedAt": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "id": "p-helene-moreau",
+      "prenom": "Hélène",
+      "nom": "Moreau",
+      "statut": "TITULAIRE",
+      "actif": true,
+      "couleur": "#8E4EC6",
+      "quotite": 100,
+      "dateEntree": "2020-09-01",
+      "dateSortie": null,
+      "contact": { "email": null, "telephone": null },
+      "notes": "Titulaire à 100 %, préfère faire les matins (T2).",
+      "ordreAffichage": 2,
+      "preferences": [
+        {
+          "id": "pref-helene-matins-t2",
+          "type": "PREFERENCE_TOURNEE",
+          "nature": "SOUPLE",
+          "poids": 7,
+          "actif": true,
+          "params": { "tourneeIds": ["t-t2"], "sens": "PREFERE" },
+          "libelle": "Préfère les matins (T2)",
+          "createdAt": "2026-10-07T08:00:00.000Z",
+          "updatedAt": "2026-10-07T08:00:00.000Z"
+        }
+      ],
+      "createdAt": "2026-10-07T08:00:00.000Z",
+      "updatedAt": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "id": "p-lea-fontaine",
+      "prenom": "Léa",
+      "nom": "Fontaine",
+      "statut": "REMPLACANT",
+      "actif": true,
+      "couleur": "#D14D5A",
+      "quotite": 80,
+      "dateEntree": "2025-01-06",
+      "dateSortie": null,
+      "contact": { "email": null, "telephone": null },
+      "notes": "Remplaçante à 80 %, préfère enchaîner 3 jours à la suite.",
+      "ordreAffichage": 3,
+      "preferences": [
+        {
+          "id": "pref-lea-3-jours-suite",
+          "type": "MIN_JOURS_CONSECUTIFS",
+          "nature": "SOUPLE",
+          "poids": 7,
+          "actif": true,
+          "params": { "min": 3 },
+          "libelle": "Préfère faire 3 jours à la suite sans coupure",
+          "createdAt": "2026-10-07T08:00:00.000Z",
+          "updatedAt": "2026-10-07T08:00:00.000Z"
+        }
+      ],
+      "createdAt": "2026-10-07T08:00:00.000Z",
+      "updatedAt": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "id": "p-sophie-garnier",
+      "prenom": "Sophie",
+      "nom": "Garnier",
+      "statut": "REMPLACANT",
+      "actif": true,
+      "couleur": "#2E9E5B",
+      "quotite": 100,
+      "dateEntree": "2024-05-13",
+      "dateSortie": null,
+      "contact": { "email": null, "telephone": null },
+      "notes": "Remplaçante à 100 %, sans préférence de jour de travail.",
+      "ordreAffichage": 4,
+      "preferences": [],
+      "createdAt": "2026-10-07T08:00:00.000Z",
+      "updatedAt": "2026-10-07T08:00:00.000Z"
+    }
+  ],
+  "tournees": [
+    {
+      "id": "t-t1",
+      "libelle": "T1",
+      "segments": [
+        { "heureDebut": "06:00", "heureFin": "13:00", "nbPersonnesRequises": 1 },
+        { "heureDebut": "17:00", "heureFin": "20:00", "nbPersonnesRequises": 1 }
+      ],
+      "joursApplication": [1, 2, 3, 4, 5, 6, 7],
+      "couleur": "#0E8A8F",
+      "archivee": false,
+      "dateDebutValidite": null,
+      "dateFinValidite": null,
+      "ordreAffichage": 1,
+      "notes": "Tournée coupée, tous les jours.",
+      "createdAt": "2026-10-07T08:00:00.000Z",
+      "updatedAt": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "id": "t-t2",
+      "libelle": "T2",
+      "segments": [
+        { "heureDebut": "06:00", "heureFin": "13:00", "nbPersonnesRequises": 1 }
+      ],
+      "joursApplication": [1, 3, 5],
+      "couleur": "#D99A26",
+      "archivee": false,
+      "dateDebutValidite": null,
+      "dateFinValidite": null,
+      "ordreAffichage": 2,
+      "notes": "Matin seulement, lundi, mercredi et vendredi.",
+      "createdAt": "2026-10-07T08:00:00.000Z",
+      "updatedAt": "2026-10-07T08:00:00.000Z"
+    }
+  ],
+  "absences": [],
+  "plannings": []
+}
