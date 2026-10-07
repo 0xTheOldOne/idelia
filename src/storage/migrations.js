@@ -7,8 +7,13 @@
  * que de la redéclarer).
  */
 
+import { genId } from '@/domain/utils/id.js';
+
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
+
+/** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
+const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Table des migrations séquentielles, indexée par version de départ.
@@ -95,6 +100,93 @@ MIGRATIONS[2] = (doc) => {
     ? doc.plannings.map((planning) => ({ ...planning, genereLe: planning.genereLe ?? null }))
     : doc.plannings;
   return { ...doc, plannings };
+};
+
+/**
+ * Migration v3 → v4 : **tout identifiant d'entité devient un GUID** (règle
+ * du porteur : aucun identifiant technique lisible, cf.
+ * docs/architecture/02-modele-de-domaine.md). Vise les données saisies à la
+ * main ou importées d'anciens jeux de test (`p-claire`, `t-t1`…) ; les ids
+ * déjà au format GUID sont conservés tels quels (idempotent).
+ *
+ * - Identifiants remplacés (si non-GUID) : `personnes[].id`,
+ *   `personnes[].preferences[].id`, `tournees[].id`, `absences[].id`,
+ *   `plannings[].id`, `plannings[].affectations[].id`.
+ * - Références réécrites avec la **même** correspondance (intégrité
+ *   préservée) : `absences[].personneId`, `preferences[].params.tourneeIds`,
+ *   `plannings[].referentId`, `affectations[].personneId` / `.tourneeId`.
+ * - Une référence vers un id inconnu est laissée telle quelle
+ *   (`verifierIntegrite` la signalera comme avant).
+ *
+ * @param {object} doc - Document de version 3.
+ * @returns {object} Document équivalent en version 4 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[3] = (doc) => {
+  const correspondance = new Map();
+  /** @param {string} id @returns {string} GUID (nouveau si `id` n'en était pas un). */
+  const versGuid = (id) => {
+    if (typeof id !== 'string' || FORMAT_GUID.test(id)) return id;
+    if (!correspondance.has(id)) correspondance.set(id, genId());
+    return correspondance.get(id);
+  };
+  /** @param {string} id @returns {string} Référence réécrite si l'id a été remplacé. */
+  const reference = (id) => correspondance.get(id) ?? id;
+  const liste = (valeur) => (Array.isArray(valeur) ? valeur : []);
+
+  // 1) Nouveaux identifiants (avant toute réécriture de référence).
+  const personnes = liste(doc.personnes).map((personne) => ({
+    ...personne,
+    id: versGuid(personne.id),
+    preferences: Array.isArray(personne.preferences)
+      ? personne.preferences.map((preference) => ({ ...preference, id: versGuid(preference.id) }))
+      : personne.preferences,
+  }));
+  const tournees = liste(doc.tournees).map((tournee) => ({ ...tournee, id: versGuid(tournee.id) }));
+  const absencesIds = liste(doc.absences).map((absence) => ({ ...absence, id: versGuid(absence.id) }));
+  const planningsIds = liste(doc.plannings).map((planning) => ({
+    ...planning,
+    id: versGuid(planning.id),
+    affectations: Array.isArray(planning.affectations)
+      ? planning.affectations.map((affectation) => ({ ...affectation, id: versGuid(affectation.id) }))
+      : planning.affectations,
+  }));
+
+  if (correspondance.size === 0) return doc;
+
+  // 2) Références.
+  const personnesRefs = personnes.map((personne) => ({
+    ...personne,
+    preferences: Array.isArray(personne.preferences)
+      ? personne.preferences.map((preference) =>
+          Array.isArray(preference.params?.tourneeIds)
+            ? {
+                ...preference,
+                params: { ...preference.params, tourneeIds: preference.params.tourneeIds.map(reference) },
+              }
+            : preference
+        )
+      : personne.preferences,
+  }));
+  const absences = absencesIds.map((absence) => ({ ...absence, personneId: reference(absence.personneId) }));
+  const plannings = planningsIds.map((planning) => ({
+    ...planning,
+    referentId: planning.referentId == null ? planning.referentId : reference(planning.referentId),
+    affectations: Array.isArray(planning.affectations)
+      ? planning.affectations.map((affectation) => ({
+          ...affectation,
+          personneId: reference(affectation.personneId),
+          tourneeId: reference(affectation.tourneeId),
+        }))
+      : planning.affectations,
+  }));
+
+  return {
+    ...doc,
+    personnes: Array.isArray(doc.personnes) ? personnesRefs : doc.personnes,
+    tournees: Array.isArray(doc.tournees) ? tournees : doc.tournees,
+    absences: Array.isArray(doc.absences) ? absences : doc.absences,
+    plannings: Array.isArray(doc.plannings) ? plannings : doc.plannings,
+  };
 };
 
 /**

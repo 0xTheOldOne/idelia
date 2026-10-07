@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -18,7 +18,7 @@
   },
   "personnes": [
     {
-      "id": "p-camille-durand",
+      "id": "801f1f38-9778-4910-9f8c-89720327266b",
       "prenom": "Camille",
       "nom": "Durand",
       "statut": "TITULAIRE",
@@ -35,7 +35,7 @@
       "updatedAt": "2026-10-07T08:00:00.000Z"
     },
     {
-      "id": "p-helene-moreau",
+      "id": "dae6c401-edc0-4676-8445-26fdeed7be01",
       "prenom": "Hélène",
       "nom": "Moreau",
       "statut": "TITULAIRE",
@@ -49,12 +49,12 @@
       "ordreAffichage": 2,
       "preferences": [
         {
-          "id": "pref-helene-matins-t2",
+          "id": "68c9f23c-cd30-4db5-9c9c-0388b1f19ef7",
           "type": "PREFERENCE_TOURNEE",
           "nature": "SOUPLE",
           "poids": 7,
           "actif": true,
-          "params": { "tourneeIds": ["t-t2"], "sens": "PREFERE" },
+          "params": { "tourneeIds": ["bfd6822d-db8c-4adc-a3e5-ccbdb04d45a8"], "sens": "PREFERE" },
           "libelle": "Préfère les matins (T2)",
           "createdAt": "2026-10-07T08:00:00.000Z",
           "updatedAt": "2026-10-07T08:00:00.000Z"
@@ -64,7 +64,7 @@
       "updatedAt": "2026-10-07T08:00:00.000Z"
     },
     {
-      "id": "p-lea-fontaine",
+      "id": "7de4f015-90c9-48db-ac00-207da29a3017",
       "prenom": "Léa",
       "nom": "Fontaine",
       "statut": "REMPLACANT",
@@ -78,7 +78,7 @@
       "ordreAffichage": 3,
       "preferences": [
         {
-          "id": "pref-lea-3-jours-suite",
+          "id": "a8071278-5767-4e40-a8e0-8687f15e294f",
           "type": "MIN_JOURS_CONSECUTIFS",
           "nature": "SOUPLE",
           "poids": 7,
@@ -93,7 +93,7 @@
       "updatedAt": "2026-10-07T08:00:00.000Z"
     },
     {
-      "id": "p-sophie-garnier",
+      "id": "a99fdeab-28c9-42b9-8a5e-211ce5ffa34c",
       "prenom": "Sophie",
       "nom": "Garnier",
       "statut": "REMPLACANT",
@@ -112,7 +112,7 @@
   ],
   "tournees": [
     {
-      "id": "t-t1",
+      "id": "017cdf6f-ecbd-408e-a86b-dcfc02f0a4a7",
       "libelle": "T1",
       "segments": [
         { "heureDebut": "06:00", "heureFin": "13:00", "nbPersonnesRequises": 1 },
@@ -129,7 +129,7 @@
       "updatedAt": "2026-10-07T08:00:00.000Z"
     },
     {
-      "id": "t-t2",
+      "id": "bfd6822d-db8c-4adc-a3e5-ccbdb04d45a8",
       "libelle": "T2",
       "segments": [
         { "heureDebut": "06:00", "heureFin": "13:00", "nbPersonnesRequises": 1 }

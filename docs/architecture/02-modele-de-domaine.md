@@ -7,7 +7,7 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 - **Jours de semaine** : ISO 8601, `1`=Lundi … `7`=Dimanche. Jamais `0-6`.
 - **Dates calendaires** : `"YYYY-MM-DD"`. **Heures** : `"HH:mm"`. **Horodatages techniques** : ISO UTC (`toISOString()`).
 - **Enums** : codes stables en `MAJUSCULES_SNAKE` (jamais les libellés affichés — ceux-ci passent par une table de correspondance, prête pour l'i18n).
-- **Identifiants** : `crypto.randomUUID()` (contexte HTTPS des Pages garanti), avec un util `genId()` de secours. IDs immuables, jamais réutilisés.
+- **Identifiants** : **toujours un GUID (UUID v4)**, générés par `genId()` (`crypto.randomUUID()`, ou le même format construit en secours). Jamais d'identifiant lisible (`p-claire`, `t-1`…), y compris dans les jeux de test et les exemples de doc. IDs immuables, jamais réutilisés.
 
 ## Glossaire
 

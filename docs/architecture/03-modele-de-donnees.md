@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 3,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe)
+  "schemaVersion": 4,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -25,7 +25,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -37,16 +37,16 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   },
   "personnes": [
     {
-      "id": "p-3f2a", "prenom": "Claire", "nom": "Martin",
+      "id": "89efbb0f-5e16-4188-b64b-029c88a7e1b2", "prenom": "Claire", "nom": "Martin",
       "statut": "TITULAIRE", "actif": true, "couleur": "#2E86AB",
       "quotite": 100, "dateEntree": "2019-09-01", "dateSortie": null,
       "contact": { "email": null, "telephone": "0600000000" },
       "ordreAffichage": 1, "notes": "",
       "preferences": [
-        { "id": "pref-1", "type": "JOUR_OFF_RECURRENT", "nature": "DURE", "actif": true,
+        { "id": "0274ede8-0b6f-4168-bbe4-911de592c54f", "type": "JOUR_OFF_RECURRENT", "nature": "DURE", "actif": true,
           "params": { "joursSemaine": [3] }, "libelle": "Pas le mercredi",
           "createdAt": "2026-07-01T08:00:00.000Z", "updatedAt": "2026-07-01T08:00:00.000Z" },
-        { "id": "pref-2", "type": "CRENEAU_OFF", "nature": "SOUPLE", "poids": 8, "actif": true,
+        { "id": "6698558c-2888-49de-88c2-1ad05343f34e", "type": "CRENEAU_OFF", "nature": "SOUPLE", "poids": 8, "actif": true,
           "params": { "creneaux": ["APRES_MIDI"] }, "libelle": "Éviter les après-midis",
           "createdAt": "2026-07-01T08:00:00.000Z", "updatedAt": "2026-07-01T08:00:00.000Z" }
       ],
@@ -55,7 +55,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   ],
   "tournees": [
     {
-      "id": "t-1", "libelle": "Tournée Nord",
+      "id": "5e4a45a4-d1c8-4e1c-b085-c39873847409", "libelle": "Tournée Nord",
       "segments": [
         { "heureDebut": "07:00", "heureFin": "13:30", "nbPersonnesRequises": 2 },
         { "heureDebut": "17:00", "heureFin": "20:00", "nbPersonnesRequises": 1 }
@@ -68,7 +68,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   ],
   "absences": [
     {
-      "id": "a-1", "personneId": "p-3f2a", "type": "CONGE_PAYE",
+      "id": "f6ab5727-f867-4ed1-a837-133ef6ca7430", "personneId": "89efbb0f-5e16-4188-b64b-029c88a7e1b2", "type": "CONGE_PAYE",
       "dateDebut": "2026-07-20", "dateFin": "2026-07-31", "creneau": "JOURNEE",
       "statut": "VALIDE", "commentaire": "Vacances d'été",
       "demandeLe": "2026-06-01T10:00:00.000Z", "decideLe": "2026-06-03T09:00:00.000Z",
@@ -77,13 +77,13 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   ],
   "plannings": [
     {
-      "id": "pl-1", "nom": "Semaine 28 - 2026",
+      "id": "d30ae3b4-fd31-45cb-b820-f2bc31d2a726", "nom": "Semaine 28 - 2026",
       "dateDebut": "2026-07-06", "dateFin": "2026-07-12",
-      "statut": "BROUILLON", "referentId": "p-3f2a", "publieLe": null,
+      "statut": "BROUILLON", "referentId": "89efbb0f-5e16-4188-b64b-029c88a7e1b2", "publieLe": null,
       "genereLe": "2026-07-05T18:00:00.000Z",
       "parametresGeneration": { "seed": 1 },
       "affectations": [
-        { "id": "af-1", "personneId": "p-3f2a", "tourneeId": "t-1",
+        { "id": "16a6e2fe-9ba8-4f72-baf8-b28c8e492d61", "personneId": "89efbb0f-5e16-4188-b64b-029c88a7e1b2", "tourneeId": "5e4a45a4-d1c8-4e1c-b085-c39873847409",
           "date": "2026-07-06", "segmentIndex": 0, "origine": "AUTO",
           "verrouillee": false, "commentaire": "",
           "createdAt": "2026-07-05T18:00:00.000Z", "updatedAt": "2026-07-05T18:00:00.000Z" }
@@ -112,12 +112,13 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` (= **3**) et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **4**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
 - **`MIGRATIONS[1]` (v1 → v2)** — première migration réelle du projet ([feature 0016](../../features/0016-tournees-coupees-modele.md), [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)) : chaque `Tournee` passe de `nom`/`creneau`/`heureDebut`/`heureFin`/`nbPersonnesRequises`/`secteur`/`code` à `libelle` + un unique `segments[0]` reconstruit depuis les anciens horaires (`archivee` recopié tel quel) ; chaque `Affectation` passe de `creneau` à `segmentIndex: 0`. Les `absences` (bucket `creneau`) sont inchangées. Sans perte.
 - **`MIGRATIONS[2]` (v2 → v3)** — [feature 0026](../../features/0026-date-de-generation-visible.md) : chaque `Planning` reçoit `genereLe: planning.genereLe ?? null` (idempotent). Pas de rétro-remplissage depuis `createdAt` (date potentiellement fausse) : `null` = inconnu, rien n'est affiché. Les autres entités sont inchangées.
+- **`MIGRATIONS[3]` (v3 → v4)** — identifiants en GUID : tout `id` d'entité (personne, souhait, tournée, absence, planning, affectation) qui n'est pas un GUID est remplacé par un GUID (`genId()`), et **toutes ses références** sont réécrites avec la même correspondance (`absence.personneId`, `preference.params.tourneeIds`, `planning.referentId`, `affectation.personneId` / `tourneeId`). Les GUID existants sont conservés (idempotent). Corrige les données issues de saisies à la main / d'anciens jeux de test (`p-claire`, `t-t1`…).
 
 ## Intégrité référentielle
 
