@@ -61,6 +61,9 @@ export default {
   display: flex;
   align-items: center;
   gap: t.$espace-3;
+  // Remplit la hauteur de sa colonne : tous les indicateurs d'une même rangée
+  // ont la même hauteur (comme les tuiles d'actions rapides).
+  height: 100%;
   min-height: t.$cible-cliquable-min;
   padding: t.$espace-3 t.$espace-4;
   border: 1px solid t.$couleur-bordure;
@@ -104,6 +107,8 @@ export default {
   font-size: t.$taille-titre-2;
   font-weight: t.$graisse-extra-gras;
   line-height: 1.1;
+  // Valeur toujours courte (« 4 », « Sem. 53 ») : jamais coupée en deux lignes.
+  white-space: nowrap;
 }
 
 .indicateur-cle__libelle {
