@@ -10,53 +10,29 @@
         <caption class="grille-planning-legende">{{ captionTexte }}</caption>
         <thead>
           <tr>
-            <th scope="col" class="grille-planning-coin grille-planning-colonne-figee">
-              {{ orientation === 'TOURNEES' ? 'Tournée' : 'Personne' }}
-            </th>
+            <th scope="col" class="grille-planning-coin grille-planning-colonne-figee">Jour</th>
             <th
-              v-for="colonne in colonnes"
-              :key="colonne.date"
+              v-for="entite in matrice"
+              :key="entite.donnees.id"
               scope="col"
-              class="grille-planning-entete-jour"
+              class="grille-planning-entete-entite"
               :class="{
-                'grille-planning-entete-jour--fermee': colonne.ferme,
-                'grille-planning-entete-jour--hors-periode': colonne.horsPeriode,
+                'grille-planning-entete-entite--concernee-erreur': entite.concerneeEnTete === 'erreur',
+                'grille-planning-entete-entite--concernee-avertissement': entite.concerneeEnTete === 'avertissement',
               }"
             >
-              <span class="grille-planning-jour-nom">{{ libelleJour(colonne.jourIso) }}</span>
-              <span class="grille-planning-jour-date">{{ dateCourte(colonne.date) }}</span>
-              <span v-if="colonne.ferme" class="grille-planning-jour-statut">
-                <PhLock :size="12" aria-hidden="true" />
-                <span>Fermé</span>
-              </span>
-              <span v-else-if="colonne.horsPeriode" class="grille-planning-jour-statut grille-planning-jour-statut--attenue">
-                Hors période
-              </span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="ligne in matrice" :key="ligne.donnees.id">
-            <th
-              scope="row"
-              class="grille-planning-entete-ligne grille-planning-colonne-figee"
-              :class="{
-                'grille-planning-entete-ligne--concernee-erreur': ligne.concerneeEnTete === 'erreur',
-                'grille-planning-entete-ligne--concernee-avertissement': ligne.concerneeEnTete === 'avertissement',
-              }"
-            >
-              <div class="grille-planning-entete-ligne-contenu">
+              <div class="grille-planning-entete-entite-contenu">
                 <span
                   class="grille-planning-pastille"
-                  :style="{ backgroundColor: ligne.donnees.couleur }"
+                  :style="{ backgroundColor: entite.donnees.couleur }"
                   aria-hidden="true"
                 />
-                <span class="grille-planning-nom-ligne">
-                  {{ ligne.donnees.nom }}<template v-if="ligne.donnees.archivee"> (archivée)</template>
+                <span class="grille-planning-nom-entite">
+                  {{ entite.donnees.nom }}<template v-if="entite.donnees.archivee"> (archivée)</template>
                 </span>
-                <template v-if="ligne.concerneeEnTete">
+                <template v-if="entite.concerneeEnTete">
                   <PhWarningOctagon
-                    v-if="ligne.concerneeEnTete === 'erreur'"
+                    v-if="entite.concerneeEnTete === 'erreur'"
                     :size="16"
                     weight="bold"
                     aria-hidden="true"
@@ -64,19 +40,47 @@
                   <PhWarning v-else :size="16" weight="bold" aria-hidden="true" />
                   <span class="grille-planning-texte-invisible">
                     {{
-                      ligne.concerneeEnTete === 'erreur'
-                        ? 'Conflit signalé sur cette ligne'
-                        : 'Point d’attention signalé sur cette ligne'
+                      entite.concerneeEnTete === 'erreur'
+                        ? 'Conflit signalé sur cette colonne'
+                        : 'Point d’attention signalé sur cette colonne'
                     }}
                   </span>
                 </template>
               </div>
             </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="ligneJour in lignesJours" :key="ligneJour.colonne.date">
+            <th
+              scope="row"
+              class="grille-planning-entete-jour grille-planning-colonne-figee"
+              :class="{
+                'grille-planning-entete-jour--fermee': ligneJour.colonne.ferme,
+                'grille-planning-entete-jour--hors-periode': ligneJour.colonne.horsPeriode,
+              }"
+            >
+              <span class="grille-planning-jour-nom">{{ libelleJour(ligneJour.colonne.jourIso) }}</span>
+              <span class="grille-planning-jour-date">{{ dateCourte(ligneJour.colonne.date) }}</span>
+              <span v-if="ligneJour.colonne.ferme" class="grille-planning-jour-statut">
+                <PhLock :size="12" aria-hidden="true" />
+                <span>Fermé</span>
+              </span>
+              <span
+                v-else-if="ligneJour.colonne.horsPeriode"
+                class="grille-planning-jour-statut grille-planning-jour-statut--attenue"
+              >
+                Hors période
+              </span>
+            </th>
             <td
-              v-for="cellule in ligne.cellules"
-              :key="cellule.date"
+              v-for="cellule in ligneJour.cellules"
+              :key="cellule.ligne.id"
               class="grille-planning-cellule"
-              :class="{ 'grille-planning-cellule--cible-depot': estCibleDepot(cellule) }"
+              :class="{
+                'grille-planning-cellule--cible-depot': estCibleDepot(cellule),
+                'grille-planning-cellule--vide': !cellule.ferme && cellule.elements.length === 0,
+              }"
               @dragover="onSurvolCellule(cellule, $event)"
             >
               <slot name="cellule" v-bind="cellule">
@@ -145,10 +149,12 @@ import { estCoupee, libelleSegment } from '@/domain/tournees.js';
 /**
  * Composant central de visualisation d'un planning (feature 0010),
  * **éditable au clic** en mode édition (feature 0011, prop `editable`, par
- * défaut `false`). Rend **toujours** une matrice lignes × jours (§6.1 du
+ * défaut `false`). Rend **toujours** une matrice entités × jours (§6.1 du
  * plan `0010`) : l'échelle (`JOUR`/`SEMAINE`/`MOIS`) ne change que l'ensemble
- * des colonnes-jours, l'orientation (`TOURNEES`/`PERSONNES`) ne change que
- * ce que sont les lignes et le contenu d'une cellule.
+ * des jours, l'orientation (`TOURNEES`/`PERSONNES`) ne change que ce que
+ * sont les entités et le contenu d'une cellule. **Affichage** : un jour par
+ * ligne, une tournée/personne par colonne (`lignesJours`, transposition de
+ * `matrice` — retour porteur du 2026-10-07).
  *
  * Ne fait **aucune dérivation métier** : la sous-couverture vient
  * directement de la prop `tourneesNonCouvertes` (jamais des violations), le
@@ -339,6 +345,21 @@ export default {
       }));
     },
 
+    /**
+     * Rendu **transposé** de `matrice` (retour porteur, 2026-10-07) : à
+     * l'écran, les jours sont en **lignes** et les tournées/personnes en
+     * **colonnes**, sur mobile comme sur desktop. Seule la disposition
+     * change : les descripteurs de cellule sont exactement ceux de
+     * `matrice` (même slot `cellule`, même glisser-déposer).
+     * @returns {Array<{colonne: {date: string, jourIso: number, ferme: boolean, horsPeriode: boolean}, cellules: object[]}>}
+     */
+    lignesJours() {
+      return this.colonnes.map((colonne, index) => ({
+        colonne,
+        cellules: this.matrice.map((entite) => entite.cellules[index]),
+      }));
+    },
+
     /** Légende visible au-dessus de la grille (contexte : orientation + fenêtre affichée). */
     captionTexte() {
       const sujet = this.orientation === 'TOURNEES' ? 'Planning par tournée' : 'Planning par personne';
@@ -352,7 +373,7 @@ export default {
     },
 
     ariaLabelDefilement() {
-      return `Grille du planning, défilement horizontal possible. ${this.captionTexte}.`;
+      return `Grille du planning, un jour par ligne. ${this.captionTexte}.`;
     },
   },
   methods: {
@@ -684,9 +705,9 @@ export default {
   color: t.$couleur-texte-attenue;
 }
 
-// Colonne figée (première colonne, en-tête de ligne compris) : reste visible
-// pendant le défilement horizontal, notamment en échelle Mois. Fond opaque
-// obligatoire pour ne pas laisser transparaître le contenu qui défile dessous.
+// Colonne figée (première colonne : les jours) : reste visible pendant le
+// défilement horizontal quand il y a beaucoup de tournées/personnes. Fond
+// opaque obligatoire pour ne pas laisser transparaître le contenu dessous.
 .grille-planning-colonne-figee {
   position: sticky;
   left: 0;
@@ -695,17 +716,60 @@ export default {
 }
 
 .grille-planning-coin,
-.grille-planning-entete-jour {
+.grille-planning-entete-entite {
   padding: t.$espace-2;
   border-bottom: 1px solid t.$couleur-bordure;
   background-color: t.$couleur-fond-clair;
   text-align: left;
   vertical-align: bottom;
-  white-space: nowrap;
 }
 
-.grille-planning-entete-jour {
+.grille-planning-coin {
+  border-right: 1px solid t.$couleur-bordure;
+}
+
+// En-tête de colonne (tournée ou personne). `display: table-cell` explicite :
+// ce `<th scope="col">` doit rester une vraie cellule de tableau (sémantique
+// Safari/VoiceOver) — la mise en page pastille + nom + icône est portée par
+// `.grille-planning-entete-entite-contenu`.
+.grille-planning-entete-entite {
+  display: table-cell;
   min-width: 140px;
+  border-right: 1px solid t.$couleur-bordure;
+  font-weight: t.$graisse-gras;
+
+  &--concernee-erreur {
+    background-color: rgba(t.$couleur-erreur, 0.08);
+    border-top: 3px solid t.$couleur-erreur;
+  }
+
+  &--concernee-avertissement {
+    background-color: rgba(t.$couleur-avertissement, 0.1);
+    border-top: 3px dashed t.$couleur-avertissement;
+  }
+}
+
+.grille-planning-entete-entite-contenu {
+  display: flex;
+  align-items: center;
+  gap: t.$espace-1;
+}
+
+.grille-planning-nom-entite {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+// En-tête de ligne (un jour).
+.grille-planning-entete-jour {
+  padding: t.$espace-2;
+  min-width: 110px;
+  border-bottom: 1px solid t.$couleur-bordure;
+  border-right: 1px solid t.$couleur-bordure;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
 
   &--fermee {
     background-color: t.$couleur-bordure;
@@ -739,48 +803,12 @@ export default {
   }
 }
 
-// `display: table-cell` explicite : ce `<th scope="row">` doit rester un
-// vrai cellule de tableau (sémantique Safari/VoiceOver) — la mise en page
-// pastille + nom + icône est déplacée sur `.grille-planning-entete-ligne-contenu`.
-.grille-planning-entete-ligne {
-  display: table-cell;
-  padding: t.$espace-2;
-  min-width: 160px;
-  max-width: 240px;
-  border-bottom: 1px solid t.$couleur-bordure;
-  border-right: 1px solid t.$couleur-bordure;
-  font-weight: t.$graisse-gras;
-  text-align: left;
-
-  &--concernee-erreur {
-    background-color: rgba(t.$couleur-erreur, 0.08);
-    border-left: 3px solid t.$couleur-erreur;
-  }
-
-  &--concernee-avertissement {
-    background-color: rgba(t.$couleur-avertissement, 0.1);
-    border-left: 3px dashed t.$couleur-avertissement;
-  }
-}
-
-.grille-planning-entete-ligne-contenu {
-  display: flex;
-  align-items: center;
-  gap: t.$espace-1;
-}
-
 .grille-planning-pastille {
   flex-shrink: 0;
   width: t.$espace-3;
   height: t.$espace-3;
   border-radius: 50%;
   border: 1px solid t.$couleur-bordure;
-}
-
-.grille-planning-nom-ligne {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-wrap: break-word;
 }
 
 // Texte réservé aux lecteurs d'écran (icône de conflit déjà `aria-hidden`,
@@ -803,6 +831,14 @@ export default {
   vertical-align: top;
   border-bottom: 1px solid t.$couleur-bordure;
   border-right: 1px solid t.$couleur-bordure;
+}
+
+// Case où personne ne travaille (retour porteur 2026-10-07) : fond atténué,
+// le même que les personnes/tournées archivées (Équipe, Tournées) pour un
+// rendu « inactif » identique partout. Les jours fermés gardent leur propre
+// rendu (« Fermé »).
+.grille-planning-cellule--vide {
+  background-color: t.$couleur-fond-clair;
 }
 
 // Repère visuel de la case survolée comme cible de dépôt pendant un

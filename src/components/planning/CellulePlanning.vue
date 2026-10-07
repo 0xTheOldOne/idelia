@@ -30,8 +30,15 @@
         @dragleave="onQuitterGroupe(groupe, $event)"
         @drop="onDeposerGroupe(groupe, $event)"
       >
-        <p v-if="groupe.libelleVacation" class="cellule-planning-groupe-titre">
-          {{ groupe.libelleVacation }} {{ groupe.horaires }}
+        <!-- Horaires affichés dès que quelqu'un travaille sur la vacation, y
+             compris pour une tournée complète (retour porteur 2026-10-07) ;
+             « Matin »/« Soir » en plus si coupée. Gardés aussi en cas de
+             sous-couverture, pour situer « Il manque … ». -->
+        <p
+          v-if="groupe.horaires && (groupe.elements.length || groupe.sousCouverture)"
+          class="cellule-planning-groupe-titre"
+        >
+          {{ titreGroupe(groupe) }}
         </p>
 
         <ul v-if="groupe.elements.length" class="cellule-planning-elements">
@@ -95,7 +102,7 @@
           ref="boutonAjouter"
           type="button"
           class="btn btn-outline-primary btn-sm cellule-planning-bouton-ajouter"
-          :aria-label="groupe.libelleVacation ? `Ajouter une personne — ${groupe.libelleVacation} ${groupe.horaires}` : 'Ajouter une personne'"
+          :aria-label="groupe.horaires ? `Ajouter une personne — ${titreGroupe(groupe)}` : 'Ajouter une personne'"
           @click="$emit('ajouter-ici', { segmentIndex: groupe.index })"
         >
           <PhUserPlus :size="16" aria-hidden="true" />
@@ -273,6 +280,16 @@ export default {
     },
   },
   methods: {
+    /**
+     * Titre d'un groupe de vacation : « Matin 06:00 – 13:00 » pour une
+     * tournée coupée, « 06:00 – 13:00 » pour une tournée complète.
+     * @param {{ libelleVacation: string, horaires: string }} groupe
+     * @returns {string}
+     */
+    titreGroupe(groupe) {
+      return [groupe.libelleVacation, groupe.horaires].filter(Boolean).join(' ');
+    },
+
     /**
      * Démarre le glisser-déposer d'un élément (feature 0011, tâche 5) :
      * émet `debut-glisser` avec l'identifiant de l'affectation glissée.
