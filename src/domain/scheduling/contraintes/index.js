@@ -21,7 +21,8 @@ import { creerContrainteReposLegal } from './contrainteReposLegal.js';
 import { creerContrainteJourOuverture } from './contrainteJourOuverture.js';
 import { creerContraintePreference } from './contraintePreference.js';
 import { creerContrainteEquite } from './contrainteEquite.js';
-import { creerContrainteContinuite } from './contrainteContinuite.js';
+// Désactivée (retour porteur, 2026-10-07) : voir creerContraintes.
+// import { creerContrainteContinuite } from './contrainteContinuite.js';
 import { creerContrainteContinuiteSegments } from './contrainteContinuiteSegments.js';
 
 /**
@@ -84,7 +85,11 @@ export function creerContraintes(entree) {
     creerContrainteReposLegal(),
     creerContrainteJourOuverture(),
     creerContrainteEquite(poids.equite),
-    creerContrainteContinuite(poids.continuite),
+    // Continuité d'un jour à l'autre désactivée (retour porteur, 2026-10-07) :
+    // qu'une personne travaille un jour et une autre le lendemain ne pose pas
+    // problème au cabinet, inutile de le pénaliser ni de le signaler.
+    // La continuité intra-journée (matin → reprise, ci-dessous) reste active.
+    // creerContrainteContinuite(poids.continuite),
     creerContrainteContinuiteSegments(poids.continuiteSegments),
   ];
 
