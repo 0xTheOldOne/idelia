@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 2,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments)
+  "schemaVersion": 3,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -25,7 +25,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -80,6 +80,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
       "id": "pl-1", "nom": "Semaine 28 - 2026",
       "dateDebut": "2026-07-06", "dateFin": "2026-07-12",
       "statut": "BROUILLON", "referentId": "p-3f2a", "publieLe": null,
+      "genereLe": "2026-07-05T18:00:00.000Z",
       "parametresGeneration": { "seed": 1 },
       "affectations": [
         { "id": "af-1", "personneId": "p-3f2a", "tourneeId": "t-1",
@@ -111,11 +112,12 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` (= **2**) et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **3**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
 - **`MIGRATIONS[1]` (v1 → v2)** — première migration réelle du projet ([feature 0016](../../features/0016-tournees-coupees-modele.md), [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)) : chaque `Tournee` passe de `nom`/`creneau`/`heureDebut`/`heureFin`/`nbPersonnesRequises`/`secteur`/`code` à `libelle` + un unique `segments[0]` reconstruit depuis les anciens horaires (`archivee` recopié tel quel) ; chaque `Affectation` passe de `creneau` à `segmentIndex: 0`. Les `absences` (bucket `creneau`) sont inchangées. Sans perte.
+- **`MIGRATIONS[2]` (v2 → v3)** — [feature 0026](../../features/0026-date-de-generation-visible.md) : chaque `Planning` reçoit `genereLe: planning.genereLe ?? null` (idempotent). Pas de rétro-remplissage depuis `createdAt` (date potentiellement fausse) : `null` = inconnu, rien n'est affiché. Les autres entités sont inchangées.
 
 ## Intégrité référentielle
 

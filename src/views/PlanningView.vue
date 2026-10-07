@@ -62,6 +62,17 @@
         </span>
       </div>
 
+      <p v-if="infoGeneration" class="planning-info-generation">
+        <PhClockCounterClockwise :size="16" aria-hidden="true" class="flex-shrink-0" />
+        <span>
+          Généré le <time :datetime="infoGeneration.genereLe">{{ infoGeneration.dateTexte }}</time>
+          <template v-if="infoGeneration.modifieDepuis">
+            · modifié à la main le
+            <time :datetime="dateModificationIso">{{ infoGeneration.dateModificationTexte }}</time>
+          </template>
+        </span>
+      </p>
+
       <div class="planning-barre-actions" role="group" aria-label="Actions du planning">
         <button
           ref="boutonBasculerEdition"
@@ -184,6 +195,7 @@ import {
   PhCheck,
   PhArrowsClockwise,
   PhShuffle,
+  PhClockCounterClockwise,
 } from '@phosphor-icons/vue';
 
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
@@ -193,6 +205,7 @@ import GrillePlanning from '@/components/planning/GrillePlanning.vue';
 import PanneauConflits from '@/components/planning/PanneauConflits.vue';
 import SelecteurPersonne from '@/components/planning/SelecteurPersonne.vue';
 import { libelleSegment, estCoupee } from '@/domain/tournees.js';
+import { infoGeneration } from '@/domain/planning.js';
 
 /**
  * Écran « Planning » (feature 0010) : orchestre le choix d'une période, le
@@ -252,6 +265,7 @@ export default {
     PhCheck,
     PhArrowsClockwise,
     PhShuffle,
+    PhClockCounterClockwise,
     DialogueConfirmation,
     FormulaireGeneration,
     ControlesGrille,
@@ -314,6 +328,18 @@ export default {
     /** Le formulaire de génération n'est utile que si les deux ingrédients indispensables existent. */
     peutGenerer() {
       return this.personnesActives.length > 0 && this.tourneesActives.length > 0;
+    },
+    /**
+     * Informations de génération du planning courant (`null` si absentes :
+     * rien n'est alors affiché, feature 0026).
+     * @returns {{ genereLe: string, dateTexte: string, modifieDepuis: boolean, dateModificationTexte: string } | null}
+     */
+    infoGeneration() {
+      return this.planningCourant ? infoGeneration(this.planningCourant) : null;
+    },
+    /** Horodatage ISO de la dernière modification, pour l'attribut `datetime`. */
+    dateModificationIso() {
+      return this.planningCourant?.updatedAt ?? '';
     },
     /**
      * `true` s'il existe au moins un ajustement manuel non verrouillé
@@ -744,6 +770,17 @@ export default {
   border-radius: t.$rayon-lg;
   font-size: t.$taille-texte-petite;
   font-weight: t.$graisse-gras;
+}
+
+// Ligne discrète « Généré le … » sous le titre (feature 0026) : icône
+// décorative + texte, taille de texte standard pour rester lisible.
+.planning-info-generation {
+  display: flex;
+  align-items: center;
+  gap: t.$espace-2;
+  margin: 0 0 t.$espace-3;
+  color: t.$couleur-texte-attenue;
+  font-size: t.$taille-texte-petite;
 }
 
 // Regroupe les actions du planning (Modifier/Terminer, Annuler,

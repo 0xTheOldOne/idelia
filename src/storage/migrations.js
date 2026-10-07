@@ -8,7 +8,7 @@
  */
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /**
  * Table des migrations séquentielles, indexée par version de départ.
@@ -76,6 +76,25 @@ MIGRATIONS[1] = (doc) => {
     : doc.plannings;
 
   return { ...doc, tournees, plannings };
+};
+
+/**
+ * Migration v2 → v3 (feature 0026) : ajout de `Planning.genereLe`, horodatage
+ * ISO UTC de la dernière génération/régénération par le moteur.
+ *
+ * - Chaque `Planning` de `doc.plannings` reçoit `genereLe: planning.genereLe ?? null`
+ *   (idempotent, aucun autre champ touché). Pas de rétro-remplissage depuis
+ *   `createdAt` : `null` = date inconnue, rien n'est affiché (honnêteté).
+ * - `personnes`, `tournees`, `absences`, `cabinet` : inchangés.
+ *
+ * @param {object} doc - Document de version 2.
+ * @returns {object} Document équivalent en version 3 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[2] = (doc) => {
+  const plannings = Array.isArray(doc.plannings)
+    ? doc.plannings.map((planning) => ({ ...planning, genereLe: planning.genereLe ?? null }))
+    : doc.plannings;
+  return { ...doc, plannings };
 };
 
 /**

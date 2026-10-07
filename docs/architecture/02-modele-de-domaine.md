@@ -158,6 +158,7 @@ Modèle **segments** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segme
 | parametresGeneration | object | non | snapshot des réglages moteur (reproductibilité) |
 | referentId | uuid → Personne | non | |
 | publieLe | ISO UTC \| null | non | |
+| genereLe | ISO UTC \| null | oui (`null` possible) | dernière génération/régénération par le moteur ; `null` = inconnu (planning antérieur à 0026). Posé uniquement par la génération/régénération, jamais par un geste manuel. À la génération, `genereLe === updatedAt` ; `updatedAt > genereLe` ⇔ modifié à la main depuis (`infoGeneration`) |
 | createdAt / updatedAt | ISO UTC | oui | |
 
 ### ParametresCabinet (singleton)

@@ -36,6 +36,11 @@
  * préservant les affectations verrouillées. Retourne le `Resultat` complet
  * du moteur (comme `genererPropose`), pour que la vue alimente ses
  * diagnostics volatils sans second passage moteur.
+ *
+ * Date de génération (feature 0026) : `genereLe` n'est posé que par
+ * `genererPropose` et `regenerer` (même horodatage que `updatedAt`) ; un geste
+ * manuel ne le touche pas. Le snapshot d'annulation restaure `genereLe`,
+ * `parametresGeneration` et `updatedAt`.
  */
 import { genererPlanning, diagnostiquer, appliquerChangement } from '@/domain/scheduling';
 import { creerPlanning, creerAffectationManuelle, resumerDiagnostic } from '@/domain/planning.js';
@@ -128,17 +133,22 @@ export default {
      * mutation en place) et bump son `updatedAt`. Met à jour
      * `parametresGeneration` uniquement si fourni (régénération, feature
      * `0011` tâche 6) : les gestes d'édition manuelle ne le touchent pas.
+     * `genereLe` (feature 0026) : fourni uniquement par la régénération ;
+     * il pose alors `genereLe` et `updatedAt` à la même valeur.
      * @param {{ items: object[] }} state
-     * @param {{ id: string, affectations: object[], parametresGeneration?: (Object|null) }} payload
+     * @param {{ id: string, affectations: object[], parametresGeneration?: (Object|null), genereLe?: string }} payload
      */
-    UPDATE_AFFECTATIONS(state, { id, affectations, parametresGeneration }) {
+    UPDATE_AFFECTATIONS(state, { id, affectations, parametresGeneration, genereLe }) {
+      // Si `genereLe` est fourni (régénération), `updatedAt` reçoit la même valeur (0026 §3.2).
+      const horodatage = genereLe ?? new Date().toISOString();
       state.items = state.items.map((pl) =>
         pl.id === id
           ? {
               ...pl,
               affectations,
-              updatedAt: new Date().toISOString(),
+              updatedAt: horodatage,
               ...(parametresGeneration !== undefined ? { parametresGeneration } : {}),
+              ...(genereLe !== undefined ? { genereLe } : {}),
             }
           : pl
       );
@@ -148,14 +158,22 @@ export default {
      * juste avant un geste d'édition (undo 1-niveau, non sérialisé — ne
      * touche jamais `items`).
      * @param {{ snapshotEdition: (Object|null) }} state
-     * @param {{ planningId: string, affectations: object[] }} payload
+     * Capture aussi l'état de génération (feature 0026) : `genereLe`,
+     * `parametresGeneration` et `updatedAt`.
+     * @param {object} planning - Planning courant, avant le geste.
      */
-    CAPTURER_SNAPSHOT(state, { planningId, affectations }) {
-      state.snapshotEdition = { planningId, affectations: [...affectations] };
+    CAPTURER_SNAPSHOT(state, planning) {
+      state.snapshotEdition = {
+        planningId: planning.id,
+        affectations: [...planning.affectations],
+        genereLe: planning.genereLe ?? null,
+        parametresGeneration: planning.parametresGeneration ?? null,
+        updatedAt: planning.updatedAt,
+      };
     },
     /**
-     * Réapplique le snapshot d'annulation au planning ciblé (immuable, bump
-     * `updatedAt`), puis **efface** le snapshot : undo 1-niveau, après
+     * Réapplique le snapshot d'annulation au planning ciblé (immuable ; restaure
+     * affectations, `genereLe`, `parametresGeneration` et `updatedAt`), puis **efface** le snapshot : undo 1-niveau, après
      * annulation il n'y a plus rien à annuler (pas de redo). No-op si aucun
      * snapshot n'existe.
      * @param {{ items: object[], snapshotEdition: (Object|null) }} state
@@ -165,7 +183,13 @@ export default {
       if (!snap) return;
       state.items = state.items.map((pl) =>
         pl.id === snap.planningId
-          ? { ...pl, affectations: snap.affectations, updatedAt: new Date().toISOString() }
+          ? {
+            ...pl,
+            affectations: snap.affectations,
+            genereLe: snap.genereLe,
+            parametresGeneration: snap.parametresGeneration,
+            updatedAt: snap.updatedAt,
+          }
           : pl
       );
       state.snapshotEdition = null;
@@ -187,12 +211,16 @@ export default {
       const entree = assemblerEntree(rootGetters, rootState, { debut: dateDebut, fin: dateFin });
       const resultat = genererPlanning(entree, { seed, variante });
 
+      const maintenant = new Date().toISOString();
       const planning = creerPlanning({
         nom: `Planning du ${dateUtil.formatDateFr(dateDebut)} au ${dateUtil.formatDateFr(dateFin)}`,
         dateDebut,
         dateFin,
         affectations: resultat.affectations,
         parametresGeneration: resultat.meta,
+        createdAt: maintenant,
+        updatedAt: maintenant,
+        genereLe: maintenant,
       });
 
       commit('ADD', planning);
@@ -239,7 +267,7 @@ export default {
       const courant = getters.courant;
       if (!courant) return;
 
-      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+      commit('CAPTURER_SNAPSHOT', courant);
 
       const affectation = creerAffectationManuelle(personneId, tourneeId, date, segmentIndex);
       const affectations = appliquerChangement(courant.affectations, { type: 'AJOUTER', affectation });
@@ -257,7 +285,7 @@ export default {
       const courant = getters.courant;
       if (!courant) return;
 
-      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+      commit('CAPTURER_SNAPSHOT', courant);
 
       const affectations = appliquerChangement(courant.affectations, { type: 'RETIRER', affectationId });
 
@@ -283,7 +311,7 @@ export default {
       const courant = getters.courant;
       if (!courant) return;
 
-      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+      commit('CAPTURER_SNAPSHOT', courant);
 
       const source = courant.affectations.find((a) => a.id === affectationId);
       const destination = {
@@ -316,7 +344,7 @@ export default {
       const courant = getters.courant;
       if (!courant) return;
 
-      commit('CAPTURER_SNAPSHOT', { planningId: courant.id, affectations: courant.affectations });
+      commit('CAPTURER_SNAPSHOT', courant);
 
       const affectations = courant.affectations.map((a) =>
         a.id === affectationId ? { ...a, verrouillee: !a.verrouillee, updatedAt: new Date().toISOString() } : a
@@ -351,7 +379,7 @@ export default {
       const planning = getters.courant;
       if (!planning) return undefined;
 
-      commit('CAPTURER_SNAPSHOT', { planningId: planning.id, affectations: planning.affectations });
+      commit('CAPTURER_SNAPSHOT', planning);
 
       const pg = planning.parametresGeneration ?? { seed: 0, variante: 0 };
       const base = (pg.seed ?? 0) - (pg.variante ?? 0);
@@ -364,10 +392,12 @@ export default {
 
       const resultat = genererPlanning(entree, options);
 
+      const maintenant = new Date().toISOString();
       commit('UPDATE_AFFECTATIONS', {
         id: planning.id,
         affectations: resultat.affectations,
         parametresGeneration: resultat.meta,
+        genereLe: maintenant,
       });
 
       return resultat;

@@ -9,6 +9,7 @@
 
 import { STATUTS_PLANNING } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
+import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
  * @typedef {Object} Planning
@@ -21,6 +22,7 @@ import { genId } from '@/domain/utils/id.js';
  * @property {(Object|null)} parametresGeneration - Snapshot des réglages moteur (`Resultat.meta`), pour la reproductibilité.
  * @property {(string|null)} referentId - Référence à une Personne, `null` tant qu'aucun référent n'est choisi.
  * @property {(string|null)} publieLe - Horodatage ISO UTC de publication, `null` tant que non publié.
+ * @property {(string|null)} genereLe - Horodatage ISO UTC de la dernière génération/régénération par le moteur ; `null` si inconnu (planning antérieur à 0026).
  * @property {string} createdAt - Horodatage ISO UTC.
  * @property {string} updatedAt - Horodatage ISO UTC.
  */
@@ -51,8 +53,37 @@ export function creerPlanning(champs = {}) {
     parametresGeneration: champs.parametresGeneration ?? null,
     referentId: champs.referentId ?? null,
     publieLe: champs.publieLe ?? null,
+    genereLe: champs.genereLe ?? null,
     createdAt: champs.createdAt ?? maintenant,
-    updatedAt: maintenant,
+    updatedAt: champs.updatedAt ?? maintenant,
+  };
+}
+
+/**
+ * @typedef {Object} InfoGeneration
+ * @property {string} genereLe - Horodatage ISO UTC brut (pour l'attribut `datetime`).
+ * @property {string} dateTexte - Date locale « JJ/MM/AAAA » de la génération.
+ * @property {boolean} modifieDepuis - `true` si le planning a été modifié après sa génération (`updatedAt > genereLe`).
+ * @property {string} dateModificationTexte - Date locale « JJ/MM/AAAA » de la dernière modification, '' si `modifieDepuis` est faux.
+ */
+
+/**
+ * Résume la date de génération d'un planning (feature 0026). Point d'entrée
+ * unique pour l'éditeur et la vue imprimable (0012). Ne construit aucune
+ * phrase : chaque écran choisit sa formulation. Comparaison de chaînes ISO
+ * (largeur fixe), aucun objet `Date`.
+ *
+ * @param {Planning|null|undefined} planning
+ * @returns {InfoGeneration|null} `null` si le planning est absent ou si `genereLe` est inconnu.
+ */
+export function infoGeneration(planning) {
+  if (!planning?.genereLe) return null;
+  const modifieDepuis = !!planning.updatedAt && planning.updatedAt > planning.genereLe;
+  return {
+    genereLe: planning.genereLe,
+    dateTexte: dateUtil.formatHorodatageDateFr(planning.genereLe),
+    modifieDepuis,
+    dateModificationTexte: modifieDepuis ? dateUtil.formatHorodatageDateFr(planning.updatedAt) : '',
   };
 }
 
