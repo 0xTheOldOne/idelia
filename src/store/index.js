@@ -162,6 +162,7 @@ async function activerSauvegardeFichier({ commit, state }) {
     return await ecrireSauvegardeFichier({ commit, state });
   } catch (e) {
     if (e.name === 'AbortError') return { ok: false, annule: true };
+    console.error("[Idelia] Activation du fichier de sauvegarde impossible :", e);
     return { ok: false, message: "Impossible d'activer le fichier de sauvegarde." };
   }
 }
@@ -187,7 +188,9 @@ async function ecrireSauvegardeFichier({ commit, state }) {
     await writable.close();
     commit('ui/SET_DERNIER_FICHIER_ENREGISTRE', new Date().toISOString(), { root: true });
     return { ok: true };
-  } catch {
+  } catch (e) {
+    // Trace technique pour le diagnostic (le message affiché reste générique).
+    console.error('[Idelia] Écriture du fichier de sauvegarde impossible :', e);
     // Handle révoqué/fichier introuvable : on désactive proprement plutôt
     // que de laisser un état « actif » qui ne fonctionne plus silencieusement.
     handleFichierSauvegarde = null;
