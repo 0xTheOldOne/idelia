@@ -60,4 +60,4 @@ $RECYCLE.BIN/
 .claude/settings.local.json
 
 # Sauvegarde de travail locale (vraies données) — les jeux de test de config/ restent versionnés
-config/idelia-sauvegarde.json
+config/idelia-sauvegarde*.json
