@@ -11,6 +11,7 @@
 
 import { COULEURS_PAR_DEFAUT } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
+import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
  * @typedef {Object} Segment
@@ -177,4 +178,22 @@ export function libelleHoraires(tournee) {
  */
 export function effectifTotal(tournee) {
   return tournee.segments.reduce((total, segment) => total + segment.nbPersonnesRequises, 0);
+}
+
+/**
+ * `true` si la tournée existe à cette date : jour ISO ∈ `joursApplication` et
+ * date dans `[dateDebutValidite, dateFinValidite]` (bornes nulles = ouvertes).
+ * Même règle que l'expansion de la demande du moteur
+ * (`scheduling/modele/demande.js`), exposée côté domaine d'affichage sans
+ * importer un fichier interne du moteur (feature 0012).
+ *
+ * @param {Tournee} tournee
+ * @param {string} date - `"YYYY-MM-DD"`
+ * @returns {boolean}
+ */
+export function tourneeApplicableLe(tournee, date) {
+  if (!tournee.joursApplication.includes(dateUtil.weekdayISO(date))) return false;
+  if (tournee.dateDebutValidite && date < tournee.dateDebutValidite) return false;
+  if (tournee.dateFinValidite && date > tournee.dateFinValidite) return false;
+  return true;
 }

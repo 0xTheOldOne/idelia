@@ -118,6 +118,14 @@
           <PhShuffle :size="18" aria-hidden="true" />
           <span>{{ regenerationEnCours === 'VARIANTE' ? 'Régénération en cours…' : 'Essayer une variante' }}</span>
         </button>
+
+        <router-link
+          class="btn btn-primary ms-auto planning-bouton-imprimer"
+          :to="{ name: 'diffusion', params: { id: planningCourant.id } }"
+        >
+          <PhPrinter :size="18" aria-hidden="true" />
+          <span>Imprimer le planning</span>
+        </router-link>
       </div>
 
       <ControlesGrille
@@ -196,6 +204,7 @@ import {
   PhArrowsClockwise,
   PhShuffle,
   PhClockCounterClockwise,
+  PhPrinter,
 } from '@phosphor-icons/vue';
 
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
@@ -227,6 +236,10 @@ import { infoGeneration } from '@/domain/planning.js';
  * dernière action » (tâche 2, undo 1-niveau, sans redo), désactivé quand
  * `plannings/peutAnnuler` est `false`, et la bascule « Modifier le
  * planning »/« Terminer la modification » (tâche 3) qui pilote `modeEdition`.
+ *
+ * Impression (feature 0012) : le bouton « Imprimer le planning » de la barre
+ * d'actions ouvre l'écran de diffusion (`/planning/:id/diffusion`) du planning
+ * courant, y compris en mode modification.
  *
  * Édition (tâche 3) : entrer en mode édition **force l'orientation
  * `TOURNEES`** (§6.1 — seule orientation où une case a un créneau propre).
@@ -266,6 +279,7 @@ export default {
     PhArrowsClockwise,
     PhShuffle,
     PhClockCounterClockwise,
+    PhPrinter,
     DialogueConfirmation,
     FormulaireGeneration,
     ControlesGrille,

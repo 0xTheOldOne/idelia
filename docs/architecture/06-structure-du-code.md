@@ -28,8 +28,10 @@ Idelia/
     ├── domain/                 # LOGIQUE MÉTIER PURE (aucun import Vue/Vuex)
     │   ├── schema.js           # enums, valeurs par défaut, toSaveDocument/fromSaveDocument, verifierIntegrite
     │   ├── scheduling/         # moteur de planification (voir 05)
+    │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]
     │   └── utils/
     │       ├── dates.js        # dateUtil : parse/format/addDays/diffDays/weekdayISO/rangeInclusive
+    │       ├── couleurs.js     # estCouleurFoncee (contraste du texte sur une pastille)
     │       └── id.js           # genId() (crypto.randomUUID + secours)
     │
     ├── storage/
@@ -42,6 +44,7 @@ Idelia/
     │   ├── TourneesView.vue
     │   ├── AbsencesView.vue
     │   ├── PlanningView.vue
+    │   ├── DiffusionView.vue   # aperçu imprimable /planning/:id/diffusion [0012]
     │   └── ParametresView.vue
     │
     ├── components/             # composants réutilisables
@@ -49,7 +52,8 @@ Idelia/
     │   ├── equipe/
     │   ├── tournees/
     │   ├── absences/
-    │   └── planning/           # grille, cellule, panneau de conflits, drag & drop
+    │   ├── planning/           # grille, cellule, panneau de conflits, drag & drop
+    │   └── diffusion/          # feuille A4, tableau de mois, légende, pastille de personne [0012]
     │
     ├── composables-ou-mixins/  # si logique UI transverse (rester minimal en Options API)
     │
@@ -58,6 +62,7 @@ Idelia/
         ├── _bootstrap.scss     # surcharge des variables Bootstrap via les tokens + import ciblé [ADR 0015]
         ├── _mixins.scss
         ├── _base.scss
+        ├── _impression.scss    # @page A4 portrait, fond blanc à l'impression [0012]
         └── main.scss           # point d'entrée importé dans main.js
 ```
 

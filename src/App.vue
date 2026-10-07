@@ -192,6 +192,7 @@ $menu-largeur-repliee: 76px;
   .app-contenu {
     height: auto;
     overflow: visible;
+    padding: 0; // les marges sont portées par `@page` (_impression.scss)
   }
 }
 </style>

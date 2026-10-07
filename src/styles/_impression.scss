@@ -1,0 +1,16 @@
+// Règles d'impression globales (feature 0012) : format de page et fond.
+// Le A4 portrait est imposé (décision du porteur) ; les marges sont portées
+// par `@page`, pas par le contenu.
+@use 'tokens' as t;
+
+@page {
+  size: A4 portrait;
+  margin: t.$impression-marge-page;
+}
+
+@media print {
+  // Pas de fond sable sur papier.
+  body {
+    background-color: t.$couleur-fond;
+  }
+}

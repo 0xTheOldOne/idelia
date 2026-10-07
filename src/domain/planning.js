@@ -88,6 +88,23 @@ export function infoGeneration(planning) {
 }
 
 /**
+ * Date de « mise à jour » d'un planning pour le tirage papier (feature 0012) :
+ * la plus récente de `genereLe` et `updatedAt` (comparaison de chaînes ISO,
+ * largeur fixe). Repli naturel sur `updatedAt` si `genereLe` est inconnu
+ * (planning antérieur à 0026) : `updatedAt` est toujours une date réelle de
+ * dernière modification, jamais inventée.
+ *
+ * @param {Planning|null|undefined} planning
+ * @returns {{ iso: string, texte: string }|null} `texte` = « JJ/MM/AAAA à HH:mm » (date et heure locales) ; `null` si aucune date.
+ */
+export function dateMiseAJour(planning) {
+  const candidats = [planning?.genereLe, planning?.updatedAt].filter(Boolean);
+  if (candidats.length === 0) return null;
+  const iso = candidats.reduce((max, c) => (c > max ? c : max));
+  return { iso, texte: dateUtil.formatHorodatageDateHeureFr(iso) };
+}
+
+/**
  * Construit une `Affectation` posée manuellement par un référent
  * (`origine: 'MANUEL'`, `verrouillee: false`, `commentaire: ''`), en dehors
  * du moteur pur (ADR 0008 — le moteur ne pose que de l'`AUTO`, via

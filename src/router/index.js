@@ -7,12 +7,14 @@ import TourneesView from '@/views/TourneesView.vue';
 import AbsencesView from '@/views/AbsencesView.vue';
 import PlanningView from '@/views/PlanningView.vue';
 import ParametresView from '@/views/ParametresView.vue';
+import DiffusionView from '@/views/DiffusionView.vue';
 
 /**
  * Routes de l'application. `souhaits` (feature 0005) est la première route
  * paramétrée : le rafraîchissement direct sur `/#/equipe/<id>/souhaits`
- * fonctionne car le `bootstrap` du store hydrate l'état avant le montage. La
- * route paramétrée de diffusion (feature 0012) sera ajoutée plus tard.
+ * fonctionne car le `bootstrap` du store hydrate l'état avant le montage.
+ * `diffusion` (feature 0012) est la vue imprimable d'un planning
+ * (`/planning/:id/diffusion`), même principe de rechargement direct.
  */
 const routes = [
   { path: '/', name: 'accueil', component: AccueilView },
@@ -21,6 +23,7 @@ const routes = [
   { path: '/tournees', name: 'tournees', component: TourneesView },
   { path: '/absences', name: 'absences', component: AbsencesView },
   { path: '/planning', name: 'planning', component: PlanningView },
+  { path: '/planning/:id/diffusion', name: 'diffusion', component: DiffusionView },
   { path: '/parametres', name: 'parametres', component: ParametresView },
 ];
 

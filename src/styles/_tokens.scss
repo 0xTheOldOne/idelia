@@ -105,3 +105,15 @@ $rupture-xl: 1200px;
 $couleur-focus: $couleur-primaire-foncee;
 $epaisseur-focus: 3px;
 $cible-cliquable-min: 44px;
+
+// ---------------------------------------------------------------------------
+// Impression (feature 0012) — valeurs indicatives, ajustables par ui-ux
+// ---------------------------------------------------------------------------
+$impression-marge-page: 10mm; // marge @page (A4 portrait)
+$impression-largeur-feuille: 210mm; // largeur d'une feuille A4 (aperçu écran)
+$impression-taille-texte: 9pt;
+$impression-taille-texte-petite: 7.5pt;
+$impression-taille-titre: 18pt;
+$impression-taille-sous-titre: 12pt;
+$impression-hauteur-logo: 20mm;
+$impression-fond-repere-dimanche: $couleur-fond-clair; // ligne de dimanche grisée

@@ -55,6 +55,54 @@ export function libelleJour(iso) {
 }
 
 /**
+ * Libellés courts des jours ISO (1 = lundi … 7 = dimanche), pour les plannings
+ * papier (feature 0012).
+ *
+ * @type {Object<number, string>}
+ */
+export const LIBELLES_JOUR_COURT = { 1: 'Lu', 2: 'Ma', 3: 'Me', 4: 'Je', 5: 'Ve', 6: 'Sa', 7: 'Di' };
+
+/**
+ * Renvoie le libellé court d'un jour ISO (`1 → 'Lu'`).
+ *
+ * @param {number} iso - Jour ISO 8601 (1 = lundi … 7 = dimanche).
+ * @returns {string} Libellé court, ou chaîne vide si inconnu.
+ */
+export function libelleJourCourt(iso) {
+  return LIBELLES_JOUR_COURT[iso] ?? '';
+}
+
+/**
+ * Noms des mois (1 = janvier … 12 = décembre).
+ *
+ * @type {Object<number, string>}
+ */
+export const LIBELLES_MOIS = {
+  1: 'Janvier',
+  2: 'Février',
+  3: 'Mars',
+  4: 'Avril',
+  5: 'Mai',
+  6: 'Juin',
+  7: 'Juillet',
+  8: 'Août',
+  9: 'Septembre',
+  10: 'Octobre',
+  11: 'Novembre',
+  12: 'Décembre',
+};
+
+/**
+ * Renvoie le nom FR d'un mois à partir de son numéro (`7 → 'Juillet'`).
+ *
+ * @param {number} numero - Numéro de mois (1..12).
+ * @returns {string} Nom du mois, ou chaîne vide si inconnu.
+ */
+export function libelleMois(numero) {
+  return LIBELLES_MOIS[numero] ?? '';
+}
+
+/**
  * Énumère une liste de jours ISO en toutes lettres, dans l'ordre ISO
  * croissant quel que soit l'ordre d'entrée (« Lundi », « Lundi et Mardi »,
  * « Lundi, Mardi et Jeudi »). Affichage uniquement, réutilisé par `0006`

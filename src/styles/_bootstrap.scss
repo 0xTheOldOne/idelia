@@ -52,6 +52,8 @@ $modal-content-bg: t.$couleur-fond;
 @import 'bootstrap/scss/close';
 // Composant modale (feature 0004) : socle de `ModaleBase`/`DialogueConfirmation`.
 @import 'bootstrap/scss/modal';
+// Classe `.visually-hidden` (texte réservé aux lecteurs d'écran, feature 0012).
+@import 'bootstrap/scss/helpers/visually-hidden';
 @import 'bootstrap/scss/utilities';
 
 // Classes utilitaires générées à partir des maps ci-dessus.
