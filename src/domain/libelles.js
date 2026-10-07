@@ -475,3 +475,41 @@ export const STATUTS_PLANNING_OPTIONS = STATUTS_PLANNING.map((code) => ({
   code,
   libelle: libelleStatutPlanning(code),
 }));
+
+/**
+ * Libellé FR de la **cause** d'une `Violation` du moteur, à partir de son
+ * `code` stable (voir `scheduling/modele/messages.js`) : sert de titre aux
+ * groupes dépliants du panneau des points d'attention (une cause = un
+ * groupe). Les souhaits réutilisent `LIBELLES_TYPE_PREFERENCE` pour rester
+ * alignés sur l'écran Souhaits.
+ *
+ * @type {Object<string, string>}
+ */
+export const LIBELLES_CAUSE_VIOLATION = {
+  ABSENCE_VALIDEE: 'Personne planifiée pendant une absence',
+  ABSENCE_DEMANDEE: 'Personne planifiée pendant une absence demandée',
+  CHEVAUCHEMENT: 'Personne planifiée deux fois en même temps',
+  SOUS_COUVERTURE: 'Tournée sans assez de personnes',
+  TROP_JOURS_CONSECUTIFS: "Trop de jours de travail d'affilée",
+  REPOS_HEBDO_INSUFFISANT: 'Pas assez de repos dans la semaine',
+  JOUR_FERME: 'Travail un jour de fermeture',
+  EQUITE_DESEQUILIBREE: 'Charge de travail mal répartie',
+  CONTINUITE_ROMPUE: "Changement de personne d'un jour à l'autre",
+  CONTINUITE_SEGMENTS_ROMPUE: 'Personnes différentes le matin et le soir',
+  ...Object.fromEntries(
+    Object.entries(LIBELLES_TYPE_PREFERENCE).map(([type, libelle]) => [
+      type === 'PREFERENCE_TOURNEE' ? type : `PREFERENCE_${type}`,
+      `Souhait non respecté : ${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}`,
+    ])
+  ),
+};
+
+/**
+ * Renvoie le libellé FR de la cause d'une violation à partir de son `code`.
+ *
+ * @param {string} code - `Violation.code`.
+ * @returns {string} Libellé FR, ou « Autres points » si le code est inconnu.
+ */
+export function libelleCauseViolation(code) {
+  return LIBELLES_CAUSE_VIOLATION[code] ?? 'Autres points';
+}

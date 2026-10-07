@@ -24,43 +24,54 @@
     </div>
 
     <template v-else>
-      <div v-if="erreurs.length" class="panneau-conflits-groupe">
-        <h3 class="panneau-conflits-sous-titre panneau-conflits-sous-titre--erreur">
-          <PhWarningOctagon :size="20" weight="bold" aria-hidden="true" />
-          <span>Erreurs à corriger ({{ erreurs.length }})</span>
+      <div
+        v-for="section in sections"
+        :key="section.severite"
+        class="panneau-conflits-groupe"
+      >
+        <h3 class="panneau-conflits-sous-titre" :class="`panneau-conflits-sous-titre--${section.severite}`">
+          <PhWarningOctagon v-if="section.severite === 'erreur'" :size="20" weight="bold" aria-hidden="true" />
+          <PhWarning v-else :size="20" weight="bold" aria-hidden="true" />
+          <span>{{ section.titre }} ({{ section.total }})</span>
         </h3>
-        <ul class="panneau-conflits-liste">
-          <li
-            v-for="(violation, index) in erreurs"
-            :key="`erreur-${index}`"
-            class="panneau-conflits-item panneau-conflits-item--erreur"
-          >
-            {{ violation.message }}
-          </li>
-        </ul>
+
+        <!-- Une cause = un volet dépliant, fermé par défaut, avec son nombre
+             de points (retour porteur 2026-10-07). `<details>` natif :
+             accessible au clavier, sans JavaScript. -->
+        <details
+          v-for="cause in section.causes"
+          :key="cause.code"
+          class="panneau-conflits-cause"
+          :class="`panneau-conflits-cause--${section.severite}`"
+        >
+          <summary class="panneau-conflits-cause-titre">
+            <PhCaretRight :size="16" weight="bold" class="panneau-conflits-chevron" aria-hidden="true" />
+            <span class="panneau-conflits-cause-libelle">{{ cause.libelle }}</span>
+            <span class="panneau-conflits-cause-nombre">{{ cause.violations.length }}</span>
+          </summary>
+          <ul class="panneau-conflits-liste">
+            <li
+              v-for="(violation, index) in cause.violations"
+              :key="`${cause.code}-${index}`"
+              class="panneau-conflits-item"
+              :class="`panneau-conflits-item--${section.severite}`"
+            >
+              {{ violation.message }}
+            </li>
+          </ul>
+        </details>
       </div>
 
-      <div v-if="avertissements.length" class="panneau-conflits-groupe">
-        <h3 class="panneau-conflits-sous-titre panneau-conflits-sous-titre--avertissement">
-          <PhWarning :size="20" weight="bold" aria-hidden="true" />
-          <span>Avertissements ({{ avertissements.length }})</span>
-        </h3>
-        <ul class="panneau-conflits-liste">
-          <li
-            v-for="(violation, index) in avertissements"
-            :key="`avertissement-${index}`"
-            class="panneau-conflits-item panneau-conflits-item--avertissement"
-          >
-            {{ violation.message }}
-          </li>
-        </ul>
-      </div>
-
-      <div v-if="detailsNonCouvertes.length" class="panneau-conflits-groupe">
-        <h3 class="panneau-conflits-sous-titre panneau-conflits-sous-titre--avertissement">
+      <details
+        v-if="detailsNonCouvertes.length"
+        class="panneau-conflits-groupe panneau-conflits-cause panneau-conflits-cause--avertissement"
+      >
+        <summary class="panneau-conflits-cause-titre">
+          <PhCaretRight :size="16" weight="bold" class="panneau-conflits-chevron" aria-hidden="true" />
           <PhWarningCircle :size="20" weight="fill" aria-hidden="true" />
-          <span>Tournées non couvertes ({{ detailsNonCouvertes.length }})</span>
-        </h3>
+          <span class="panneau-conflits-cause-libelle">Tournées non couvertes</span>
+          <span class="panneau-conflits-cause-nombre">{{ detailsNonCouvertes.length }}</span>
+        </summary>
         <ul class="panneau-conflits-liste">
           <li
             v-for="detail in detailsNonCouvertes"
@@ -85,16 +96,38 @@
             </span>
           </li>
         </ul>
-      </div>
+      </details>
     </template>
   </section>
 </template>
 
 <script>
 import { mapGetters } from 'vuex';
-import { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle } from '@phosphor-icons/vue';
+import { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight } from '@phosphor-icons/vue';
 
 import { dateUtil } from '@/domain/utils/dates.js';
+import { libelleCauseViolation } from '@/domain/libelles.js';
+
+/**
+ * Regroupe des violations par cause (`code`), dans l'ordre de première
+ * apparition (le moteur trie déjà par gravité).
+ * @param {object[]} violations - `Violation[]`.
+ * @returns {Array<{code: string, libelle: string, violations: object[]}>}
+ */
+function grouperParCause(violations) {
+  const groupes = new Map();
+  for (const violation of violations) {
+    if (!groupes.has(violation.code)) {
+      groupes.set(violation.code, {
+        code: violation.code,
+        libelle: libelleCauseViolation(violation.code),
+        violations: [],
+      });
+    }
+    groupes.get(violation.code).violations.push(violation);
+  }
+  return [...groupes.values()];
+}
 
 /**
  * Panneau de conflits (feature 0010), **présentational** : affiche les
@@ -109,7 +142,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
  */
 export default {
   name: 'PanneauConflits',
-  components: { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle },
+  components: { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight },
   props: {
     /** `Violation[]` du moteur, triées erreurs d'abord (voir `Resultat`/`diagnostiquer`). */
     violations: { type: Array, default: () => [] },
@@ -126,6 +159,24 @@ export default {
     /** Violations souples, dans l'ordre reçu. */
     avertissements() {
       return this.violations.filter((v) => v.severite === 'avertissement');
+    },
+    /**
+     * Sections affichées (erreurs puis avertissements), chacune découpée en
+     * groupes par cause ; les sections vides sont omises.
+     * @returns {Array<{severite: string, titre: string, total: number, causes: object[]}>}
+     */
+    sections() {
+      return [
+        { severite: 'erreur', titre: 'Erreurs à corriger', liste: this.erreurs },
+        { severite: 'avertissement', titre: 'Avertissements', liste: this.avertissements },
+      ]
+        .filter((section) => section.liste.length > 0)
+        .map(({ severite, titre, liste }) => ({
+          severite,
+          titre,
+          total: liste.length,
+          causes: grouperParCause(liste),
+        }));
     },
     /** État rassurant : ni violation, ni tournée non couverte. */
     aucunConflit() {
@@ -219,6 +270,75 @@ export default {
   &--avertissement {
     color: t.$couleur-avertissement-texte;
   }
+}
+
+// Volet dépliant d'une cause (`<details>`) : bordure gauche reprenant la
+// gravité (pleine = erreur, pointillée = avertissement, jamais la seule couleur).
+.panneau-conflits-cause {
+  margin-bottom: t.$espace-2;
+  border: 1px solid t.$couleur-bordure;
+  border-radius: t.$rayon-md;
+
+  &--erreur {
+    border-left: 3px solid t.$couleur-erreur;
+  }
+
+  &--avertissement {
+    border-left: 3px dashed t.$couleur-avertissement;
+  }
+
+  &[open] .panneau-conflits-chevron {
+    transform: rotate(90deg);
+  }
+}
+
+.panneau-conflits-cause-titre {
+  display: flex;
+  align-items: center;
+  gap: t.$espace-2;
+  min-height: t.$cible-cliquable-min;
+  padding: t.$espace-2 t.$espace-3;
+  cursor: pointer;
+  list-style: none; // masque le triangle natif (remplacé par le chevron)
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:hover {
+    background-color: t.$couleur-fond-clair;
+  }
+
+  &:focus-visible {
+    outline: t.$epaisseur-focus solid t.$couleur-focus;
+    outline-offset: 2px;
+  }
+}
+
+.panneau-conflits-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.panneau-conflits-cause-libelle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// Nombre de points de la cause, en pastille.
+.panneau-conflits-cause-nombre {
+  flex-shrink: 0;
+  min-width: 1.75em;
+  padding: 0 t.$espace-2;
+  border-radius: 999px;
+  background-color: t.$couleur-fond-clair;
+  border: 1px solid t.$couleur-bordure;
+  font-weight: t.$graisse-gras;
+  text-align: center;
+}
+
+.panneau-conflits-cause > .panneau-conflits-liste {
+  padding: 0 t.$espace-3 t.$espace-3;
 }
 
 .panneau-conflits-liste {
