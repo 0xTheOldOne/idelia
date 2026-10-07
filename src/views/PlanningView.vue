@@ -52,17 +52,102 @@
     <p class="planning-annonce-invisible" role="status" aria-live="polite">{{ messageAnnonce }}</p>
 
     <div v-if="planningCourant" class="planning-resultat">
+      <!-- En-tête : titre + icône d'information (date de génération), puis
+           les actions en boutons icône seule collés à droite (libellé en
+           infobulle `title` et en `aria-label`) — retour porteur 2026-10-08. -->
       <div class="planning-resultat-entete">
-        <h2 ref="titrePlanning" tabindex="-1" class="planning-resultat-titre">
-          {{ planningCourant.nom }}
-        </h2>
-        <span v-if="modeEdition" class="planning-badge-edition">
-          <PhPencilSimple :size="16" weight="bold" aria-hidden="true" />
-          <span>Mode modification — affichage par tournées</span>
-        </span>
+        <div class="planning-resultat-titre-groupe">
+          <h2 ref="titrePlanning" tabindex="-1" class="planning-resultat-titre">
+            {{ planningCourant.nom }}
+          </h2>
+          <button
+            v-if="infoGeneration"
+            type="button"
+            class="planning-bouton-info d-none d-md-inline-flex"
+            :title="texteInfoGeneration"
+            :aria-label="texteInfoGeneration"
+            :aria-expanded="infoGenerationVisible ? 'true' : 'false'"
+            aria-controls="planning-info-generation"
+            @click="infoGenerationVisible = !infoGenerationVisible"
+          >
+            <PhInfo :size="20" aria-hidden="true" />
+          </button>
+          <span v-if="modeEdition" class="planning-badge-edition">
+            <PhPencilSimple :size="16" weight="bold" aria-hidden="true" />
+            <span>Mode modification — affichage par tournées</span>
+          </span>
+        </div>
+
+        <div class="planning-entete-actions">
+          <div class="planning-barre-actions" role="group" aria-label="Actions du planning">
+            <button
+              ref="boutonBasculerEdition"
+              type="button"
+              class="btn btn-sm planning-bouton-icone"
+              :class="modeEdition ? 'btn-outline-primary planning-bouton-icone--actif' : 'btn-outline-secondary'"
+              :aria-pressed="modeEdition ? 'true' : 'false'"
+              :aria-label="modeEdition ? 'Terminer la modification' : 'Modifier le planning'"
+              :title="modeEdition ? 'Terminer la modification' : 'Modifier le planning'"
+              @click="onBasculerEdition"
+            >
+              <PhCheck v-if="modeEdition" :size="18" aria-hidden="true" />
+              <PhPencilSimple v-else :size="18" aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary planning-bouton-icone"
+              :disabled="!peutAnnuler"
+              aria-label="Annuler la dernière action"
+              :title="peutAnnuler ? 'Annuler la dernière action' : 'Annuler la dernière action (rien à annuler pour l\'instant)'"
+              @click="onAnnuler"
+            >
+              <PhArrowCounterClockwise :size="18" aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary planning-bouton-icone"
+              :disabled="chargement"
+              :aria-label="regenerationEnCours === 'IDENTIQUE' ? 'Régénération en cours…' : 'Regénérer à l\'identique'"
+              :title="regenerationEnCours === 'IDENTIQUE' ? 'Régénération en cours…' : 'Regénérer à l\'identique : repropose la même répartition en conservant les affectations verrouillées.'"
+              @click="demanderRegeneration(false)"
+            >
+              <PhArrowsClockwise :size="18" aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary planning-bouton-icone"
+              :disabled="chargement"
+              :aria-label="regenerationEnCours === 'VARIANTE' ? 'Régénération en cours…' : 'Essayer une variante'"
+              :title="regenerationEnCours === 'VARIANTE' ? 'Régénération en cours…' : 'Essayer une variante : propose une autre répartition en conservant les affectations verrouillées.'"
+              @click="demanderRegeneration(true)"
+            >
+              <PhShuffle :size="18" aria-hidden="true" />
+            </button>
+          </div>
+
+          <router-link
+            class="btn btn-sm btn-primary planning-bouton-icone"
+            :to="{ name: 'diffusion', params: { id: planningCourant.id } }"
+            aria-label="Imprimer le planning"
+            title="Imprimer le planning"
+          >
+            <PhPrinter :size="18" aria-hidden="true" />
+          </router-link>
+        </div>
       </div>
 
-      <p v-if="infoGeneration" class="planning-info-generation">
+      <!-- Date de génération en texte : toujours visible sur mobile (pas
+           d'icône d'information, le survol n'y existe pas) ; à partir de `md`,
+           affichée seulement au clic sur l'icône d'information. -->
+      <p
+        v-if="infoGeneration"
+        id="planning-info-generation"
+        class="planning-info-generation"
+        :class="{ 'd-md-none': !infoGenerationVisible }"
+      >
         <PhClockCounterClockwise :size="16" aria-hidden="true" class="flex-shrink-0" />
         <span>
           Généré le <time :datetime="infoGeneration.genereLe">{{ infoGeneration.dateTexte }}</time>
@@ -73,76 +158,12 @@
         </span>
       </p>
 
-      <div class="planning-barre-actions" role="group" aria-label="Actions du planning">
-        <button
-          ref="boutonBasculerEdition"
-          type="button"
-          class="btn btn-outline-primary"
-          :aria-pressed="modeEdition ? 'true' : 'false'"
-          @click="onBasculerEdition"
-        >
-          <PhCheck v-if="modeEdition" :size="18" aria-hidden="true" />
-          <PhPencilSimple v-else :size="18" aria-hidden="true" />
-          <span>{{ modeEdition ? 'Terminer la modification' : 'Modifier le planning' }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          :disabled="!peutAnnuler"
-          :title="!peutAnnuler ? 'Aucune action à annuler pour l\'instant.' : null"
-          @click="onAnnuler"
-        >
-          <PhArrowCounterClockwise :size="18" aria-hidden="true" />
-          <span>Annuler la dernière action</span>
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          :disabled="chargement"
-          title="Repropose la même répartition en conservant les affectations verrouillées."
-          @click="demanderRegeneration(false)"
-        >
-          <PhArrowsClockwise :size="18" aria-hidden="true" />
-          <span>{{ regenerationEnCours === 'IDENTIQUE' ? 'Régénération en cours…' : "Regénérer à l'identique" }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          :disabled="chargement"
-          title="Propose une autre répartition en conservant les affectations verrouillées."
-          @click="demanderRegeneration(true)"
-        >
-          <PhShuffle :size="18" aria-hidden="true" />
-          <span>{{ regenerationEnCours === 'VARIANTE' ? 'Régénération en cours…' : 'Essayer une variante' }}</span>
-        </button>
-
-        <router-link
-          class="btn btn-primary ms-auto planning-bouton-imprimer"
-          :to="{ name: 'diffusion', params: { id: planningCourant.id } }"
-        >
-          <PhPrinter :size="18" aria-hidden="true" />
-          <span>Imprimer le planning</span>
-        </router-link>
-      </div>
-
-      <ControlesGrille
-        :orientation="orientation"
-        :echelle="echelle"
-        :date-reference="dateReference"
-        :echelle-contexte="{ dateDebutPlanning: planningCourant.dateDebut }"
-        @update:orientation="orientation = $event"
-        @update:echelle="echelle = $event"
-        @update:dateReference="dateReference = $event"
-      />
-
       <p v-if="modeEdition && orientation === 'PERSONNES'" class="alert alert-info planning-message-orientation">
         <PhInfo :size="18" weight="fill" class="flex-shrink-0" aria-hidden="true" />
         <span>
-          Pour modifier le planning, affichez-le par « Tournées ». En affichage « Personnes », le
-          planning reste en lecture seule.
+          Pour modifier le planning, affichez-le par tournée (bouton
+          <PhPath :size="16" aria-hidden="true" /> en haut à droite de la grille). En affichage
+          par personne, le planning reste en lecture seule.
         </span>
       </p>
 
@@ -158,7 +179,22 @@
         @retirer="onRetirer"
         @verrouiller="onVerrouiller"
         @deplacer="onDeplacer"
-      />
+      >
+        <template #actions>
+          <ControlesGrille
+            :echelle="echelle"
+            :date-reference="dateReference"
+            :echelle-contexte="{ dateDebutPlanning: planningCourant.dateDebut }"
+            @update:dateReference="dateReference = $event"
+          />
+          <ReglagesAffichageGrille
+            :orientation="orientation"
+            :echelle="echelle"
+            @update:orientation="orientation = $event"
+            @update:echelle="echelle = $event"
+          />
+        </template>
+      </GrillePlanning>
 
       <PanneauConflits
         :violations="diagnostics.violations"
@@ -195,8 +231,8 @@
 import { mapState, mapGetters, mapActions, mapMutations } from 'vuex';
 import {
   PhInfo,
-  PhUsers,
   PhPath,
+  PhUsers,
   PhWarningOctagon,
   PhArrowCounterClockwise,
   PhPencilSimple,
@@ -211,6 +247,7 @@ import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue'
 import FormulaireGeneration from '@/components/planning/FormulaireGeneration.vue';
 import ControlesGrille from '@/components/planning/ControlesGrille.vue';
 import GrillePlanning from '@/components/planning/GrillePlanning.vue';
+import ReglagesAffichageGrille from '@/components/planning/ReglagesAffichageGrille.vue';
 import PanneauConflits from '@/components/planning/PanneauConflits.vue';
 import SelecteurPersonne from '@/components/planning/SelecteurPersonne.vue';
 import { libelleSegment, estCoupee } from '@/domain/tournees.js';
@@ -270,8 +307,8 @@ export default {
   name: 'PlanningView',
   components: {
     PhInfo,
-    PhUsers,
     PhPath,
+    PhUsers,
     PhWarningOctagon,
     PhArrowCounterClockwise,
     PhPencilSimple,
@@ -284,6 +321,7 @@ export default {
     FormulaireGeneration,
     ControlesGrille,
     GrillePlanning,
+    ReglagesAffichageGrille,
     PanneauConflits,
     SelecteurPersonne,
   },
@@ -291,6 +329,8 @@ export default {
     return {
       // `true` pendant l'appel au moteur (bascule le libellé du bouton).
       chargement: false,
+      // Détail « Généré le … » affiché sous le titre (clic sur l'icône d'information).
+      infoGenerationVisible: false,
       // Diagnostics volatils du planning courant (`{ violations,
       // tourneesNonCouvertes, score }`), issus soit du `Resultat` d'une
       // génération fraîche, soit de `evaluerCourant` (montage/rechargement).
@@ -350,6 +390,13 @@ export default {
      */
     infoGeneration() {
       return this.planningCourant ? infoGeneration(this.planningCourant) : null;
+    },
+    /** Texte de l'infobulle de l'icône d'information (date de génération). */
+    texteInfoGeneration() {
+      const info = this.infoGeneration;
+      if (!info) return '';
+      const modification = info.modifieDepuis ? ` · modifié à la main le ${info.dateModificationTexte}` : '';
+      return `Généré le ${info.dateTexte}${modification}`;
     },
     /** Horodatage ISO de la dernière modification, pour l'attribut `datetime`. */
     dateModificationIso() {
@@ -753,12 +800,47 @@ export default {
 // Regroupe le titre du planning et le badge « Mode modification » (MIN-1) :
 // le titre garde sa marge basse propre le temps de porter le focus après
 // génération, l'espacement avant la barre d'actions vit ici.
+// Titre (+ icône d'information + badge) à gauche, actions icône seule
+// collées à droite ; elles passent dessous si la place manque.
 .planning-resultat-entete {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: t.$espace-2;
   margin-bottom: t.$espace-3;
+}
+
+.planning-resultat-titre-groupe {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$espace-2;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// Icône d'information (date de génération) : infobulle au survol, détail
+// affiché/masqué au clic. Cible cliquable de taille standard.
+.planning-bouton-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: t.$cible-cliquable-min;
+  min-height: t.$cible-cliquable-min;
+  padding: 0;
+  border: 0;
+  border-radius: t.$rayon-md;
+  background: none;
+  color: t.$couleur-texte-attenue;
+
+  &:hover {
+    color: t.$couleur-primaire-foncee;
+  }
+
+  &:focus-visible {
+    outline: t.$epaisseur-focus solid t.$couleur-focus;
+    outline-offset: 2px;
+  }
 }
 
 .planning-resultat-titre {
@@ -797,14 +879,34 @@ export default {
   font-size: t.$taille-texte-petite;
 }
 
-// Regroupe les actions du planning (Modifier/Terminer, Annuler,
-// Regénérer/Variante) : conteneur unique, extensible.
+// Actions collées à droite de l'en-tête, toutes en icône seule : les 4
+// boutons d'édition, un petit espace, puis « Imprimer le planning » (bouton
+// plein, action principale) — même gabarit que le bandeau de la grille.
+.planning-entete-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$espace-3;
+  margin-left: auto;
+}
+
+// Modifier/Terminer, Annuler, Regénérer, Variante.
 .planning-barre-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: t.$espace-2;
-  margin-bottom: t.$espace-3;
+  gap: t.$espace-1;
+}
+
+.planning-bouton-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: t.$cible-cliquable-min;
+
+  // Bouton actif (mode modification) : fond léger en plus de la couleur,
+  // `aria-pressed` porte l'état pour les lecteurs d'écran.
+  &--actif {
+    background-color: rgba(t.$couleur-primaire, 0.12);
+  }
 }
 
 // Message discret invitant à revenir sur « Tournées » pour modifier

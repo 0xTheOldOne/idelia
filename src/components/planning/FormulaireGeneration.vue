@@ -1,7 +1,9 @@
 <template>
   <form class="formulaire-generation" novalidate @submit.prevent="soumettre">
+    <!-- Desktop : Du / Au / bouton sur une ligne, bouton en bout de ligne.
+         Mobile : empilés. -->
     <div class="row g-3 mb-2">
-      <div class="col-sm-6">
+      <div class="col-12 col-sm-6 col-lg">
         <label for="generation-date-debut" class="form-label">Du</label>
         <input
           id="generation-date-debut"
@@ -22,7 +24,7 @@
         </p>
       </div>
 
-      <div class="col-sm-6">
+      <div class="col-12 col-sm-6 col-lg">
         <label for="generation-date-fin" class="form-label">Au (inclus)</label>
         <input
           id="generation-date-fin"
@@ -42,6 +44,20 @@
           <span>{{ v$.formulaire.dateFin.$errors[0].$message }}</span>
         </p>
       </div>
+
+      <div class="col-12 col-lg-auto">
+        <!-- Espace de la hauteur d'un libellé (desktop uniquement) : aligne le
+             bouton sur les champs, même si un message d'erreur s'affiche dessous. -->
+        <span class="form-label d-none d-lg-block invisible" aria-hidden="true">&nbsp;</span>
+        <button
+          type="submit"
+          class="btn btn-primary formulaire-generation-bouton"
+          :disabled="chargement"
+        >
+          <PhMagicWand :size="18" weight="bold" aria-hidden="true" />
+          <span>{{ chargement ? 'Génération en cours…' : 'Générer le planning' }}</span>
+        </button>
+      </div>
     </div>
 
     <div v-if="periodeTresLongue" id="generation-periode-aide" class="form-text mb-3">
@@ -57,15 +73,6 @@
       <PhWarning :size="14" weight="bold" aria-hidden="true" />
       <span>Certains champs sont à corriger.</span>
     </p>
-
-    <button
-      type="submit"
-      class="btn btn-primary btn-lg formulaire-generation-bouton"
-      :disabled="chargement"
-    >
-      <PhMagicWand :size="22" weight="bold" aria-hidden="true" />
-      <span>{{ chargement ? 'Génération en cours…' : 'Générer le planning' }}</span>
-    </button>
   </form>
 </template>
 

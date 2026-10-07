@@ -1,5 +1,14 @@
 <template>
   <div class="grille-planning">
+    <!-- Bandeau hors de la zone défilante : les réglages (slot `actions`)
+         restent visibles même quand la grille est plus large que l'écran.
+         Le texte est doublé par la `<caption>` (lecteurs d'écran). -->
+    <div class="grille-planning-bandeau">
+      <p class="grille-planning-legende" aria-hidden="true">{{ captionTexte }}</p>
+      <div v-if="$slots.actions" class="grille-planning-bandeau-actions">
+        <slot name="actions" />
+      </div>
+    </div>
     <div
       class="grille-planning-scroll"
       tabindex="0"
@@ -7,7 +16,7 @@
       :aria-label="ariaLabelDefilement"
     >
       <table class="grille-planning-table">
-        <caption class="grille-planning-legende">{{ captionTexte }}</caption>
+        <caption class="visually-hidden">{{ captionTexte }}</caption>
         <thead>
           <tr>
             <th scope="col" class="grille-planning-coin grille-planning-colonne-figee">Jour</th>
@@ -679,11 +688,71 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
+
+.grille-planning {
+  border: 1px solid t.$couleur-bordure;
+  border-radius: t.$rayon-md;
+}
+
+// Mobile : le titre sur sa propre ligne, puis tous les boutons sur une seule
+// ligne alignée à droite. Grand écran (lg+) : titre et boutons côte à côte.
+.grille-planning-bandeau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$espace-2;
+  padding: t.$espace-2;
+
+  @include m.a-partir-de('sm') {
+    padding: t.$espace-2 t.$espace-3;
+  }
+
+  .grille-planning-legende {
+    flex: 1 1 100%;
+
+    @include m.a-partir-de('lg') {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+// Groupes de réglages côte à côte, jamais renvoyés à la ligne, séparés par le
+// même petit espace que celui entre les groupes de `ReglagesAffichageGrille`.
+// Sous `lg` (boutons sur leur propre ligne) : toute la largeur, chaque
+// composant de réglages s'étire (les groupes internes se répartissent la
+// place, voir `ControlesGrille` / `ReglagesAffichageGrille`).
+.grille-planning-bandeau-actions {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$espace-2;
+
+  @include m.a-partir-de('sm') {
+    gap: t.$espace-3;
+  }
+
+  @include m.a-partir-de('lg') {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  > :slotted(*) {
+    flex: 1 1 0;
+
+    @include m.a-partir-de('lg') {
+      flex: 0 0 auto;
+    }
+  }
+}
 
 .grille-planning-scroll {
   overflow-x: auto;
-  border: 1px solid t.$couleur-bordure;
-  border-radius: t.$rayon-md;
+  border-bottom-left-radius: t.$rayon-md;
+  border-bottom-right-radius: t.$rayon-md;
 
   &:focus-visible {
     outline: t.$epaisseur-focus solid t.$couleur-focus;
@@ -698,9 +767,7 @@ export default {
 }
 
 .grille-planning-legende {
-  caption-side: top;
-  padding: t.$espace-2 t.$espace-3;
-  text-align: left;
+  margin: 0;
   font-size: t.$taille-texte-petite;
   color: t.$couleur-texte-attenue;
 }
