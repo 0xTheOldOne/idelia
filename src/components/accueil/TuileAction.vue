@@ -73,6 +73,9 @@ export default {
   align-items: center;
   gap: t.$espace-3;
   width: 100%;
+  // Remplit la hauteur de sa colonne : toutes les tuiles d'une même rangée
+  // ont la même hauteur, quelle que soit la longueur de leur texte.
+  height: 100%;
   min-height: 96px;
   padding: t.$espace-4;
   border: 1px solid t.$couleur-bordure;

@@ -18,7 +18,14 @@
           <span>Retour au planning</span>
         </a>
 
-        <h1>Imprimer le planning</h1>
+        <!-- Titre + bouton à droite (même gabarit que Équipe / Tournées). -->
+        <div class="diffusion-entete">
+          <h1>Imprimer le planning</h1>
+          <button type="button" class="btn btn-primary diffusion-bouton" @click="imprimer">
+            <PhPrinter :size="20" aria-hidden="true" />
+            <span>Imprimer</span>
+          </button>
+        </div>
         <p class="diffusion-explication">
           Voici le planning tel qu'il sera imprimé. Pour obtenir un fichier PDF (par exemple pour
           l'envoyer par e-mail), choisissez « Enregistrer au format PDF » dans la fenêtre qui
@@ -43,11 +50,6 @@
           <PhInfo :size="18" aria-hidden="true" class="flex-shrink-0" />
           <span>Ce planning ne contient encore aucune affectation.</span>
         </p>
-
-        <button type="button" class="btn btn-primary btn-lg diffusion-bouton" @click="imprimer">
-          <PhPrinter :size="22" aria-hidden="true" />
-          <span>Imprimer</span>
-        </button>
       </div>
 
       <div class="diffusion-apercu">
@@ -223,12 +225,29 @@ export default {
   color: t.$couleur-texte-attenue;
 }
 
+// Espace avant l'aperçu (porté autrefois par le bouton « Imprimer »).
+.diffusion-outils {
+  margin-bottom: t.$espace-3;
+}
+
+.diffusion-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$espace-3;
+  margin-bottom: t.$espace-3;
+
+  h1 {
+    margin-bottom: 0;
+  }
+}
+
 .diffusion-bouton {
   display: inline-flex;
   align-items: center;
   gap: t.$espace-2;
   min-height: t.$cible-cliquable-min;
-  margin-bottom: t.$espace-4;
 }
 
 // Aperçu : défilement horizontal si l'écran est plus étroit qu'une feuille A4.

@@ -17,7 +17,19 @@
         <span>Retour à l'équipe</span>
       </router-link>
 
-      <h1>Souhaits et contraintes de {{ personne.prenom }} {{ personne.nom }}</h1>
+      <!-- Titre + bouton à droite (même gabarit que Équipe / Tournées). -->
+      <div class="souhaits-entete">
+        <h1>Souhaits et contraintes de {{ personne.prenom }} {{ personne.nom }}</h1>
+        <button
+          ref="boutonAjout"
+          type="button"
+          class="btn btn-primary souhaits-bouton-ajout"
+          @click="ouvrirAjout"
+        >
+          <PhPlus :size="20" weight="bold" aria-hidden="true" />
+          <span>Ajouter un souhait</span>
+        </button>
+      </div>
       <p class="souhaits-rappel">
         {{ libelleStatutPersonne(personne.statut) }} · {{ personne.quotite }} %
       </p>
@@ -44,18 +56,6 @@
           incomplète. Une copie de sauvegarde a été conservée. Rechargez la page pour réessayer ;
           si le problème persiste, réimportez une sauvegarde.
         </p>
-      </div>
-
-      <div class="souhaits-entete">
-        <button
-          ref="boutonAjout"
-          type="button"
-          class="btn btn-primary souhaits-bouton-ajout"
-          @click="ouvrirAjout"
-        >
-          <PhPlus :size="20" weight="bold" aria-hidden="true" />
-          <span>Ajouter un souhait</span>
-        </button>
       </div>
 
       <div v-if="personne.preferences.length === 0" class="souhaits-etat-vide">
@@ -392,7 +392,16 @@ export default {
 }
 
 .souhaits-entete {
-  margin-bottom: t.$espace-4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$espace-3;
+  margin-bottom: t.$espace-2;
+
+  h1 {
+    margin-bottom: 0;
+  }
 }
 
 .souhaits-bouton-ajout {
