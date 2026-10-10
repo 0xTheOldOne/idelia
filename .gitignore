@@ -59,5 +59,9 @@ $RECYCLE.BIN/
 # Claude Code — réglages locaux/personnels (le harness .claude/agents reste versionné)
 .claude/settings.local.json
 
-# Sauvegarde de travail locale (vraies données) — les jeux de test de config/ restent versionnés
-config/idelia-sauvegarde*.json
+# Sauvegardes Idelia (vraies données) — où qu'elles soient dans le dépôt ;
+# les jeux de test de config/ restent versionnés (autre nom de fichier)
+**/idelia-sauvegarde*.json
+
+# Exports Vega (PDF) et sauvegardes de travail : données réelles, jamais versionnées
+files/
