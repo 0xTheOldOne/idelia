@@ -30,20 +30,20 @@
   }
 }
 
-/// Pastille de personne contenant ses initiales (feature 0034, T5) : cercle
-/// pour 1-2 caractères, « pilule » pour 3-4 (largeur auto, min-width = hauteur).
-/// À réserver aux pastilles assez grandes (`$espace-5`).
+/// Pastille de personne contenant ses initiales (feature 0034, T5) : toujours
+/// un cercle, de 40 px, assez large pour 1 à 4 caractères (« EMM », « A1B2 »).
 @mixin pastille-initiales {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;
-  height: t.$espace-5;
-  min-width: t.$espace-5;
-  padding: 0 t.$espace-1;
+  width: t.$espace-5 + t.$espace-2;
+  height: t.$espace-5 + t.$espace-2;
+  padding: 0;
   border: 1px solid t.$couleur-bordure;
-  border-radius: t.$espace-5;
+  border-radius: 50%;
+  letter-spacing: -0.02em;
   font-size: 0.75rem;
   font-weight: t.$graisse-gras;
   line-height: 1;

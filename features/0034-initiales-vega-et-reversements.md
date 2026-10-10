@@ -294,7 +294,7 @@ Demande ajoutée : afficher les initiales dans les pastilles de couleur des pers
 
 **Fichiers** :
 - `src/domain/personnes.js` (**modifier**) — `reperePersonne(personne)` : `initialesVega` normalisées, sinon 1re lettre du prénom, sinon du nom, sinon `''` (majuscules `fr`, accents conservés) ; `couleurTexteRepere(couleur)` : texte clair sur fond foncé (`estCouleurFoncee`), sinon foncé (contraste AA).
-- `src/styles/_mixins.scss` (**modifier**) — mixin `pastille-initiales` : cercle pour 1-2 caractères, pilule (`min-width` = hauteur, largeur auto) pour 3-4 ; même hauteur qu'avant.
+- `src/styles/_mixins.scss` (**modifier**) — mixin `pastille-initiales` : toujours un cercle de 40 px (`$espace-5 + $espace-2`), assez large pour 1 à 4 caractères (« EMM », « A1B2 ») ; retour utilisateur : la forme « pilule » pour 3-4 caractères a été abandonnée.
 - `src/views/EquipeView.vue` (2 pastilles), `src/views/AbsencesView.vue`, `src/components/absences/FormulaireAbsence.vue`, `src/components/equipe/FormulairePersonne.vue` (aperçu en direct : initiales Vega saisies, sinon prénom) (**modifier**).
 
 **Hors périmètre** : petites pastilles (planning, sélecteur, conflits), pastilles de tournée, sélecteurs de couleur. `aria-hidden="true"` conservé (le nom est écrit à côté).
