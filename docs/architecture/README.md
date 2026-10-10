@@ -12,6 +12,7 @@ Ce dossier décrit **comment** Idelia est construite. Le **pourquoi** des choix 
 6. [`06-structure-du-code.md`](06-structure-du-code.md) — l'arborescence `src/` et les conventions.
 7. [`07-navigation-et-ecrans.md`](07-navigation-et-ecrans.md) — les routes et les écrans.
 8. [`08-principes-ux-ergonomie.md`](08-principes-ux-ergonomie.md) — les principes d'ergonomie.
+9. [`09-feuille-de-route-vega.md`](09-feuille-de-route-vega.md) — lecture des séances Vega (PDF), détection des passages multiples et reversements.
 
 ## Principes directeurs (rappel)
 

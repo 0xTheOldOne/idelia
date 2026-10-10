@@ -44,3 +44,5 @@ Idelia est une **Single Page Application (SPA) Vue.js**, entièrement exécutée
 **Sauvegarde/partage** : `app/exporter` → `toSaveDocument(state)` → téléchargement d'un fichier JSON. `app/importer(fichier)` → migration + validation → `REPLACE_ALL` → flush de persistance ([ADR 0006](../adr/0006-sauvegarde-partage-par-export-import-json.md)).
 
 **Diffusion** : le référent imprime / exporte en PDF une vue lecture du planning pour l'équipe ([ADR 0009](../adr/0009-workflow-referent-diffusion-lecture.md)).
+
+**Feuille de route** : un PDF Vega déposé → `lireGlyphesPdf` (pdf.js, adaptateur) → `extraireSeances` → `detecterRelais` (domaine pur) → affichage des cas et des reversements. Lecture seule de l'équipe dans le store ; **rien n'est persisté** ([09](09-feuille-de-route-vega.md), [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md)).
