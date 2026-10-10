@@ -65,9 +65,10 @@ import { mapActions, mapGetters, mapState } from 'vuex';
 import {
   PhHouse,
   PhUsers,
-  PhPath,
+  PhKanban,
   PhCalendarX,
   PhCalendarBlank,
+  PhPath,
   PhGear,
   PhCaretDoubleLeft,
 } from '@phosphor-icons/vue';
@@ -99,9 +100,10 @@ export default {
   components: {
     PhHouse,
     PhUsers,
-    PhPath,
+    PhKanban,
     PhCalendarX,
     PhCalendarBlank,
+    PhPath,
     PhGear,
     PhCaretDoubleLeft,
     IndicateurSauvegarde,
@@ -114,7 +116,7 @@ export default {
           items: [
             { nom: 'accueil', chemin: '/', libelle: 'Accueil', icone: 'PhHouse' },
             { nom: 'equipe', chemin: '/equipe', libelle: 'Équipe', icone: 'PhUsers' },
-            { nom: 'tournees', chemin: '/tournees', libelle: 'Tournées', icone: 'PhPath' },
+            { nom: 'tournees', chemin: '/tournees', libelle: 'Tournées', icone: 'PhKanban' },
             {
               nom: 'absences',
               chemin: '/absences',
@@ -131,6 +133,12 @@ export default {
               chemin: '/planning',
               libelle: 'Planning',
               icone: 'PhCalendarBlank',
+            },
+            {
+              nom: 'feuille-de-route',
+              chemin: '/feuille-de-route',
+              libelle: 'Feuille de route',
+              icone: 'PhPath',
             },
             { nom: 'parametres', chemin: '/parametres', libelle: 'Paramètres', icone: 'PhGear' },
           ],

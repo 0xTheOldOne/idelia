@@ -28,7 +28,12 @@ Idelia/
     ├── domain/                 # LOGIQUE MÉTIER PURE (aucun import Vue/Vuex)
     │   ├── schema.js           # enums, valeurs par défaut, toSaveDocument/fromSaveDocument, verifierIntegrite
     │   ├── scheduling/         # moteur de planification (voir 05)
+    │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
     │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]
+    │   ├── feuilleDeRoute/     # lecture des séances Vega, détection des relais, répartition et reversements [0033, 0034]
+    │   │   ├── extraireSeances.js
+    │   │   ├── detecterRelais.js
+    │   │   └── relierInfirmieres.js  # code PS Vega → personne de l'équipe (initialesVega) [0034]
     │   └── utils/
     │       ├── dates.js        # dateUtil : parse/format/addDays/diffDays/weekdayISO/rangeInclusive
     │       ├── couleurs.js     # estCouleurFoncee (contraste du texte sur une pastille)
@@ -38,6 +43,9 @@ Idelia/
     │   ├── storageRepository.js  # abstraction load/save/clear/isAvailable (async) [ADR 0005]
     │   └── migrations.js         # CURRENT_SCHEMA_VERSION + pipeline de migration
     │
+    ├── adaptateurs/            # I/O navigateur + bibliothèques tierces (jamais de persistance : c'est le rôle de storage/)
+    │   └── lireGlyphesPdf.js   # lecture PDF via pdfjs-dist, chargé à la demande [ADR 0019, 0033]
+    │
     ├── views/                  # écrans (un par route)
     │   ├── AccueilView.vue
     │   ├── EquipeView.vue
@@ -45,6 +53,7 @@ Idelia/
     │   ├── AbsencesView.vue
     │   ├── PlanningView.vue
     │   ├── DiffusionView.vue   # aperçu imprimable /planning/:id/diffusion [0012]
+    │   ├── FeuilleDeRouteView.vue  # relais matin/après-midi depuis un PDF Vega [0033]
     │   └── ParametresView.vue
     │
     ├── components/             # composants réutilisables
@@ -53,7 +62,8 @@ Idelia/
     │   ├── tournees/
     │   ├── absences/
     │   ├── planning/           # grille, cellule, panneau de conflits, drag & drop
-    │   └── diffusion/          # feuille A4, tableau de mois, légende, pastille de personne [0012]
+    │   ├── diffusion/          # feuille A4, tableau de mois, légende, pastille de personne [0012]
+    │   └── feuilleDeRoute/     # zone de dépôt, résumé, cartes de relais [0033]
     │
     ├── composables-ou-mixins/  # si logique UI transverse (rester minimal en Options API)
     │

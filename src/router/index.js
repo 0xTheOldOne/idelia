@@ -8,6 +8,7 @@ import AbsencesView from '@/views/AbsencesView.vue';
 import PlanningView from '@/views/PlanningView.vue';
 import ParametresView from '@/views/ParametresView.vue';
 import DiffusionView from '@/views/DiffusionView.vue';
+import FeuilleDeRouteView from '@/views/FeuilleDeRouteView.vue';
 
 /**
  * Routes de l'application. `souhaits` (feature 0005) est la première route
@@ -15,6 +16,8 @@ import DiffusionView from '@/views/DiffusionView.vue';
  * fonctionne car le `bootstrap` du store hydrate l'état avant le montage.
  * `diffusion` (feature 0012) est la vue imprimable d'un planning
  * (`/planning/:id/diffusion`), même principe de rechargement direct.
+ * `feuille-de-route` (feature 0033) est une route sœur de `planning` : écran
+ * autonome, sans paramètre, qui ne persiste rien.
  */
 const routes = [
   { path: '/', name: 'accueil', component: AccueilView },
@@ -24,6 +27,7 @@ const routes = [
   { path: '/absences', name: 'absences', component: AbsencesView },
   { path: '/planning', name: 'planning', component: PlanningView },
   { path: '/planning/:id/diffusion', name: 'diffusion', component: DiffusionView },
+  { path: '/feuille-de-route', name: 'feuille-de-route', component: FeuilleDeRouteView },
   { path: '/parametres', name: 'parametres', component: ParametresView },
 ];
 

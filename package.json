@@ -15,6 +15,7 @@
     "@vuelidate/core": "^2.0.3",
     "@vuelidate/validators": "^2.0.4",
     "bootstrap": "^5.3.8",
+    "pdfjs-dist": "6.3.289",
     "vue": "^3.5.39",
     "vue-debounce": "^5.0.1",
     "vue-router": "^4.6.4",
