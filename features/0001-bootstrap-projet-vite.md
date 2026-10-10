@@ -68,7 +68,7 @@ Création des **squelettes** de `src/domain/` (aucun import de Vue/Vuex — [ADR
 |---|---|
 | Accueil | `PhHouse` |
 | Équipe | `PhUsers` |
-| Tournées | `PhPath` |
+| Tournées | `PhKanban` |
 | Absences & congés | `PhCalendarX` |
 | Planning | `PhCalendarBlank` |
 | Paramètres | `PhGear` |

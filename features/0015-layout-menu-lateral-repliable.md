@@ -112,7 +112,7 @@ groupes: [
   { titre: 'Pilotage', items: [
     { nom: 'accueil',   chemin: '/',          libelle: 'Accueil',            icone: 'PhHouse' },
     { nom: 'equipe',    chemin: '/equipe',    libelle: 'Équipe',             icone: 'PhUsers' },
-    { nom: 'tournees',  chemin: '/tournees',  libelle: 'Tournées',           icone: 'PhPath' },
+    { nom: 'tournees',  chemin: '/tournees',  libelle: 'Tournées',           icone: 'PhKanban' },
     { nom: 'absences',  chemin: '/absences',  libelle: 'Absences & congés',  icone: 'PhCalendarX' },
   ]},
   { titre: 'Planning', items: [
@@ -122,7 +122,7 @@ groupes: [
 ]
 ```
 
-Icônes importées comme dans l'`App.vue` actuel (mêmes composants Phosphor : `PhHouse`, `PhUsers`, `PhPath`, `PhCalendarX`, `PhCalendarBlank`, `PhGear`) + `PhCaretDoubleLeft` (bouton de repli). Le **logo de marque n'est pas une icône Phosphor** : c'est l'image `public/favicon.png` (`<img>`).
+Icônes importées comme dans l'`App.vue` actuel (mêmes composants Phosphor : `PhHouse`, `PhUsers`, `PhKanban`, `PhCalendarX`, `PhCalendarBlank`, `PhGear`) + `PhCaretDoubleLeft` (bouton de repli). Le **logo de marque n'est pas une icône Phosphor** : c'est l'image `public/favicon.png` (`<img>`).
 
 ### 6.2 `src/App.vue` (**réécriture** du shell)
 

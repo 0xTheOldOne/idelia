@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import { PhCalendarBlank, PhCaretDown, PhCheck, PhPath, PhUsers } from '@phosphor-icons/vue';
+import { PhCalendarBlank, PhCaretDown, PhCheck, PhKanban, PhUsers } from '@phosphor-icons/vue';
 
 /**
  * Réglages d'affichage compacts de `GrillePlanning`, placés dans son bandeau
@@ -80,7 +80,7 @@ import { PhCalendarBlank, PhCaretDown, PhCheck, PhPath, PhUsers } from '@phospho
  */
 export default {
   name: 'ReglagesAffichageGrille',
-  components: { PhCalendarBlank, PhCaretDown, PhCheck, PhPath, PhUsers },
+  components: { PhCalendarBlank, PhCaretDown, PhCheck, PhKanban, PhUsers },
   props: {
     /** Orientation courante : `'TOURNEES'` ou `'PERSONNES'`. */
     orientation: { type: String, required: true },
@@ -92,7 +92,7 @@ export default {
     return {
       menuOuvert: false,
       optionsOrientation: [
-        { code: 'TOURNEES', libelle: 'Afficher par tournée', icone: 'PhPath' },
+        { code: 'TOURNEES', libelle: 'Afficher par tournée', icone: 'PhKanban' },
         { code: 'PERSONNES', libelle: 'Afficher par personne', icone: 'PhUsers' },
       ],
       optionsEchelle: [

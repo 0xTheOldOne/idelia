@@ -120,7 +120,7 @@ import {
   PhCalendarX,
   PhUsers,
   PhUserPlus,
-  PhPath,
+  PhKanban,
   PhWarning,
 } from '@phosphor-icons/vue';
 
@@ -190,7 +190,7 @@ export default {
       return PhUsers;
     },
     iconeTournees() {
-      return PhPath;
+      return PhKanban;
     },
     iconeAbsences() {
       return PhCalendarX;

@@ -30,7 +30,7 @@
           pouvoir générer un planning.
         </p>
         <router-link class="btn btn-primary planning-lien-etat-vide" :to="{ name: 'tournees' }">
-          <PhPath :size="18" aria-hidden="true" />
+          <PhKanban :size="18" aria-hidden="true" />
           <span>Aller aux tournées</span>
         </router-link>
       </div>
@@ -162,7 +162,7 @@
         <PhInfo :size="18" weight="fill" class="flex-shrink-0" aria-hidden="true" />
         <span>
           Pour modifier le planning, affichez-le par tournée (bouton
-          <PhPath :size="16" aria-hidden="true" /> en haut à droite de la grille). En affichage
+          <PhKanban :size="16" aria-hidden="true" /> en haut à droite de la grille). En affichage
           par personne, le planning reste en lecture seule.
         </span>
       </p>
@@ -231,7 +231,7 @@
 import { mapState, mapGetters, mapActions, mapMutations } from 'vuex';
 import {
   PhInfo,
-  PhPath,
+  PhKanban,
   PhUsers,
   PhWarningOctagon,
   PhArrowCounterClockwise,
@@ -307,7 +307,7 @@ export default {
   name: 'PlanningView',
   components: {
     PhInfo,
-    PhPath,
+    PhKanban,
     PhUsers,
     PhWarningOctagon,
     PhArrowCounterClockwise,
