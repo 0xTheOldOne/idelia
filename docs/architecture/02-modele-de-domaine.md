@@ -52,6 +52,7 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | contact | `{ email?, telephone? }` | non | |
 | ordreAffichage | integer | non | |
 | notes | string | non | |
+| initialesVega | string `^[A-Z0-9]{2,4}$` \| null | non | code « PS » de la personne dans Vega ; `null` si non renseigné ; **unique** parmi toutes les personnes (actives et archivées) ; stocké en majuscules, sans espaces [0034] |
 | preferences | Preference[] | oui (`[]` possible) | imbriqué |
 | createdAt / updatedAt | ISO UTC | oui | |
 

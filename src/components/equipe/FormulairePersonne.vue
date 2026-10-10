@@ -55,6 +55,40 @@
         </select>
       </div>
 
+      <!-- Initiales Vega -->
+      <div class="mb-4">
+        <label for="personne-initiales-vega" class="form-label">Initiales Vega (facultatif)</label>
+        <input
+          id="personne-initiales-vega"
+          v-model="formulaire.initialesVega"
+          type="text"
+          class="form-control formulaire-initiales"
+          maxlength="4"
+          autocomplete="off"
+          placeholder="FC"
+          :class="{ 'is-invalid': v$.formulaire.initialesVega.$error }"
+          :aria-describedby="
+            describedBy(
+              'personne-initiales-vega-aide',
+              v$.formulaire.initialesVega.$error ? 'personne-initiales-vega-erreur' : null
+            )
+          "
+          @input="mettreInitialesEnMajuscules"
+          @blur="v$.formulaire.initialesVega.$touch()"
+        >
+        <div id="personne-initiales-vega-aide" class="form-text">
+          Code de 2 à 4 lettres utilisé dans la feuille de route Vega (ex. FC).
+        </div>
+        <p
+          v-if="v$.formulaire.initialesVega.$error"
+          id="personne-initiales-vega-erreur"
+          class="formulaire-erreur"
+        >
+          <PhWarning :size="14" weight="bold" aria-hidden="true" />
+          <span>{{ v$.formulaire.initialesVega.$errors[0].$message }}</span>
+        </p>
+      </div>
+
       <!-- Couleur de repère -->
       <div class="mb-4">
         <span class="form-label d-block">Couleur de repère</span>
@@ -107,9 +141,9 @@
         <div class="formulaire-apercu mt-3">
           <span
             class="formulaire-pastille formulaire-pastille--apercu"
-            :style="{ backgroundColor: formulaire.couleur }"
+            :style="{ backgroundColor: formulaire.couleur, color: couleurTexteApercu }"
             aria-hidden="true"
-          />
+          >{{ repereApercu }}</span>
           <span>{{ formulaire.prenom || 'Prénom' }} {{ formulaire.nom || 'Nom' }}</span>
         </div>
       </div>
@@ -243,6 +277,12 @@ import { PhCheck, PhWarning } from '@phosphor-icons/vue';
 import ModaleBase from '@/components/communs/ModaleBase.vue';
 import { STATUTS_PERSONNE_OPTIONS } from '@/domain/libelles.js';
 import { genId } from '@/domain/utils/id.js';
+import { reperePersonne, couleurTexteRepere } from '@/domain/personnes.js';
+import {
+  normaliserInitialesVega,
+  estInitialesVegaValide,
+  personneAvecInitialesVega,
+} from '@/domain/initialesVega.js';
 
 /**
  * Formulaire présentational d'ajout/édition d'une personne (feature 0004).
@@ -264,6 +304,8 @@ export default {
     personne: { type: Object, default: null },
     /** Palette de couleurs suggérées (`cabinet/parametres.couleursParDefaut`). */
     couleursSuggerees: { type: Array, default: () => [] },
+    /** Toutes les personnes (actives et archivées), pour l'unicité des initiales Vega. */
+    personnes: { type: Array, default: () => [] },
   },
   emits: ['enregistrer', 'annuler'],
   setup() {
@@ -284,6 +326,13 @@ export default {
     };
   },
   computed: {
+    /** Initiales de l'aperçu : suit en direct « Initiales Vega », sinon le prénom saisi. */
+    repereApercu() {
+      return reperePersonne(this.formulaire);
+    },
+    couleurTexteApercu() {
+      return couleurTexteRepere(this.formulaire.couleur);
+    },
     titreModale() {
       return this.personne ? 'Modifier la personne' : 'Ajouter une personne';
     },
@@ -308,6 +357,26 @@ export default {
         },
         nom: {
           required: helpers.withMessage('Indiquez le nom de la personne.', required),
+        },
+        initialesVega: {
+          format: helpers.withMessage(
+            'Saisissez 2 à 4 lettres sans accent ou chiffres (ex. FC).',
+            (valeur) => estInitialesVegaValide(valeur)
+          ),
+          unique: helpers.withMessage(
+            (param) => {
+              const autre = personneAvecInitialesVega(
+                param.$model,
+                this.personnes,
+                this.personne?.id ?? null
+              );
+              return autre
+                ? `Ces initiales sont déjà utilisées par ${autre.prenom} ${autre.nom}.`
+                : 'Ces initiales sont déjà utilisées.';
+            },
+            (valeur) =>
+              personneAvecInitialesVega(valeur, this.personnes, this.personne?.id ?? null) === null
+          ),
         },
         couleur: {
           required: helpers.withMessage('Choisissez une couleur de repère.', required),
@@ -362,6 +431,7 @@ export default {
           prenom: this.personne.prenom,
           nom: this.personne.nom,
           statut: this.personne.statut,
+          initialesVega: this.personne.initialesVega ?? '',
           couleur: this.personne.couleur,
           quotite: this.personne.quotite,
           dateEntree: this.personne.dateEntree ?? '',
@@ -378,6 +448,7 @@ export default {
         prenom: '',
         nom: '',
         statut: 'TITULAIRE',
+        initialesVega: '',
         couleur: this.couleursSuggerees[0] ?? '#0E8A8F',
         quotite: 100,
         dateEntree: '',
@@ -419,6 +490,11 @@ export default {
     describedBy(...ids) {
       const valides = ids.filter(Boolean);
       return valides.length ? valides.join(' ') : null;
+    },
+
+    /** Force les majuscules à la frappe dans le champ « Initiales Vega ». */
+    mettreInitialesEnMajuscules(event) {
+      this.formulaire.initialesVega = event.target.value.toUpperCase();
     },
 
     /** Index de tabulation d'une pastille (tabulation « roving » du groupe de radios). */
@@ -476,6 +552,7 @@ export default {
       return [
         { validation: this.v$.formulaire.prenom, id: 'personne-prenom' },
         { validation: this.v$.formulaire.nom, id: 'personne-nom' },
+        { validation: this.v$.formulaire.initialesVega, id: 'personne-initiales-vega' },
         { validation: this.v$.formulaire.couleur, id: 'personne-couleur-libre' },
         { validation: this.v$.formulaire.quotite, id: 'personne-quotite' },
         { validation: this.v$.formulaire.dateSortie, id: 'personne-date-sortie' },
@@ -509,6 +586,7 @@ export default {
         prenom: this.formulaire.prenom.trim(),
         nom: this.formulaire.nom.trim(),
         statut: this.formulaire.statut,
+        initialesVega: normaliserInitialesVega(this.formulaire.initialesVega),
         couleur: this.formulaire.couleur,
         quotite: this.formulaire.quotite,
         dateEntree: this.formulaire.dateEntree || null,
@@ -536,6 +614,11 @@ export default {
 .form-control,
 .form-select {
   min-height: t.$cible-cliquable-min;
+}
+
+.formulaire-initiales {
+  max-width: 10rem;
+  text-transform: uppercase;
 }
 
 .formulaire-quotite {
@@ -566,10 +649,7 @@ export default {
 }
 
 .formulaire-pastille--apercu {
-  width: t.$espace-5;
-  height: t.$espace-5;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
+  @include m.pastille-initiales;
 }
 
 .formulaire-apercu {

@@ -45,9 +45,9 @@
           <li v-for="personne in actifsTries" :key="personne.id" class="equipe-ligne">
             <span
               class="equipe-pastille"
-              :style="{ backgroundColor: personne.couleur }"
+              :style="stylePastille(personne)"
               aria-hidden="true"
-            />
+            >{{ repere(personne) }}</span>
             <div class="equipe-identite">
               <span class="equipe-nom">{{ personne.prenom }} {{ personne.nom }}</span>
               <span class="equipe-details">
@@ -114,9 +114,9 @@
             <li v-for="personne in inactifsTries" :key="personne.id" class="equipe-ligne">
               <span
                 class="equipe-pastille"
-                :style="{ backgroundColor: personne.couleur }"
+                :style="stylePastille(personne)"
                 aria-hidden="true"
-              />
+              >{{ repere(personne) }}</span>
               <div class="equipe-identite">
                 <span class="equipe-nom">{{ personne.prenom }} {{ personne.nom }}</span>
                 <span class="equipe-details">
@@ -143,6 +143,7 @@
       :visible="formulaireVisible"
       :personne="personneEnCours"
       :couleurs-suggerees="parametres.couleursParDefaut"
+      :personnes="toutesLesPersonnes"
       @enregistrer="onEnregistrer"
       @annuler="onAnnulerFormulaire"
     />
@@ -175,6 +176,7 @@ import {
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulairePersonne from '@/components/equipe/FormulairePersonne.vue';
 import { libelleStatutPersonne } from '@/domain/libelles.js';
+import { reperePersonne, couleurTexteRepere } from '@/domain/personnes.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -220,6 +222,10 @@ export default {
     aucunePersonne() {
       return this.actifs.length === 0 && this.inactifs.length === 0;
     },
+    /** Actives + archivées : l'unicité des initiales Vega les couvre toutes. */
+    toutesLesPersonnes() {
+      return [...this.actifs, ...this.inactifs];
+    },
     actifsTries() {
       return [...this.actifs].sort(this.comparerPersonnes);
     },
@@ -241,6 +247,14 @@ export default {
     },
   },
   methods: {
+    /** Initiales affichées dans la pastille d'une personne. */
+    repere(personne) {
+      return reperePersonne(personne);
+    },
+    /** Fond + couleur de texte lisible de la pastille. */
+    stylePastille(personne) {
+      return { backgroundColor: personne.couleur, color: couleurTexteRepere(personne.couleur) };
+    },
     ...mapActions('personnes', ['ajouter', 'modifier', 'desactiver', 'reactiver']),
     libelleStatutPersonne,
 
@@ -335,6 +349,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .equipe-entete {
   display: flex;
@@ -410,11 +425,7 @@ export default {
 }
 
 .equipe-pastille {
-  flex-shrink: 0;
-  width: t.$espace-5;
-  height: t.$espace-5;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
+  @include m.pastille-initiales;
 }
 
 .equipe-identite {

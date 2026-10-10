@@ -15,6 +15,7 @@ import { estCouleurFoncee } from '@/domain/utils/couleurs.js';
 import { libelleJourCourt, libelleMois } from '@/domain/libelles.js';
 import { estCoupee, libelleSegment, libelleHoraires, tourneeApplicableLe } from '@/domain/tournees.js';
 import { dateMiseAJour } from '@/domain/planning.js';
+import { normaliserInitialesVega } from '@/domain/initialesVega.js';
 
 /** Nombre de « colonnes utiles » (jour + segments de tournées) tenant sur la largeur d'une page A4 portrait. */
 export const BUDGET_COLONNES_PAGE = 15;
@@ -48,7 +49,7 @@ export const MOIS_PAR_PAGE_MAX = 4;
 /**
  * @typedef {Object} PersonneDiffusion
  * @property {string} personneId
- * @property {string} repere - Initiale(s) unique(s) dans ce tirage (« M », « MD »…), '?' si inconnue.
+ * @property {string} repere - Initiales Vega si renseignées, sinon initiale(s) unique(s) dans ce tirage (« M », « MD »…), '?' si inconnue.
  * @property {string} nomComplet - « Prénom Nom » (+ « (archivée) »), « Personne inconnue » si introuvable.
  * @property {string} couleur - Hex, ou '' si inconnue.
  * @property {boolean} fonce - `estCouleurFoncee(couleur)`.
@@ -121,11 +122,15 @@ function initiale(texte) {
 
 /**
  * Calcule des repères **uniques au sein du tirage**, déterministes
- * (indépendants de l'ordre d'entrée) : initiale du prénom ; en cas de
- * collision, initiale prénom + initiale nom ; si collision persistante,
- * suffixe numérique dans l'ordre stable (« MD1 », « MD2 »).
+ * (indépendants de l'ordre d'entrée).
  *
- * @param {Array<{ id: string, prenom: string, nom: string }>} personnes
+ * - Une personne avec `initialesVega` (normalisées) garde **exactement** ce code.
+ * - Les autres : initiale du prénom ; en cas de collision (ou si le code est
+ *   déjà réservé par une initiale Vega), initiale prénom + initiale nom ; si
+ *   le problème persiste, suffixe numérique dans l'ordre stable (« MD1 », « MD2 »),
+ *   en sautant les codes déjà pris.
+ *
+ * @param {Array<{ id: string, prenom: string, nom: string, initialesVega?: (string|null) }>} personnes
  * @returns {Map<string, string>} personneId → repère
  */
 export function calculerReperesPersonnes(personnes) {
@@ -136,20 +141,38 @@ export function calculerReperesPersonnes(personnes) {
       String(a.id).localeCompare(String(b.id)),
   );
 
+  const reperes = new Map();
+  /** Codes déjà attribués ou réservés (initiales Vega). */
+  const pris = new Set();
+  const sansVega = [];
+  for (const p of triees) {
+    const vega = normaliserInitialesVega(p.initialesVega);
+    if (vega && !pris.has(vega)) {
+      reperes.set(p.id, vega);
+      pris.add(vega);
+    } else {
+      sansVega.push(p);
+    }
+  }
+
   const niveau1 = (p) => initiale(p.prenom) || initiale(p.nom) || '?';
   const niveau2 = (p) => `${initiale(p.prenom)}${initiale(p.nom)}` || '?';
 
   const parInitiale = new Map();
-  for (const p of triees) {
+  for (const p of sansVega) {
     const cle = niveau1(p);
     if (!parInitiale.has(cle)) parInitiale.set(cle, []);
     parInitiale.get(cle).push(p);
   }
 
-  const reperes = new Map();
+  const attribuer = (id, code) => {
+    reperes.set(id, code);
+    pris.add(code);
+  };
+
   for (const [cle, groupe] of parInitiale) {
-    if (groupe.length === 1) {
-      reperes.set(groupe[0].id, cle);
+    if (groupe.length === 1 && !pris.has(cle)) {
+      attribuer(groupe[0].id, cle);
       continue;
     }
     const parDouble = new Map();
@@ -159,10 +182,14 @@ export function calculerReperesPersonnes(personnes) {
       parDouble.get(c2).push(p);
     }
     for (const [c2, sousGroupe] of parDouble) {
-      if (sousGroupe.length === 1) {
-        reperes.set(sousGroupe[0].id, c2);
-      } else {
-        sousGroupe.forEach((p, i) => reperes.set(p.id, `${c2}${i + 1}`));
+      if (sousGroupe.length === 1 && !pris.has(c2)) {
+        attribuer(sousGroupe[0].id, c2);
+        continue;
+      }
+      let n = 1;
+      for (const p of sousGroupe) {
+        while (pris.has(`${c2}${n}`)) n++;
+        attribuer(p.id, `${c2}${n}`);
       }
     }
   }

@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 4,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID)
+  "schemaVersion": 5,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -25,7 +25,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -41,7 +41,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
       "statut": "TITULAIRE", "actif": true, "couleur": "#2E86AB",
       "quotite": 100, "dateEntree": "2019-09-01", "dateSortie": null,
       "contact": { "email": null, "telephone": "0600000000" },
-      "ordreAffichage": 1, "notes": "",
+      "ordreAffichage": 1, "notes": "", "initialesVega": "CM",
       "preferences": [
         { "id": "0274ede8-0b6f-4168-bbe4-911de592c54f", "type": "JOUR_OFF_RECURRENT", "nature": "DURE", "actif": true,
           "params": { "joursSemaine": [3] }, "libelle": "Pas le mercredi",
@@ -112,13 +112,14 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` (= **4**) et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **5**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
 - **`MIGRATIONS[1]` (v1 → v2)** — première migration réelle du projet ([feature 0016](../../features/0016-tournees-coupees-modele.md), [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)) : chaque `Tournee` passe de `nom`/`creneau`/`heureDebut`/`heureFin`/`nbPersonnesRequises`/`secteur`/`code` à `libelle` + un unique `segments[0]` reconstruit depuis les anciens horaires (`archivee` recopié tel quel) ; chaque `Affectation` passe de `creneau` à `segmentIndex: 0`. Les `absences` (bucket `creneau`) sont inchangées. Sans perte.
 - **`MIGRATIONS[2]` (v2 → v3)** — [feature 0026](../../features/0026-date-de-generation-visible.md) : chaque `Planning` reçoit `genereLe: planning.genereLe ?? null` (idempotent). Pas de rétro-remplissage depuis `createdAt` (date potentiellement fausse) : `null` = inconnu, rien n'est affiché. Les autres entités sont inchangées.
 - **`MIGRATIONS[3]` (v3 → v4)** — identifiants en GUID : tout `id` d'entité (personne, souhait, tournée, absence, planning, affectation) qui n'est pas un GUID est remplacé par un GUID (`genId()`), et **toutes ses références** sont réécrites avec la même correspondance (`absence.personneId`, `preference.params.tourneeIds`, `planning.referentId`, `affectation.personneId` / `tourneeId`). Les GUID existants sont conservés (idempotent). Corrige les données issues de saisies à la main / d'anciens jeux de test (`p-claire`, `t-t1`…).
+- **`MIGRATIONS[4]` (v4 → v5)** — [feature 0034](../../features/0034-initiales-vega-et-reversements.md) : chaque `Personne` reçoit `initialesVega: personne.initialesVega ?? null` (idempotent). `null` = non renseigné. Les autres entités sont inchangées.
 
 ## Intégrité référentielle
 

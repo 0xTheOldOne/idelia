@@ -61,9 +61,9 @@
         <li v-for="absence in absencesTriees" :key="absence.id" class="absences-ligne">
           <span
             class="absences-pastille"
-            :style="{ backgroundColor: personneAffichage(absence).couleur }"
+            :style="{ backgroundColor: personneAffichage(absence).couleur, color: personneAffichage(absence).couleurTexte }"
             aria-hidden="true"
-          />
+          >{{ personneAffichage(absence).repere }}</span>
           <div class="absences-identite">
             <span class="absences-nom">
               {{ personneAffichage(absence).nom
@@ -150,6 +150,7 @@ import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue'
 import FormulaireAbsence from '@/components/absences/FormulaireAbsence.vue';
 import { libelleTypeAbsence, libelleCreneau, libelleEtatTemporelAbsence } from '@/domain/libelles.js';
 import { etatTemporelAbsence } from '@/domain/absences.js';
+import { reperePersonne, couleurTexteRepere } from '@/domain/personnes.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -283,16 +284,18 @@ export default {
      * est introuvable (ne devrait pas arriver, intégrité garantie), affiche
      * « Personne inconnue » plutôt que de faire échouer le rendu.
      * @param {{ personneId: string }} absence
-     * @returns {{ nom: string, couleur: string, archivee: boolean }}
+     * @returns {{ nom: string, couleur: string, couleurTexte: string, repere: string, archivee: boolean }}
      */
     personneAffichage(absence) {
       const personne = this.personneById(absence.personneId);
       if (!personne) {
-        return { nom: 'Personne inconnue', couleur: 'transparent', archivee: false };
+        return { nom: 'Personne inconnue', couleur: 'transparent', couleurTexte: 'inherit', repere: '', archivee: false };
       }
       return {
         nom: `${personne.prenom} ${personne.nom}`,
         couleur: personne.couleur,
+        couleurTexte: couleurTexteRepere(personne.couleur),
+        repere: reperePersonne(personne),
         archivee: !personne.actif,
       };
     },
@@ -351,6 +354,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .absences-aucune-personne {
   display: flex;
@@ -408,11 +412,7 @@ export default {
 }
 
 .absences-pastille {
-  flex-shrink: 0;
-  width: t.$espace-5;
-  height: t.$espace-5;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
+  @include m.pastille-initiales;
 }
 
 .absences-identite {

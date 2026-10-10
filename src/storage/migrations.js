@@ -10,7 +10,7 @@
 import { genId } from '@/domain/utils/id.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -187,6 +187,24 @@ MIGRATIONS[3] = (doc) => {
     absences: Array.isArray(doc.absences) ? absences : doc.absences,
     plannings: Array.isArray(doc.plannings) ? plannings : doc.plannings,
   };
+};
+
+/**
+ * Migration v4 → v5 (feature 0034) : ajout de `Personne.initialesVega`, code
+ * « PS » de la personne dans Vega.
+ *
+ * - Chaque `Personne` de `doc.personnes` reçoit
+ *   `initialesVega: personne.initialesVega ?? null` (idempotent).
+ * - `tournees`, `absences`, `plannings`, `cabinet` : inchangés.
+ *
+ * @param {object} doc - Document de version 4.
+ * @returns {object} Document équivalent en version 5 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[4] = (doc) => {
+  const personnes = Array.isArray(doc.personnes)
+    ? doc.personnes.map((personne) => ({ ...personne, initialesVega: personne.initialesVega ?? null }))
+    : doc.personnes;
+  return { ...doc, personnes };
 };
 
 /**

@@ -33,9 +33,9 @@
         <div class="formulaire-apercu mt-2">
           <span
             class="formulaire-pastille formulaire-pastille--apercu"
-            :style="{ backgroundColor: personneSelectionnee ? personneSelectionnee.couleur : 'transparent' }"
+            :style="stylePastilleApercu"
             aria-hidden="true"
-          />
+          >{{ repereApercu }}</span>
           <span>
             {{ personneSelectionnee ? `${personneSelectionnee.prenom} ${personneSelectionnee.nom}` : 'Aucune personne sélectionnée' }}
           </span>
@@ -179,6 +179,7 @@ import { CRENEAUX } from '@/domain/schema.js';
 import { TYPES_ABSENCE_OPTIONS, libelleCreneau } from '@/domain/libelles.js';
 import { chevauchementsPour } from '@/domain/absences.js';
 import { genId } from '@/domain/utils/id.js';
+import { reperePersonne, couleurTexteRepere } from '@/domain/personnes.js';
 
 /**
  * Formulaire présentational d'ajout/édition d'une absence (feature 0007).
@@ -230,6 +231,16 @@ export default {
     /** Personne choisie, pour l'aperçu « pastille + Prénom Nom ». */
     personneSelectionnee() {
       return this.personnes.find((personne) => personne.id === this.formulaire.personneId) ?? null;
+    },
+    /** Initiales de la personne choisie (pastille d'aperçu). */
+    repereApercu() {
+      return reperePersonne(this.personneSelectionnee);
+    },
+    stylePastilleApercu() {
+      const couleur = this.personneSelectionnee?.couleur;
+      return couleur
+        ? { backgroundColor: couleur, color: couleurTexteRepere(couleur) }
+        : { backgroundColor: 'transparent' };
     },
     /**
      * Absences en conflit avec la période/créneau saisis, pour un
@@ -418,6 +429,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .formulaire-select {
   max-width: 20rem;
@@ -430,11 +442,7 @@ export default {
 }
 
 .formulaire-pastille--apercu {
-  width: t.$espace-5;
-  height: t.$espace-5;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
-  flex-shrink: 0;
+  @include m.pastille-initiales;
 }
 
 .formulaire-apercu {
