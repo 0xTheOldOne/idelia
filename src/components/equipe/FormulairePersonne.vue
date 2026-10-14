@@ -279,16 +279,24 @@
       <!-- Coordonnées & notes -->
       <div class="row g-3 mb-3">
         <div class="col-sm-6">
-          <label for="personne-email" class="form-label">Adresse e-mail (facultatif)</label>
+          <label for="personne-email" class="form-label">Adresse e-mail</label>
           <input
             id="personne-email"
             v-model.trim="formulaire.contact.email"
             type="email"
             class="form-control"
             :class="{ 'is-invalid': v$.formulaire.contact.email.$error }"
-            :aria-describedby="v$.formulaire.contact.email.$error ? 'personne-email-erreur' : null"
+            :aria-describedby="
+              describedBy(
+                'personne-email-aide',
+                v$.formulaire.contact.email.$error ? 'personne-email-erreur' : null
+              )
+            "
             @blur="v$.formulaire.contact.email.$touch()"
           >
+          <div id="personne-email-aide" class="form-text">
+            Facultatif. Nécessaire pour recevoir le planning par e-mail.
+          </div>
           <p v-if="v$.formulaire.contact.email.$error" id="personne-email-erreur" class="formulaire-erreur">
             <PhWarning :size="14" weight="bold" aria-hidden="true" />
             <span>{{ v$.formulaire.contact.email.$errors[0].$message }}</span>
@@ -386,6 +394,11 @@ export default {
     couleursSuggerees: { type: Array, default: () => [] },
     /** Toutes les personnes (actives et archivées), pour l'unicité des initiales Vega. */
     personnes: { type: Array, default: () => [] },
+    /**
+     * Champ qui reçoit le focus à l'ouverture : `'prenom'` (défaut) ou
+     * `'email'` (lien profond depuis l'envoi du planning, feature 0027).
+     */
+    champInitial: { type: String, default: 'prenom' },
   },
   emits: ['enregistrer', 'annuler'],
   setup() {
@@ -582,6 +595,12 @@ export default {
      * le piège à focus de la modale (contrairement à un délai arbitraire).
      */
     onAffichee() {
+      if (this.champInitial === 'email') {
+        this.$el.querySelector('#personne-email')?.focus();
+        // Une adresse invalide affiche aussitôt son message ; vide = aucune erreur (facultatif).
+        this.v$.formulaire.contact.email.$touch();
+        return;
+      }
       this.$refs.champPrenom?.focus();
     },
 

@@ -20,16 +20,28 @@
 
         <!-- Titre + bouton à droite (même gabarit que Équipe / Tournées). -->
         <div class="diffusion-entete">
-          <h1>Imprimer le planning</h1>
-          <button type="button" class="btn btn-primary diffusion-bouton" @click="imprimer">
-            <PhPrinter :size="20" aria-hidden="true" />
-            <span>Imprimer</span>
-          </button>
+          <h1>Imprimer ou envoyer le planning</h1>
+          <div class="diffusion-entete-actions">
+            <button
+              type="button"
+              class="btn btn-outline-primary diffusion-bouton-icone diffusion-envoi"
+              aria-label="Envoyer le planning par e-mail"
+              :title="titreEnvoi"
+              @click="modaleEnvoiVisible = true"
+            >
+              <PhEnvelopeSimple :size="20" aria-hidden="true" />
+            </button>
+            <button type="button" class="btn btn-primary diffusion-bouton" @click="imprimer">
+              <PhPrinter :size="20" aria-hidden="true" />
+              <span>Imprimer</span>
+            </button>
+          </div>
         </div>
         <p class="diffusion-explication">
-          Voici le planning tel qu'il sera imprimé. Pour obtenir un fichier PDF (par exemple pour
-          l'envoyer par e-mail), choisissez « Enregistrer au format PDF » dans la fenêtre qui
-          s'ouvre.
+          Voici le planning tel qu'il sera imprimé. Pour obtenir un fichier PDF, cliquez sur
+          « Imprimer » puis choisissez « Enregistrer au format PDF ». Pour l'envoyer à l'équipe,
+          cliquez ensuite sur le bouton enveloppe (« Envoyer le planning par e-mail »), à gauche
+          d'« Imprimer » : votre messagerie s'ouvre avec les adresses de l'équipe.
         </p>
 
         <div v-if="resume && resume.aResoudre > 0" class="alert alert-warning diffusion-bandeau" role="status">
@@ -64,15 +76,32 @@
           />
         </div>
       </div>
+
+      <ModaleEnvoiEmail
+        :visible="modaleEnvoiVisible"
+        :envoi="envoi"
+        @fermeture="onFermetureModaleEnvoi"
+        @completer-fiche="onCompleterFiche"
+        @aller-equipe="onAllerEquipe"
+      />
     </template>
   </div>
 </template>
 
 <script>
 import { mapGetters, mapState, mapMutations, mapActions } from 'vuex';
-import { PhArrowLeft, PhPrinter, PhCalendarX, PhWarning, PhInfo } from '@phosphor-icons/vue';
+import {
+  PhArrowLeft,
+  PhEnvelopeSimple,
+  PhPrinter,
+  PhCalendarX,
+  PhWarning,
+  PhInfo,
+} from '@phosphor-icons/vue';
 
 import FeuilleDiffusion from '@/components/diffusion/FeuilleDiffusion.vue';
+import ModaleEnvoiEmail from '@/components/diffusion/ModaleEnvoiEmail.vue';
+import { preparerEnvoiEmail } from '@/domain/envoiEmail.js';
 import { construireDiffusion, titreDocumentDiffusion } from '@/domain/diffusion.js';
 
 /**
@@ -87,16 +116,34 @@ import { construireDiffusion, titreDocumentDiffusion } from '@/domain/diffusion.
  * résoudre (`plannings/resumeConflits`, lecture seule, état volatil) ; le titre
  * du document (`document.title`) nomme le PDF proposé par le navigateur et est
  * restauré en quittant la vue.
+ *
+ * Envoi par e-mail (0027) : l'enveloppe ouvre `ModaleEnvoiEmail` (message préparé
+ * dans la messagerie de l'utilisatrice, rien n'est persisté). Pour compléter une
+ * fiche, la navigation vers l'Équipe a lieu **après** l'événement de fermeture de
+ * la modale (sinon le fond grisé Bootstrap resterait) ; `?envoi=1` la rouvre au
+ * retour de l'Équipe.
  */
 export default {
   name: 'DiffusionView',
-  components: { FeuilleDiffusion, PhArrowLeft, PhPrinter, PhCalendarX, PhWarning, PhInfo },
+  components: {
+    FeuilleDiffusion,
+    ModaleEnvoiEmail,
+    PhArrowLeft,
+    PhEnvelopeSimple,
+    PhPrinter,
+    PhCalendarX,
+    PhWarning,
+    PhInfo,
+  },
   data() {
     return {
       // Résumé des conflits du planning (`{ aResoudre, … }`) ; `null` tant que non calculé. Volatil.
       resume: null,
       // Titre du document avant l'entrée dans la vue, restauré au démontage.
       titreInitial: '',
+      // Visibilité de la modale d'envoi par e-mail, et navigation à faire une fois fermée.
+      modaleEnvoiVisible: false,
+      navigationEnAttente: null,
     };
   },
   computed: {
@@ -117,6 +164,16 @@ export default {
         joursOuverture: this.parametres?.joursOuverture ?? [],
       });
     },
+    /** Préparation de l'envoi par e-mail (domaine, pur). */
+    envoi() {
+      return preparerEnvoiEmail({ planning: this.planning, personnes: this.personnes });
+    },
+    /** Infobulle de l'enveloppe. */
+    titreEnvoi() {
+      return this.envoi.etat === 'BLOQUE'
+        ? 'Envoyer le planning par e-mail (adresses à compléter)'
+        : 'Envoyer le planning par e-mail';
+    },
   },
   watch: {
     planning() {
@@ -130,6 +187,10 @@ export default {
   mounted() {
     this.majTitre();
     this.chargerResume();
+    if (this.$route.query.envoi === '1' && this.planning) {
+      this.modaleEnvoiVisible = true;
+      this.$router.replace({ query: {} });
+    }
   },
   beforeUnmount() {
     document.title = this.titreInitial;
@@ -157,6 +218,26 @@ export default {
     retourPlanning() {
       this.SELECT(this.planning.id);
       this.$router.push({ name: 'planning' });
+    },
+    /** Ferme la modale, puis navigue vers l'Équipe pour compléter la fiche. */
+    onCompleterFiche(personneId) {
+      this.navigationEnAttente = {
+        name: 'equipe',
+        query: { modifier: personneId, retour: this.planning.id },
+      };
+      this.modaleEnvoiVisible = false;
+    },
+    /** Ferme la modale, puis ouvre l'Équipe. */
+    onAllerEquipe() {
+      this.navigationEnAttente = { name: 'equipe' };
+      this.modaleEnvoiVisible = false;
+    },
+    /** Modale fermée : on peut changer de route sans laisser de fond grisé. */
+    onFermetureModaleEnvoi() {
+      this.modaleEnvoiVisible = false;
+      const cible = this.navigationEnAttente;
+      this.navigationEnAttente = null;
+      if (cible) this.$router.push(cible);
     },
     /** Ouvre la fenêtre d'impression du navigateur. */
     imprimer() {
@@ -241,6 +322,20 @@ export default {
   h1 {
     margin-bottom: 0;
   }
+}
+
+.diffusion-entete-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$espace-3;
+}
+
+.diffusion-bouton-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: t.$cible-cliquable-min;
+  min-height: t.$cible-cliquable-min;
 }
 
 .diffusion-bouton {

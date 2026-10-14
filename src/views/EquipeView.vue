@@ -13,6 +13,15 @@
       </p>
     </div>
 
+    <router-link
+      v-if="planningRetour"
+      class="equipe-retour"
+      :to="{ name: 'diffusion', params: { id: planningRetour.id }, query: { envoi: '1' } }"
+    >
+      <PhArrowLeft :size="18" aria-hidden="true" />
+      <span>Retour à l'envoi du planning</span>
+    </router-link>
+
     <div class="equipe-entete">
       <h1>Équipe</h1>
       <button
@@ -146,6 +155,7 @@
       :personne="personneEnCours"
       :couleurs-suggerees="parametres.couleursParDefaut"
       :personnes="toutesLesPersonnes"
+      :champ-initial="champInitial"
       @enregistrer="onEnregistrer"
       @annuler="onAnnulerFormulaire"
     />
@@ -173,6 +183,7 @@ import {
   PhArrowCounterClockwise,
   PhCaretRight,
   PhShootingStar,
+  PhArrowLeft,
 } from '@phosphor-icons/vue';
 
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
@@ -193,6 +204,19 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * construction/normalisation d'une personne est déléguée au domaine
  * (`creerPersonne`, appelé par l'action `personnes/ajouter`) ; le tri
  * alphabétique n'est qu'un choix de présentation local à l'écran.
+ *
+ * Liens profonds (feature 0027, envoi du planning par e-mail), paramètres
+ * d'URL de `/equipe` :
+ * - `?modifier=<personneId>` : ouvre la fiche de cette personne **active**,
+ *   curseur dans le champ e-mail. Id inconnu ou personne archivée : ignoré
+ *   sans message. Le paramètre est retiré de l'URL après lecture (pas de
+ *   réouverture au rechargement).
+ * - `?retour=<planningId>` : si ce planning existe dans le store, affiche le
+ *   lien « Retour à l'envoi du planning » vers `/planning/<id>/diffusion?envoi=1`
+ *   (la modale d'envoi s'y rouvre). La valeur n'est JAMAIS utilisée comme URL :
+ *   c'est seulement une clé de recherche, la route cible est construite ici
+ *   (route nommée interne), donc aucune redirection ouverte possible. Elle est
+ *   conservée dans l'URL après l'enregistrement de la fiche.
  */
 export default {
   name: 'EquipeView',
@@ -205,6 +229,7 @@ export default {
     PhArrowCounterClockwise,
     PhCaretRight,
     PhShootingStar,
+    PhArrowLeft,
     DialogueConfirmation,
     FormulairePersonne,
   },
@@ -214,6 +239,8 @@ export default {
       // création, objet `Personne` en édition).
       formulaireVisible: false,
       personneEnCours: null,
+      // Champ qui reçoit le focus à l'ouverture de la fiche ('prenom' | 'email').
+      champInitial: 'prenom',
       // Pilotage de la confirmation d'archivage.
       confirmationVisible: false,
       personneAArchiver: null,
@@ -225,7 +252,13 @@ export default {
   computed: {
     ...mapGetters('personnes', ['actifs', 'inactifs']),
     ...mapGetters('cabinet', ['parametres']),
+    ...mapGetters('plannings', { planningParId: 'byId' }),
     ...mapState(['statutSauvegarde']),
+    /** Planning de `?retour=` s'il existe (sinon `undefined` : pas de lien). */
+    planningRetour() {
+      const id = this.$route.query.retour;
+      return typeof id === 'string' ? this.planningParId(id) : undefined;
+    },
     aucunePersonne() {
       return this.actifs.length === 0 && this.inactifs.length === 0;
     },
@@ -253,7 +286,31 @@ export default {
       );
     },
   },
+  watch: {
+    '$route.query.modifier'() {
+      this.ouvrirDepuisLien();
+    },
+  },
+  mounted() {
+    this.ouvrirDepuisLien();
+  },
   methods: {
+    /**
+     * Lien profond `?modifier=<personneId>` : ouvre la fiche de la personne
+     * active correspondante, focus sur l'e-mail. Le paramètre est ensuite
+     * retiré de l'URL (`retour` est conservé).
+     */
+    ouvrirDepuisLien() {
+      const id = this.$route.query.modifier;
+      if (id === undefined) return;
+      const personne = typeof id === 'string' ? this.actifs.find((p) => p.id === id) : undefined;
+      if (personne) {
+        this.personneEnCours = personne;
+        this.champInitial = 'email';
+        this.formulaireVisible = true;
+      }
+      this.$router.replace({ query: { ...this.$route.query, modifier: undefined } });
+    },
     /** Initiales affichées dans la pastille d'une personne. */
     repere(personne) {
       return reperePersonne(personne);
@@ -296,10 +353,12 @@ export default {
 
     ouvrirAjout() {
       this.personneEnCours = null;
+      this.champInitial = 'prenom';
       this.formulaireVisible = true;
     },
     ouvrirEdition(personne) {
       this.personneEnCours = personne;
+      this.champInitial = 'prenom';
       this.formulaireVisible = true;
     },
     onEnregistrer(champs) {
@@ -359,6 +418,20 @@ export default {
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
 @use '@/styles/mixins' as m;
+
+.equipe-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$espace-1;
+  margin-bottom: t.$espace-3;
+  color: t.$couleur-primaire;
+  text-decoration: underline;
+
+  &:hover,
+  &:focus-visible {
+    color: t.$couleur-primaire-foncee;
+  }
+}
 
 .equipe-entete {
   display: flex;

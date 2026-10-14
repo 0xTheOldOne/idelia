@@ -131,8 +131,8 @@
           <router-link
             class="btn btn-sm btn-primary planning-bouton-icone"
             :to="{ name: 'diffusion', params: { id: planningCourant.id } }"
-            aria-label="Imprimer le planning"
-            title="Imprimer le planning"
+            aria-label="Imprimer ou envoyer le planning"
+            title="Imprimer ou envoyer le planning"
           >
             <PhPrinter :size="18" aria-hidden="true" />
           </router-link>
@@ -280,7 +280,7 @@ import { indexerSouhaitsNonRespectes } from '@/domain/souhaitsNonRespectes.js';
  * `plannings/peutAnnuler` est `false`, et la bascule « Modifier le
  * planning »/« Terminer la modification » (tâche 3) qui pilote `modeEdition`.
  *
- * Impression (feature 0012) : le bouton « Imprimer le planning » de la barre
+ * Impression et envoi par e-mail (features 0012, 0027) : le bouton « Imprimer ou envoyer le planning » de la barre
  * d'actions ouvre l'écran de diffusion (`/planning/:id/diffusion`) du planning
  * courant, y compris en mode modification.
  *

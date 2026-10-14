@@ -35,6 +35,7 @@ Idelia/
     │   ├── souhaitsNonRespectes.js # localise les souhaits non respectés (violations PREFERENCE_*) sur les affectations, textes de l'indicateur [0025]
     │   ├── trameWeekend.js     # weekends travaillés / de repos d'une trame « un weekend sur X » [0022]
     │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]
+    │   ├── envoiEmail.js       # destinataires, objet, corps et lien mailto: de l'envoi du planning par e-mail [0027]
     │   ├── feuilleDeRoute/     # lecture des séances Vega, détection des relais, répartition et reversements [0033, 0034]
     │   │   ├── extraireSeances.js
     │   │   ├── detecterRelais.js
@@ -49,7 +50,8 @@ Idelia/
     │   └── migrations.js         # CURRENT_SCHEMA_VERSION + pipeline de migration
     │
     ├── adaptateurs/            # I/O navigateur + bibliothèques tierces (jamais de persistance : c'est le rôle de storage/)
-    │   └── lireGlyphesPdf.js   # lecture PDF via pdfjs-dist, chargé à la demande [ADR 0019, 0033]
+    │   ├── lireGlyphesPdf.js   # lecture PDF via pdfjs-dist, chargé à la demande [ADR 0019, 0033]
+    │   └── pressePapiers.js    # copie de texte (API Clipboard) [0027]
     │
     ├── views/                  # écrans (un par route)
     │   ├── AccueilView.vue
@@ -67,7 +69,7 @@ Idelia/
     │   ├── tournees/
     │   ├── absences/
     │   ├── planning/           # grille, cellule, panneau de conflits, récap mensuel [0024], drag & drop
-    │   ├── diffusion/          # feuille A4, tableau de mois, légende, pastille de personne [0012]
+    │   ├── diffusion/          # feuille A4, tableau de mois, légende, pastille de personne [0012], modale d'envoi par e-mail [0027]
     │   └── feuilleDeRoute/     # zone de dépôt, résumé, cartes de relais [0033]
     │
     ├── composables-ou-mixins/  # si logique UI transverse (rester minimal en Options API)

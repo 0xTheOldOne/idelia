@@ -12,7 +12,7 @@ Idelia s'organise autour d'un petit nombre d'écrans clairs, accessibles depuis 
 | `/tournees` | **Tournées** | Gérer les tournées et leurs horaires | `0006` |
 | `/absences` | **Absences & congés** | Saisir les absences (saisie directe, sans validation en v1) | `0007`, `0017` |
 | `/planning` | **Planning** | Générer, éditer (drag & drop), voir les conflits et les souhaits non respectés, récap mensuel par personne | `0010`, `0011`, `0024`, `0025` |
-| `/planning/:id/diffusion` | **Diffusion** | Impression / export PDF pour l'équipe | `0012` |
+| `/planning/:id/diffusion` | **Diffusion** | Impression / export PDF, envoi par e-mail à l'équipe (messagerie de l'utilisatrice) | `0012`, `0027` |
 | `/feuille-de-route` | **Feuille de route** | Repérer, depuis la liste des séances exportée de Vega (PDF), les patients soignés le matin et l'après-midi par deux infirmières différentes, avec qui reverse combien à qui (noms via les initiales Vega de l'équipe) — lu sur le poste, rien n'est conservé | `0033`, `0034` |
 | `/parametres` | **Paramètres** | Réglages cabinet + sauvegarde / import / export | `0003`, `0008` |
 
