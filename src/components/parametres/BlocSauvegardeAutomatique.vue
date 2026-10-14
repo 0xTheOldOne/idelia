@@ -103,6 +103,7 @@ import {
 } from '@phosphor-icons/vue';
 
 import { dateUtil } from '@/domain/utils/dates.js';
+import { INTERVALLES_SAUVEGARDE_AUTO } from '@/storage/storageRepository.js';
 
 /**
  * Bloc « Sauvegarde automatique » de l'écran Paramètres (feature 0019) :
@@ -124,7 +125,7 @@ export default {
   data() {
     return {
       /** Liste fermée de fréquences proposées, en minutes. */
-      FREQUENCES: [5, 10, 15, 30, 60],
+      FREQUENCES: INTERVALLES_SAUVEGARDE_AUTO,
       /** Détection de capacité navigateur (pas une règle métier). */
       compatible: 'showSaveFilePicker' in window,
       /** `true` pendant l'`await` du choix de fichier (désactive le bouton). */

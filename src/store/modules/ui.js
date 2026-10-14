@@ -82,9 +82,9 @@ function desarmerMinuteur() {
   minuteur = null;
 }
 
-export default {
-  namespaced: true,
-  state: () => ({
+/** @returns {object} État initial du module (aussi utilisé par `REINITIALISER`). */
+function etatInitial() {
+  return {
     dernierExportLe: null,
     menuReplie: false,
     sauvegardeAutoActive: false,
@@ -92,7 +92,12 @@ export default {
     fichierSauvegardeActif: false,
     nomFichierSauvegarde: null,
     dernierFichierEnregistreLe: null,
-  }),
+  };
+}
+
+export default {
+  namespaced: true,
+  state: etatInitial,
   getters: {
     menuReplie: (state) => state.menuReplie,
   },
@@ -113,6 +118,10 @@ export default {
     },
     SET_DERNIER_FICHIER_ENREGISTRE(state, iso) {
       state.dernierFichierEnregistreLe = iso;
+    },
+    /** Remet tout l'état du module à ses valeurs initiales. */
+    REINITIALISER(state) {
+      Object.assign(state, etatInitial());
     },
   },
   actions: {
@@ -169,11 +178,7 @@ export default {
      */
     reinitialiserPreferences({ commit }) {
       desarmerMinuteur();
-      commit('SET_MENU_REPLIE', false);
-      commit('SET_SAUVEGARDE_AUTO', { active: false, intervalleMinutes: 15 });
-      commit('SET_FICHIER_SAUVEGARDE_ACTIF', { actif: false, nom: null });
-      commit('SET_DERNIER_FICHIER_ENREGISTRE', null);
-      commit('SET_DERNIER_EXPORT', null);
+      commit('REINITIALISER');
     },
 
     /**

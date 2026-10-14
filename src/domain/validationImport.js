@@ -21,6 +21,7 @@ import {
   STATUTS_PLANNING,
   verifierIntegrite,
 } from '@/domain/schema.js';
+import { dateUtil } from '@/domain/utils/dates.js';
 
 /** Taille maximale d'un fichier de sauvegarde importé (octets) : 10 Mo. */
 export const TAILLE_MAX_FICHIER_OCTETS = 10 * 1024 * 1024;
@@ -44,7 +45,6 @@ const LONGUEUR_ID = 100;
 const LONGUEUR_COURTE = 500;
 const LONGUEUR_LONGUE = 20000;
 
-const RE_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const RE_HEURE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const RE_COULEUR = /^#[0-9a-fA-F]{3,8}$/;
 
@@ -57,19 +57,13 @@ function estObjet(v) {
 }
 
 /**
- * @param {*} v
- * @returns {boolean} `true` si `v` est une date calendaire réelle `"YYYY-MM-DD"`.
+ * Validateurs d'éléments d'un tableau (option `elements` d'une règle `tableau`).
+ * @type {Record<string, (v: *) => boolean>}
  */
-function estDate(v) {
-  if (typeof v !== 'string') return false;
-  const m = RE_DATE.exec(v);
-  if (!m) return false;
-  const mois = Number(m[2]);
-  const jour = Number(m[3]);
-  if (mois < 1 || mois > 12 || jour < 1) return false;
-  const joursDuMois = new Date(Date.UTC(Number(m[1]), mois, 0)).getUTCDate();
-  return jour <= joursDuMois;
-}
+const ELEMENTS = {
+  jourIso: (j) => Number.isInteger(j) && j >= 1 && j <= 7,
+  creneau: (c) => CRENEAUX.includes(c),
+};
 
 /**
  * Contrôleurs de valeur par type de règle. Chacun renvoie `true` si valide.
@@ -78,7 +72,7 @@ function estDate(v) {
 const CONTROLEURS = {
   id: (v) => typeof v === 'string' && v.length > 0 && v.length <= LONGUEUR_ID,
   texte: (v, o) => typeof v === 'string' && v.length <= (o.max ?? LONGUEUR_COURTE),
-  date: estDate,
+  date: dateUtil.estDateValide,
   heure: (v) => typeof v === 'string' && (v === '' || RE_HEURE.test(v)), // '' : héritage migration v1
   couleur: (v) => typeof v === 'string' && RE_COULEUR.test(v),
   horodatage: (v) => typeof v === 'string' && v.length <= 40,
@@ -96,6 +90,8 @@ const CONTROLEURS = {
  *
  * @param {object} obj - Entité à contrôler.
  * @param {Record<string, object>} regles - `{ champ: { type, requis?, ...options } }`.
+ *   Une règle `tableau` peut porter `elements` (clé de {@link ELEMENTS}) et
+ *   `libelleElements` (ex. « les jours d'ouverture ») pour contrôler chaque élément.
  * @param {string} contexte - Préfixe lisible pour les messages.
  * @param {string[]} erreurs - Accumulateur de messages.
  */
@@ -108,41 +104,51 @@ function controlerChamps(obj, regles, contexte, erreurs) {
     }
     if (!CONTROLEURS[regle.type](v, regle)) {
       erreurs.push(`${contexte} : le champ « ${champ} » est invalide.`);
+    } else if (regle.elements && !v.every(ELEMENTS[regle.elements])) {
+      erreurs.push(`${contexte} : ${regle.libelleElements} sont invalides.`);
     }
   }
 }
 
 /**
- * Contrôle une collection d'entités (tableau d'objets) et applique `controle`
- * à chaque élément.
+ * Contrôle une collection d'entités (tableau d'objets) : chaque élément doit
+ * être un objet conforme à `regles`, ses sous-collections sont contrôlées
+ * récursivement.
  *
- * @param {*} liste - Valeur à contrôler.
- * @param {string} nom - Nom français de la collection (messages).
- * @param {number} max - Cardinalité maximale.
+ * @param {*} liste - Valeur à contrôler (ignorée si ce n'est pas un tableau :
+ *   déjà signalé par la structure racine ou par la règle `tableau` du parent).
+ * @param {Record<string, object>} regles - Règles d'un élément.
+ * @param {string} libelle - Libellé d'un élément, préfixe des messages.
  * @param {string[]} erreurs - Accumulateur de messages.
- * @param {(item: object, contexte: string) => void} controle - Contrôle d'un élément.
- * @param {string} singulier - Libellé d'un élément (messages).
+ * @param {Object} [options]
+ * @param {{ nom: string, max: number }} [options.plafond] - Cardinalité maximale
+ *   (collections racine ; pour les imbriquées, la règle `tableau` du parent suffit).
+ * @param {{ champ: string, regles: object, libelle: string }[]} [options.sous]
+ *   - Sous-collections portées par chaque élément.
  */
-function controlerCollection(liste, nom, max, erreurs, controle, singulier) {
-  if (!Array.isArray(liste)) return; // déjà signalé par la structure racine
-  if (liste.length > max) {
-    erreurs.push(`Trop d'éléments dans « ${nom} » (maximum ${max}).`);
+function controlerCollection(liste, regles, libelle, erreurs, { plafond, sous = [] } = {}) {
+  if (!Array.isArray(liste)) return;
+  if (plafond && liste.length > plafond.max) {
+    erreurs.push(`Trop d'éléments dans « ${plafond.nom} » (maximum ${plafond.max}).`);
     return;
   }
   liste.forEach((item, i) => {
-    const contexte = `${singulier} n°${i + 1}`;
+    const contexte = `${libelle} n°${i + 1}`;
     if (!estObjet(item)) {
       erreurs.push(`${contexte} : élément invalide.`);
       return;
     }
-    controle(item, contexte);
+    controlerChamps(item, regles, contexte, erreurs);
+    for (const s of sous) {
+      controlerCollection(item[s.champ], s.regles, `${contexte}, ${s.libelle}`, erreurs);
+    }
   });
 }
 
 const REGLES_CABINET = {
   nomCabinet: { type: 'texte' },
-  joursOuverture: { type: 'tableau', max: 7, requis: true },
-  creneauxActifs: { type: 'tableau', max: 3, requis: true },
+  joursOuverture: { type: 'tableau', max: 7, requis: true, elements: 'jourIso', libelleElements: "les jours d'ouverture" },
+  creneauxActifs: { type: 'tableau', max: 3, requis: true, elements: 'creneau', libelleElements: 'les créneaux actifs' },
   reposHebdoMin: { type: 'entier', min: 0, max: 7 },
   maxJoursConsecutifs: { type: 'entier', min: 0, max: 366 },
   premierJourSemaine: { type: 'entier', min: 1, max: 7 },
@@ -186,7 +192,7 @@ const REGLES_TOURNEE = {
   id: { type: 'id', requis: true },
   libelle: { type: 'texte' },
   segments: { type: 'tableau', max: MAX.segments },
-  joursApplication: { type: 'tableau', max: 7 },
+  joursApplication: { type: 'tableau', max: 7, elements: 'jourIso', libelleElements: "les jours d'application" },
   couleur: { type: 'couleur' },
   archivee: { type: 'booleen' },
   dateDebutValidite: { type: 'date' },
@@ -246,6 +252,23 @@ const REGLES_AFFECTATION = {
   updatedAt: { type: 'horodatage' },
 };
 
+/** Collections racine du document, dans l'ordre de contrôle (et de messages). */
+const COLLECTIONS = [
+  {
+    nom: 'personnes', regles: REGLES_PERSONNE, libelle: 'Personne',
+    sous: [{ champ: 'preferences', regles: REGLES_PREFERENCE, libelle: 'souhait' }],
+  },
+  {
+    nom: 'tournees', regles: REGLES_TOURNEE, libelle: 'Tournée',
+    sous: [{ champ: 'segments', regles: REGLES_SEGMENT, libelle: 'segment' }],
+  },
+  { nom: 'absences', regles: REGLES_ABSENCE, libelle: 'Absence' },
+  {
+    nom: 'plannings', regles: REGLES_PLANNING, libelle: 'Planning',
+    sous: [{ champ: 'affectations', regles: REGLES_AFFECTATION, libelle: 'affectation' }],
+  },
+];
+
 /**
  * Pré-contrôle **avant migration** : le document est-il un objet avec un
  * `schemaVersion` entier dans la plage connue ? Ne lève jamais.
@@ -280,74 +303,28 @@ export function verifierVersion(doc, versionCourante) {
  * @param {*} doc - Document migré.
  * @returns {{ ok: boolean, erreurs: string[] }} Messages en français.
  */
-export function verifierStructure(doc) {
+function verifierStructure(doc) {
   const erreurs = [];
   if (!estObjet(doc)) {
     return { ok: false, erreurs: ["Le document est invalide : un objet est attendu."] };
   }
 
-  const collections = ['personnes', 'tournees', 'absences', 'plannings'];
-  for (const nom of collections) {
+  for (const { nom } of COLLECTIONS) {
     if (!Array.isArray(doc[nom])) erreurs.push(`Le champ « ${nom} » doit être une liste.`);
   }
   if (!estObjet(doc.cabinet)) {
     erreurs.push('Le champ « cabinet » doit être un objet.');
   } else {
     controlerChamps(doc.cabinet, REGLES_CABINET, 'Réglages du cabinet', erreurs);
-    if (Array.isArray(doc.cabinet.joursOuverture)
-      && !doc.cabinet.joursOuverture.every((j) => Number.isInteger(j) && j >= 1 && j <= 7)) {
-      erreurs.push('Réglages du cabinet : les jours d\'ouverture sont invalides.');
-    }
-    if (Array.isArray(doc.cabinet.creneauxActifs)
-      && !doc.cabinet.creneauxActifs.every((c) => CRENEAUX.includes(c))) {
-      erreurs.push('Réglages du cabinet : les créneaux actifs sont invalides.');
-    }
   }
   if (doc.vacancesScolaires !== undefined && doc.vacancesScolaires !== null
     && (!Array.isArray(doc.vacancesScolaires) || doc.vacancesScolaires.length > MAX.vacances)) {
     erreurs.push('Le champ « vacancesScolaires » est invalide.');
   }
 
-  controlerCollection(doc.personnes, 'personnes', MAX.personnes, erreurs, (p, ctx) => {
-    controlerChamps(p, REGLES_PERSONNE, ctx, erreurs);
-    if (Array.isArray(p.preferences) && p.preferences.length <= MAX.preferences) {
-      p.preferences.forEach((pref, i) => {
-        const c = `${ctx}, souhait n°${i + 1}`;
-        if (!estObjet(pref)) erreurs.push(`${c} : élément invalide.`);
-        else controlerChamps(pref, REGLES_PREFERENCE, c, erreurs);
-      });
-    }
-  }, 'Personne');
-
-  controlerCollection(doc.tournees, 'tournees', MAX.tournees, erreurs, (t, ctx) => {
-    controlerChamps(t, REGLES_TOURNEE, ctx, erreurs);
-    if (Array.isArray(t.joursApplication)
-      && !t.joursApplication.every((j) => Number.isInteger(j) && j >= 1 && j <= 7)) {
-      erreurs.push(`${ctx} : les jours d'application sont invalides.`);
-    }
-    if (Array.isArray(t.segments) && t.segments.length <= MAX.segments) {
-      t.segments.forEach((s, i) => {
-        const c = `${ctx}, segment n°${i + 1}`;
-        if (!estObjet(s)) erreurs.push(`${c} : élément invalide.`);
-        else controlerChamps(s, REGLES_SEGMENT, c, erreurs);
-      });
-    }
-  }, 'Tournée');
-
-  controlerCollection(doc.absences, 'absences', MAX.absences, erreurs, (a, ctx) => {
-    controlerChamps(a, REGLES_ABSENCE, ctx, erreurs);
-  }, 'Absence');
-
-  controlerCollection(doc.plannings, 'plannings', MAX.plannings, erreurs, (pl, ctx) => {
-    controlerChamps(pl, REGLES_PLANNING, ctx, erreurs);
-    if (Array.isArray(pl.affectations) && pl.affectations.length <= MAX.affectations) {
-      pl.affectations.forEach((a, i) => {
-        const c = `${ctx}, affectation n°${i + 1}`;
-        if (!estObjet(a)) erreurs.push(`${c} : élément invalide.`);
-        else controlerChamps(a, REGLES_AFFECTATION, c, erreurs);
-      });
-    }
-  }, 'Planning');
+  for (const { nom, regles, libelle, sous } of COLLECTIONS) {
+    controlerCollection(doc[nom], regles, libelle, erreurs, { plafond: { nom, max: MAX[nom] }, sous });
+  }
 
   return { ok: erreurs.length === 0, erreurs };
 }

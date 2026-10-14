@@ -242,120 +242,79 @@ export function fromSaveDocument(doc) {
 // ---------------------------------------------------------------------------
 
 /**
- * Vérifie la structure et l'intégrité référentielle d'un SaveDocument. Ne
- * lève jamais : renvoie un verdict et des messages en français, explicites,
- * destinés à être affichés tels quels par la future UI d'import.
+ * Vérifie l'intégrité **référentielle** d'un SaveDocument. Suppose le document
+ * **structurellement valide** (objets/tableaux, types) : c'est le rôle de
+ * `verifierStructure` (`src/domain/validationImport.js`), appelée avant par
+ * `verifierDocument`. Renvoie un verdict et des messages en français,
+ * destinés à être affichés tels quels par l'UI d'import.
  *
- * Contrôles effectués :
- * - structure racine : `schemaVersion` entier ; `cabinet` objet ;
- *   `personnes`/`tournees`/`absences`/`plannings` sont des tableaux ;
- * - intégrité référentielle (si la structure ci-dessus est saine) :
- *   `absence.personneId`, `affectation.personneId`, `affectation.tourneeId`,
- *   `planning.referentId` (s'il est non nul), `personne.titulaireId` (s'il est
- *   non nul, vers une personne active ou archivée) et `preference.params.tourneeIds`
- *   (souhaits `PREFERENCE_TOURNEE`) doivent résoudre vers une entité existante.
+ * Contrôles effectués : `absence.personneId`, `affectation.personneId`,
+ * `affectation.tourneeId`, `planning.referentId` (s'il est non nul),
+ * `personne.titulaireId` (s'il est non nul, vers une personne active ou
+ * archivée) et `preference.params.tourneeIds` (souhaits `PREFERENCE_TOURNEE`)
+ * doivent résoudre vers une entité existante.
  *
- * @param {*} doc - Document à vérifier (forme quelconque, non garantie).
+ * @param {SaveDocument} doc - Document structurellement valide.
  * @returns {ResultatIntegrite} Verdict et liste des erreurs éventuelles.
  */
 export function verifierIntegrite(doc) {
-  if (doc === null || typeof doc !== 'object') {
-    return { ok: false, erreurs: ['Le document est invalide : un objet est attendu.'] };
-  }
-
   const erreurs = [];
 
-  // Éléments non-objets (ex. `[null]`) : signalés, jamais parcourus (aucune exception).
-  for (const nom of ['personnes', 'tournees', 'absences', 'plannings']) {
-    if (Array.isArray(doc[nom]) && !doc[nom].every((e) => e !== null && typeof e === 'object')) {
-      return { ok: false, erreurs: [`Le champ « ${nom} » contient un élément invalide.`] };
+  const idsPersonnes = new Set(doc.personnes.map((p) => p.id));
+  const idsTournees = new Set(doc.tournees.map((t) => t.id));
+
+  for (const absence of doc.absences) {
+    if (!idsPersonnes.has(absence.personneId)) {
+      erreurs.push(
+        `Absence « ${absence.id} » : la personne « ${absence.personneId} » référencée est introuvable.`
+      );
     }
   }
 
-  if (!Number.isInteger(doc.schemaVersion)) {
-    erreurs.push('Le champ « schemaVersion » doit être un nombre entier.');
-  }
-  if (doc.cabinet === null || typeof doc.cabinet !== 'object' || Array.isArray(doc.cabinet)) {
-    erreurs.push('Le champ « cabinet » doit être un objet.');
-  }
-
-  const personnesOk = Array.isArray(doc.personnes);
-  const tourneesOk = Array.isArray(doc.tournees);
-  const absencesOk = Array.isArray(doc.absences);
-  const planningsOk = Array.isArray(doc.plannings);
-
-  if (!personnesOk) erreurs.push('Le champ « personnes » doit être une liste.');
-  if (!tourneesOk) erreurs.push('Le champ « tournees » doit être une liste.');
-  if (!absencesOk) erreurs.push('Le champ « absences » doit être une liste.');
-  if (!planningsOk) erreurs.push('Le champ « plannings » doit être une liste.');
-
-  // L'intégrité référentielle ne peut être contrôlée que si les collections
-  // impliquées sont effectivement des tableaux exploitables.
-  const idsPersonnes = personnesOk ? new Set(doc.personnes.map((p) => p.id)) : null;
-  const idsTournees = tourneesOk ? new Set(doc.tournees.map((t) => t.id)) : null;
-
-  if (idsPersonnes && absencesOk) {
-    for (const absence of doc.absences) {
-      if (!idsPersonnes.has(absence.personneId)) {
-        erreurs.push(
-          `Absence « ${absence.id} » : la personne « ${absence.personneId} » référencée est introuvable.`
-        );
-      }
-    }
-  }
-
-  // Souhaits « Tournée préférée ou évitée » (`PREFERENCE_TOURNEE`, 0006) :
-  // chaque tournée référencée dans `params.tourneeIds` doit exister.
-  if (personnesOk && idsTournees) {
-    for (const personne of doc.personnes) {
-      const preferences = Array.isArray(personne.preferences) ? personne.preferences : [];
-      for (const preference of preferences) {
-        if (preference.type !== 'PREFERENCE_TOURNEE') continue;
-        const tourneeIds = Array.isArray(preference.params?.tourneeIds) ? preference.params.tourneeIds : [];
-        for (const tourneeId of tourneeIds) {
-          if (!idsTournees.has(tourneeId)) {
-            erreurs.push(
-              `Personne « ${personne.id} », souhait « ${preference.id} » : la tournée « ${tourneeId} » référencée est introuvable.`
-            );
-          }
+  for (const personne of doc.personnes) {
+    // Souhaits « Tournée préférée ou évitée » (`PREFERENCE_TOURNEE`, 0006) :
+    // chaque tournée référencée dans `params.tourneeIds` doit exister.
+    const preferences = Array.isArray(personne.preferences) ? personne.preferences : [];
+    for (const preference of preferences) {
+      if (preference.type !== 'PREFERENCE_TOURNEE') continue;
+      const tourneeIds = Array.isArray(preference.params?.tourneeIds) ? preference.params.tourneeIds : [];
+      for (const tourneeId of tourneeIds) {
+        if (!idsTournees.has(tourneeId)) {
+          erreurs.push(
+            `Personne « ${personne.id} », souhait « ${preference.id} » : la tournée « ${tourneeId} » référencée est introuvable.`
+          );
         }
       }
     }
   }
 
   // Titulaire remplacée en priorité (`Personne.titulaireId`, 0020) : doit exister.
-  if (personnesOk && idsPersonnes) {
-    for (const personne of doc.personnes) {
-      if (personne.titulaireId != null && !idsPersonnes.has(personne.titulaireId)) {
-        erreurs.push(
-          `Personne « ${personne.id} » : la personne remplacée en priorité « ${personne.titulaireId} » est introuvable.`
-        );
-      }
+  for (const personne of doc.personnes) {
+    if (personne.titulaireId != null && !idsPersonnes.has(personne.titulaireId)) {
+      erreurs.push(
+        `Personne « ${personne.id} » : la personne remplacée en priorité « ${personne.titulaireId} » est introuvable.`
+      );
     }
   }
 
-  if (idsPersonnes && planningsOk) {
-    for (const planning of doc.plannings) {
-      if (planning.referentId != null && !idsPersonnes.has(planning.referentId)) {
+  for (const planning of doc.plannings) {
+    if (planning.referentId != null && !idsPersonnes.has(planning.referentId)) {
+      erreurs.push(
+        `Planning « ${planning.id} » : le référent « ${planning.referentId} » référencé est introuvable.`
+      );
+    }
+
+    const affectations = Array.isArray(planning.affectations) ? planning.affectations : [];
+    for (const affectation of affectations) {
+      if (!idsPersonnes.has(affectation.personneId)) {
         erreurs.push(
-          `Planning « ${planning.id} » : le référent « ${planning.referentId} » référencé est introuvable.`
+          `Planning « ${planning.id} », affectation « ${affectation.id} » : la personne « ${affectation.personneId} » référencée est introuvable.`
         );
       }
-
-      if (idsTournees) {
-        const affectations = Array.isArray(planning.affectations) ? planning.affectations : [];
-        for (const affectation of affectations) {
-          if (!idsPersonnes.has(affectation.personneId)) {
-            erreurs.push(
-              `Planning « ${planning.id} », affectation « ${affectation.id} » : la personne « ${affectation.personneId} » référencée est introuvable.`
-            );
-          }
-          if (!idsTournees.has(affectation.tourneeId)) {
-            erreurs.push(
-              `Planning « ${planning.id} », affectation « ${affectation.id} » : la tournée « ${affectation.tourneeId} » référencée est introuvable.`
-            );
-          }
-        }
+      if (!idsTournees.has(affectation.tourneeId)) {
+        erreurs.push(
+          `Planning « ${planning.id} », affectation « ${affectation.id} » : la tournée « ${affectation.tourneeId} » référencée est introuvable.`
+        );
       }
     }
   }

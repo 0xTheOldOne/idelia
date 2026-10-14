@@ -31,7 +31,10 @@ const CLE_PREFS_UI = 'idelia:prefs-ui';
 const CLE_PREFS_SAUVEGARDE_AUTO = 'idelia:prefs-sauvegarde-auto';
 
 /** Fréquences (minutes) proposées par `BlocSauvegardeAutomatique.vue` : seules valeurs acceptées. */
-const INTERVALLES_SAUVEGARDE_AUTO = [5, 10, 15, 30, 60];
+export const INTERVALLES_SAUVEGARDE_AUTO = Object.freeze([5, 10, 15, 30, 60]);
+
+/** Préférence de sauvegarde automatique par défaut (désactivée, 15 minutes). */
+const PREFERENCE_SAUVEGARDE_AUTO_DEFAUT = Object.freeze({ active: false, intervalleMinutes: 15 });
 
 /**
  * Indique si une erreur correspond à un dépassement de quota de stockage
@@ -66,9 +69,7 @@ async function load() {
   try {
     return JSON.parse(brut);
   } catch {
-    if (localStorage.getItem(CLE_DONNEES_CORROMPUES) === null) {
-      localStorage.setItem(CLE_DONNEES_CORROMPUES, brut);
-    }
+    conserverCopieCorrompue();
     throw new Error(
       "Les données sauvegardées sont illisibles (fichier corrompu). Une copie a été conservée."
     );
@@ -191,7 +192,7 @@ function enregistrerPreferenceMenuReplie(valeur) {
 /**
  * Lit la préférence de sauvegarde automatique (feature 0019). Lecture
  * **synchrone** et tolérante, sur le même modèle que
- * `lirePreferenceMenuReplie` : valeurs par défaut (désactivée, 15 minutes) si
+ * `lirePreferenceMenuReplie` : valeurs par défaut si
  * la clé est absente ou illisible.
  *
  * @returns {{ active: boolean, intervalleMinutes: number }}
@@ -199,14 +200,14 @@ function enregistrerPreferenceMenuReplie(valeur) {
 function lirePreferenceSauvegardeAuto() {
   try {
     const brut = localStorage.getItem(CLE_PREFS_SAUVEGARDE_AUTO);
-    if (!brut) return { active: false, intervalleMinutes: 15 };
+    if (!brut) return { ...PREFERENCE_SAUVEGARDE_AUTO_DEFAUT };
     const valeur = JSON.parse(brut);
     return {
       active: valeur?.active === true,
-      intervalleMinutes: INTERVALLES_SAUVEGARDE_AUTO.includes(valeur?.intervalleMinutes) ? valeur.intervalleMinutes : 15,
+      intervalleMinutes: INTERVALLES_SAUVEGARDE_AUTO.includes(valeur?.intervalleMinutes) ? valeur.intervalleMinutes : PREFERENCE_SAUVEGARDE_AUTO_DEFAUT.intervalleMinutes,
     };
   } catch {
-    return { active: false, intervalleMinutes: 15 };
+    return { ...PREFERENCE_SAUVEGARDE_AUTO_DEFAUT };
   }
 }
 

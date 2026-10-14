@@ -101,6 +101,15 @@ function flushImmediat(store) {
 }
 
 /**
+ * Annule l'écriture débouncée en attente, s'il y en a une (ex. après
+ * « Tout effacer » : une modification en attente recréerait une clé de données).
+ */
+function annulerEcritureEnAttente() {
+  clearTimeout(timer);
+  timer = null;
+}
+
+/**
  * Plugin de persistance : observe toutes les mutations du store et planifie
  * une écriture débouncée pour toute mutation qui modifie de la donnée
  * persistée.
@@ -109,16 +118,18 @@ function flushImmediat(store) {
  * `notifications` (tous deux volatils, jamais persistés — voir feature 0018
  * §4.2) ainsi que les mutations de statut de sauvegarde elles-mêmes
  * (`SET_STATUT_SAUVEGARDE`, `SET_DERNIERE_SAUVEGARDE`), sinon chaque écriture
- * réussie redéclencherait une nouvelle écriture, à l'infini.
+ * réussie redéclencherait une nouvelle écriture, à l'infini. Ignore aussi
+ * `REPLACE_ALL` : l'hydratation (démarrage, import, réinitialisation) n'est
+ * pas une modification utilisateur ; l'import persiste lui-même via
+ * `flushImmediat`.
  *
  * @param {import('vuex').Store} store - Store racine.
  */
 function persistancePlugin(store) {
+  const SANS_PERSISTANCE = new Set(['REPLACE_ALL', 'SET_STATUT_SAUVEGARDE', 'SET_DERNIERE_SAUVEGARDE']);
   store.subscribe((mutation) => {
     if (mutation.type.startsWith('ui/') || mutation.type.startsWith('notifications/')) return;
-    if (mutation.type === 'SET_STATUT_SAUVEGARDE' || mutation.type === 'SET_DERNIERE_SAUVEGARDE') {
-      return;
-    }
+    if (SANS_PERSISTANCE.has(mutation.type)) return;
     planifier(store);
   });
 }
@@ -303,32 +314,27 @@ export default createStore({
      * @returns {Promise<void>}
      */
     async bootstrap({ commit }) {
-      let doc = null;
       try {
-        doc = await storageRepository.load();
-
+        const doc = await storageRepository.load();
         if (doc === null) {
           commit('REPLACE_ALL', etatParDefaut());
           return;
         }
 
         const preparation = preparerDocument(doc);
-        if (preparation.ok) {
-          commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
-        } else {
-          console.error(preparation.message, preparation.erreurs);
-          // Conserve une copie du contenu refusé avant qu'une écriture ne l'écrase.
-          storageRepository.conserverCopieCorrompue();
-          commit('REPLACE_ALL', etatParDefaut());
-          // N'écrase pas le stockage avec l'état vide : l'erreur reste affichée
-          // jusqu'à la première vraie modification.
-          clearTimeout(timer);
-          commit('SET_STATUT_SAUVEGARDE', 'ERREUR_CHARGEMENT');
+        if (!preparation.ok) {
+          console.error(preparation.erreurs);
+          throw new Error(preparation.message);
         }
+        commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
       } catch (e) {
         console.error(e);
+        // Conserve une copie du contenu refusé avant qu'une écriture ne
+        // l'écrase (idempotent : sans effet si `load` l'a déjà fait).
+        storageRepository.conserverCopieCorrompue();
+        // N'écrase pas le stockage avec l'état vide : l'erreur reste affichée
+        // jusqu'à la première vraie modification.
         commit('REPLACE_ALL', etatParDefaut());
-        clearTimeout(timer);
         commit('SET_STATUT_SAUVEGARDE', 'ERREUR_CHARGEMENT');
       }
     },
@@ -348,9 +354,8 @@ export default createStore({
     async importer({ commit, state }, fichierOuTexte) {
       const MESSAGE_GENERIQUE = "L'import a échoué. Le fichier n'a pas pu être utilisé ; vos données actuelles sont conservées.";
       try {
-        const taille = typeof fichierOuTexte === 'string'
-          ? fichierOuTexte.length
-          : fichierOuTexte?.size;
+        // Pré-contrôle sans lecture pour un `File` ; une chaîne est contrôlée après lecture.
+        const taille = fichierOuTexte?.size;
         if (typeof taille === 'number' && taille > TAILLE_MAX_FICHIER_OCTETS) {
           return { ok: false, message: 'Ce fichier est trop volumineux (10 Mo maximum) pour être une sauvegarde Idelia.' };
         }
@@ -424,11 +429,11 @@ export default createStore({
      * @returns {Promise<void>}
      */
     async reinitialiser({ commit, dispatch }) {
+      // Une modification utilisateur en attente recréerait une clé de données
+      // juste après l'effacement : on l'annule.
+      annulerEcritureEnAttente();
       commit('REPLACE_ALL', etatParDefaut());
-      // La mutation ci-dessus planifie une écriture débouncée : on l'annule,
-      // sinon elle recréerait une clé de données juste après l'effacement.
-      clearTimeout(timer);
-      handleFichierSauvegarde = null;
+      desactiverSauvegardeFichier({ commit });
       await storageRepository.clear();
       await dispatch('ui/reinitialiserPreferences');
       commit('SET_STATUT_SAUVEGARDE', 'INACTIF');

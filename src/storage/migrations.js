@@ -270,7 +270,7 @@ MIGRATIONS[6] = (doc) => {
 MIGRATIONS[7] = (doc) => {
   const personnes = Array.isArray(doc.personnes)
     ? doc.personnes.map((personne) =>
-      // Élément non objet laissé tel quel : `verifierIntegrite` le rejettera.
+      // Élément non objet laissé tel quel : `verifierStructure` le rejettera.
       personne && typeof personne === 'object' && !Array.isArray(personne)
         ? { ...personne, identifiants: normaliserIdentifiants(personne.identifiants) }
         : personne

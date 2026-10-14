@@ -294,9 +294,8 @@ export default {
       this.importEnCours = true;
       let resultat;
       try {
+        // `importer` ne lève jamais : toute erreur revient dans le résultat.
         resultat = await this.importer(this.fichierEnAttente);
-      } catch {
-        resultat = { ok: false, message: "L'import a échoué. Vos données actuelles sont conservées." };
       } finally {
         this.importEnCours = false;
         this.fichierEnAttente = null;
