@@ -69,26 +69,42 @@
             <div class="equipe-actions">
               <button
                 type="button"
-                class="btn btn-outline-secondary"
+                class="btn btn-outline-secondary equipe-bouton-icone"
+                title="Modifier la fiche"
+                :aria-label="`Modifier la fiche de ${nomComplet(personne)}`"
                 @click="ouvrirEdition(personne)"
               >
                 <PhPencilSimple :size="18" aria-hidden="true" />
-                <span>Modifier</span>
+                <span class="d-md-none" aria-hidden="true">Modifier</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary equipe-bouton-icone equipe-bouton-informations"
+                title="Informations utiles"
+                :aria-label="`Informations utiles de ${nomComplet(personne)}`"
+                @click="ouvrirInformations(personne)"
+              >
+                <PhIdentificationCard :size="18" aria-hidden="true" />
+                <span class="d-md-none" aria-hidden="true">Informations utiles</span>
               </button>
               <router-link
-                class="btn btn-outline-secondary equipe-bouton-souhaits"
+                class="btn btn-outline-secondary equipe-bouton-icone"
+                title="Souhaits"
+                :aria-label="`Souhaits de ${nomComplet(personne)}`"
                 :to="{ name: 'souhaits', params: { id: personne.id } }"
               >
                 <PhShootingStar :size="18" aria-hidden="true" />
-                <span>Souhaits</span>
+                <span class="d-md-none" aria-hidden="true">Souhaits</span>
               </router-link>
               <button
                 type="button"
-                class="btn btn-outline-secondary"
+                class="btn btn-outline-danger equipe-bouton-icone equipe-bouton-archiver"
+                title="Archiver"
+                :aria-label="`Archiver ${nomComplet(personne)}`"
                 @click="demanderArchivage(personne)"
               >
                 <PhArchive :size="18" aria-hidden="true" />
-                <span>Archiver</span>
+                <span class="d-md-none" aria-hidden="true">Archiver</span>
               </button>
             </div>
           </li>
@@ -136,13 +152,25 @@
               </div>
               <div class="equipe-actions">
                 <button
-                  type="button"
-                  class="btn btn-outline-secondary"
-                  @click="restaurer(personne)"
-                >
-                  <PhArrowCounterClockwise :size="18" aria-hidden="true" />
-                  <span>Restaurer</span>
-                </button>
+                type="button"
+                class="btn btn-outline-secondary equipe-bouton-icone equipe-bouton-informations"
+                title="Informations utiles"
+                :aria-label="`Informations utiles de ${nomComplet(personne)}`"
+                @click="ouvrirInformations(personne)"
+              >
+                <PhIdentificationCard :size="18" aria-hidden="true" />
+                <span class="d-md-none" aria-hidden="true">Informations utiles</span>
+              </button>
+                <button
+                type="button"
+                class="btn btn-outline-secondary equipe-bouton-icone"
+                title="Restaurer"
+                :aria-label="`Restaurer ${nomComplet(personne)}`"
+                @click="restaurer(personne)"
+              >
+                <PhArrowCounterClockwise :size="18" aria-hidden="true" />
+                <span class="d-md-none" aria-hidden="true">Restaurer</span>
+              </button>
               </div>
             </li>
           </ul>
@@ -158,6 +186,14 @@
       :champ-initial="champInitial"
       @enregistrer="onEnregistrer"
       @annuler="onAnnulerFormulaire"
+    />
+
+    <ModaleInformationsUtiles
+      :visible="informationsVisible"
+      :personne="personneInformations"
+      :modifiable="personneInformations?.actif !== false"
+      @fermeture="onFermetureInformations"
+      @modifier="onModifierDepuisInformations"
     />
 
     <DialogueConfirmation
@@ -184,10 +220,12 @@ import {
   PhCaretRight,
   PhShootingStar,
   PhArrowLeft,
+  PhIdentificationCard,
 } from '@phosphor-icons/vue';
 
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulairePersonne from '@/components/equipe/FormulairePersonne.vue';
+import ModaleInformationsUtiles from '@/components/equipe/ModaleInformationsUtiles.vue';
 import { libelleStatutPersonne } from '@/domain/libelles.js';
 import {
   reperePersonne,
@@ -204,6 +242,11 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * construction/normalisation d'une personne est déléguée au domaine
  * (`creerPersonne`, appelé par l'action `personnes/ajouter`) ; le tri
  * alphabétique n'est qu'un choix de présentation local à l'écran.
+ *
+ * Consultation (feature 0030) : « Informations utiles » (personnes actives et
+ * archivées) ouvre `ModaleInformationsUtiles` ; « Modifier ces informations »
+ * ferme d'abord la consultation, puis ouvre la fiche sur l'onglet
+ * professionnel (`champInitial: 'identifiants'`) après l'événement de fermeture.
  *
  * Liens profonds (feature 0027, envoi du planning par e-mail), paramètres
  * d'URL de `/equipe` :
@@ -230,7 +273,9 @@ export default {
     PhCaretRight,
     PhShootingStar,
     PhArrowLeft,
+    PhIdentificationCard,
     DialogueConfirmation,
+    ModaleInformationsUtiles,
     FormulairePersonne,
   },
   data() {
@@ -241,6 +286,12 @@ export default {
       personneEnCours: null,
       // Champ qui reçoit le focus à l'ouverture de la fiche ('prenom' | 'email').
       champInitial: 'prenom',
+      // Consultation « Informations utiles » (feature 0030) ; le drapeau
+      // enchaîne vers la fiche une fois la consultation totalement fermée
+      // (Bootstrap n'affiche qu'une modale à la fois).
+      informationsVisible: false,
+      personneInformations: null,
+      ficheApresInformations: false,
       // Pilotage de la confirmation d'archivage.
       confirmationVisible: false,
       personneAArchiver: null,
@@ -356,10 +407,30 @@ export default {
       this.champInitial = 'prenom';
       this.formulaireVisible = true;
     },
-    ouvrirEdition(personne) {
+    ouvrirEdition(personne, champ = 'prenom') {
       this.personneEnCours = personne;
-      this.champInitial = 'prenom';
+      this.champInitial = champ;
       this.formulaireVisible = true;
+    },
+    /** Nom complet, pour les noms accessibles des boutons de ligne. */
+    nomComplet(personne) {
+      return `${personne.prenom} ${personne.nom}`;
+    },
+    ouvrirInformations(personne) {
+      this.personneInformations = personne;
+      this.informationsVisible = true;
+    },
+    onModifierDepuisInformations() {
+      this.ficheApresInformations = true;
+      this.informationsVisible = false;
+    },
+    /** Appelé quand la fermeture de la consultation est terminée. */
+    onFermetureInformations() {
+      this.informationsVisible = false;
+      if (this.ficheApresInformations) {
+        this.ficheApresInformations = false;
+        this.ouvrirEdition(this.personneInformations, 'identifiants');
+      }
     },
     onEnregistrer(champs) {
       const estCreation = !this.personneEnCours;
@@ -448,14 +519,20 @@ export default {
   gap: t.$espace-2;
 }
 
-// Correctif ergonomie : icône + libellé mal centrés verticalement dans le
-// bouton « Souhaits » (routeur-link, sans le `display: inline-flex` des
-// boutons `<button>` classiques de cette liste).
-.equipe-bouton-souhaits {
+// Actions de ligne en icône seule (libellé écrit sous `md`, voir gabarit).
+.equipe-bouton-icone {
   display: inline-flex;
   align-items: center;
-  gap: t.$espace-2;
+  justify-content: center;
+  gap: t.$espace-1;
+  min-width: t.$cible-cliquable-min;
   line-height: 1;
+}
+
+// « Archiver » retire la personne de la liste active : écarté des autres actions
+// (en plus de sa couleur), relecture ui-ux 0030.
+.equipe-bouton-archiver {
+  margin-left: t.$espace-3;
 }
 
 .equipe-etat-vide {
@@ -529,7 +606,7 @@ export default {
 .equipe-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: t.$espace-2;
+  gap: t.$espace-1;
   margin-left: auto;
 }
 

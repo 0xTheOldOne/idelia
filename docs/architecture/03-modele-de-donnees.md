@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 6,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone)
+  "schemaVersion": 6,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -25,7 +25,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -42,6 +42,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
       "quotite": 100, "joursTravaillesParMois": 15, "titulaireId": null, "dateEntree": "2019-09-01", "dateSortie": null,
       "contact": { "email": null, "telephone": "0600000000" },
       "ordreAffichage": 1, "notes": "", "initialesVega": "CM",
+      "identifiants": { "rpps": null, "adeli": null, "ordinal": null, "cps": null, "carteProfessionnelle": null, "siret": null },
       "preferences": [
         { "id": "0274ede8-0b6f-4168-bbe4-911de592c54f", "type": "JOUR_OFF_RECURRENT", "nature": "DURE", "actif": true,
           "params": { "joursSemaine": [3] }, "libelle": "Pas le mercredi",
@@ -122,6 +123,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[4]` (v4 → v5)** — [feature 0034](../../features/0034-initiales-vega-et-reversements.md) : chaque `Personne` reçoit `initialesVega: personne.initialesVega ?? null` (idempotent). `null` = non renseigné. Les autres entités sont inchangées.
 - **`MIGRATIONS[5]` (v5 → v6)** — [feature 0020](../../features/0020-equipe-rythme-mensuel-remplacante.md) : chaque `Personne` reçoit `joursTravaillesParMois: personne.joursTravaillesParMois ?? null` et `titulaireId: personne.titulaireId ?? null` (idempotent). `null` = pas de rythme / pas de titulaire rattachée. Les autres entités sont inchangées.
 - **`MIGRATIONS[6]` (v6 → v7)** — [feature 0029](../../features/0029-tournees-icone-de-repere.md) : chaque `Tournee` reçoit `icone: normaliserIconeTournee(tournee.icone)` (idempotent : absent → `null` ; code connu conservé ; valeur inconnue → `null`). `null` = pas d'icône de repère. Les autres entités sont inchangées. Une valeur hors liste dans un fichier déjà en v7 est ramenée à `null` par `fromSaveDocument`, sans erreur.
+- **`MIGRATIONS[7]` (v7 → v8)** — [feature 0030](../../features/0030-personne-informations-professionnelles.md) : chaque `Personne` reçoit `identifiants: normaliserIdentifiants(personne.identifiants)` (idempotent : absent → 6 `null` ; valeurs existantes normalisées ; clés inconnues ignorées). Les autres entités sont inchangées. Un bloc absent ou non objet dans un fichier déjà en v8 est normalisé par `fromSaveDocument`, sans erreur.
 
 ## Intégrité référentielle
 

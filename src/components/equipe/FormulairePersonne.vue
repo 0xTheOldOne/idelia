@@ -7,6 +7,21 @@
     @affichee="onAffichee"
   >
     <form :id="idFormulaire" novalidate @submit.prevent="soumettre">
+      <ListeOnglets
+        v-model="ongletActif"
+        class="mb-3"
+        :onglets="ONGLETS_FICHE"
+        prefixe-id="personne"
+        libelle-groupe="Rubriques de la fiche personne"
+      />
+
+      <div
+        v-show="ongletActif === 'general'"
+        id="personne-panneau-general"
+        role="tabpanel"
+        aria-labelledby="personne-onglet-general"
+        tabindex="0"
+      >
       <!-- Identité -->
       <div class="row g-3 mb-4">
         <div class="col-sm-6">
@@ -332,6 +347,47 @@
           <span>{{ v$.formulaire.notes.$errors[0].$message }}</span>
         </p>
       </div>
+      </div>
+
+      <div
+        v-show="ongletActif === 'pro'"
+        id="personne-panneau-pro"
+        role="tabpanel"
+        aria-labelledby="personne-onglet-pro"
+        tabindex="0"
+      >
+        <p class="form-text mb-3">
+          Facultatif. Ces numéros restent enregistrés sur cet ordinateur, avec le reste du planning, et
+          sont inclus dans les sauvegardes. Vous pourrez les retrouver et les copier depuis la page
+          Équipe (bouton « Informations utiles »).
+        </p>
+        <div v-for="champ in CHAMPS_IDENTIFIANTS" :key="champ.cle" class="mb-4">
+          <label :for="`personne-identifiant-${champ.cle}`" class="form-label">{{ champ.libelle }}</label>
+          <input
+            :id="`personne-identifiant-${champ.cle}`"
+            v-model="formulaire.identifiants[champ.cle]"
+            type="text"
+            class="form-control formulaire-identifiant"
+            :maxlength="LONGUEUR_MAX_IDENTIFIANT"
+            autocomplete="off"
+            :aria-describedby="
+              describedBy(
+                `personne-identifiant-${champ.cle}-aide`,
+                avertissements[champ.cle] ? `personne-identifiant-${champ.cle}-avertissement` : null
+              )
+            "
+          >
+          <div :id="`personne-identifiant-${champ.cle}-aide`" class="form-text">{{ champ.aide }}</div>
+          <p
+            v-if="avertissements[champ.cle]"
+            :id="`personne-identifiant-${champ.cle}-avertissement`"
+            class="formulaire-avertissement"
+          >
+            <PhInfo :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ avertissements[champ.cle] }}</span>
+          </p>
+        </div>
+      </div>
 
       <p
         v-if="soumissionInvalide"
@@ -354,9 +410,16 @@
 <script>
 import { useVuelidate } from '@vuelidate/core';
 import { required, integer, between, email, maxLength, helpers } from '@vuelidate/validators';
-import { PhCheck, PhWarning } from '@phosphor-icons/vue';
+import { PhCheck, PhInfo, PhWarning } from '@phosphor-icons/vue';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
+import ListeOnglets from '@/components/communs/ListeOnglets.vue';
+import {
+  CHAMPS_IDENTIFIANTS,
+  LONGUEUR_MAX_IDENTIFIANT,
+  normaliserIdentifiants,
+  avertissementIdentifiant,
+} from '@/domain/identifiantsPro.js';
 import { STATUTS_PERSONNE_OPTIONS } from '@/domain/libelles.js';
 import { genId } from '@/domain/utils/id.js';
 import {
@@ -384,7 +447,7 @@ import {
  */
 export default {
   name: 'FormulairePersonne',
-  components: { ModaleBase, PhCheck, PhWarning },
+  components: { ModaleBase, ListeOnglets, PhCheck, PhInfo, PhWarning },
   props: {
     /** Affiche (`true`) ou masque (`false`) la modale ; piloté par le parent. */
     visible: { type: Boolean, required: true },
@@ -396,7 +459,8 @@ export default {
     personnes: { type: Array, default: () => [] },
     /**
      * Champ qui reçoit le focus à l'ouverture : `'prenom'` (défaut) ou
-     * `'email'` (lien profond depuis l'envoi du planning, feature 0027).
+     * `'email'` (lien profond depuis l'envoi du planning, feature 0027) ou
+     * `'identifiants'` (ouvre l'onglet « Informations professionnelles », feature 0030).
      */
     champInitial: { type: String, default: 'prenom' },
   },
@@ -409,6 +473,13 @@ export default {
   data() {
     return {
       STATUTS_PERSONNE_OPTIONS,
+      CHAMPS_IDENTIFIANTS,
+      LONGUEUR_MAX_IDENTIFIANT,
+      ONGLETS_FICHE: [
+        { code: 'general', libelle: 'Informations générales' },
+        { code: 'pro', libelle: 'Informations professionnelles' },
+      ],
+      ongletActif: this.champInitial === 'identifiants' ? 'pro' : 'general',
       // Identifiant unique du `<form>`, pour relier le bouton « Enregistrer »
       // du pied de modale (hors du `<form>`) via l'attribut HTML `form`.
       idFormulaire: `formulaire-personne-${genId()}`,
@@ -439,6 +510,14 @@ export default {
     /** Aucune titulaire active proposable (hors rattachement conservé). */
     aucuneTitulaireActive() {
       return this.optionsTitulaireListe.length === 0;
+    },
+    /** Avertissements non bloquants par clé d'identifiant (hors Vuelidate). */
+    avertissements() {
+      const resultat = {};
+      for (const { cle } of CHAMPS_IDENTIFIANTS) {
+        resultat[cle] = avertissementIdentifiant(cle, this.formulaire.identifiants[cle]);
+      }
+      return resultat;
     },
     titreModale() {
       return this.personne ? 'Modifier la personne' : 'Ajouter une personne';
@@ -556,6 +635,7 @@ export default {
             telephone: this.personne.contact?.telephone ?? '',
           },
           notes: this.personne.notes ?? '',
+          identifiants: { ...normaliserIdentifiants(this.personne.identifiants) },
         };
       }
 
@@ -572,6 +652,7 @@ export default {
         dateSortie: '',
         contact: { email: '', telephone: '' },
         notes: '',
+        identifiants: { ...normaliserIdentifiants(null) },
       };
     },
 
@@ -583,6 +664,7 @@ export default {
      */
     reinitialiser() {
       this.formulaire = this.construireFormulaire();
+      this.ongletActif = this.champInitial === 'identifiants' ? 'pro' : 'general';
       this.v$.$reset();
       this.soumissionInvalide = false;
     },
@@ -595,6 +677,10 @@ export default {
      * le piège à focus de la modale (contrairement à un délai arbitraire).
      */
     onAffichee() {
+      if (this.champInitial === 'identifiants') {
+        this.$el.querySelector(`#personne-identifiant-${CHAMPS_IDENTIFIANTS[0].cle}`)?.focus();
+        return;
+      }
       if (this.champInitial === 'email') {
         this.$el.querySelector('#personne-email')?.focus();
         // Une adresse invalide affiche aussitôt son message ; vide = aucune erreur (facultatif).
@@ -694,7 +780,12 @@ export default {
     focusPremierChampErrone() {
       const premierEnErreur = this.champsEnOrdre().find((champ) => champ.validation.$error);
       if (!premierEnErreur) return;
-      this.$el.querySelector(`#${premierEnErreur.id}`)?.focus();
+      // Tous les champs validés sont dans l'onglet général : on y revient si besoin,
+      // puis on focalise une fois le panneau réaffiché.
+      if (this.ongletActif !== 'general') this.ongletActif = 'general';
+      this.$nextTick(() => {
+        this.$el.querySelector(`#${premierEnErreur.id}`)?.focus();
+      });
     },
 
     soumettre() {
@@ -722,6 +813,7 @@ export default {
           telephone: this.formulaire.contact.telephone || null,
         },
         notes: this.formulaire.notes,
+        identifiants: normaliserIdentifiants(this.formulaire.identifiants),
       });
     },
   },
@@ -787,6 +879,25 @@ export default {
   align-items: center;
   gap: t.$espace-2;
   font-weight: t.$graisse-gras;
+}
+
+.formulaire-identifiant {
+  max-width: 20rem;
+}
+
+// Avertissement non bloquant : icône info + couleur d'avertissement, pas de bordure rouge.
+.formulaire-avertissement {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$espace-1;
+  margin: t.$espace-2 0 0;
+  color: t.$couleur-avertissement-texte;
+  font-size: t.$taille-texte-petite;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 0.15em;
+  }
 }
 
 // Présentation des messages d'erreur, cohérente avec ParametresView.

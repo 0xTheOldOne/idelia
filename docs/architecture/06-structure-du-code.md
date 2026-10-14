@@ -30,6 +30,7 @@ Idelia/
     │   ├── scheduling/         # moteur de planification (voir 05)
     │   ├── remplacement.js     # identification des remplaçantes (estRemplacante) [0021]
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
+    │   ├── identifiantsPro.js  # identifiants professionnels d'une personne (normalisation, formats) [0030]
     │   ├── iconesTournee.js    # codes et libellés des icônes de repère des tournées [0029]
     │   ├── rythmeMensuel.js    # jours attendus d'une personne sur une période selon son rythme mensuel [0020, réutilisé par 0024]
     │   ├── recapMensuel.js     # récap par mois et par personne : grandes/petites tournées, jours travaillés, dépassement du rythme [0024]

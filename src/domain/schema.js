@@ -13,6 +13,7 @@
  */
 
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
+import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 
 // ---------------------------------------------------------------------------
 // Enums / constantes du domaine (codes stables, MAJUSCULES_SNAKE)
@@ -211,7 +212,8 @@ export function fromSaveDocument(doc) {
     // que celle figée dans une sauvegarde ancienne, pour qu'elle suive la
     // version d'Idelia. Les autres réglages du cabinet sont préservés tels quels.
     cabinet: { parametres: { ...doc.cabinet, couleursParDefaut: COULEURS_PAR_DEFAUT } },
-    personnes: { items: doc.personnes ?? [] },
+    // `identifiants` : forme garantie (6 clés), jamais bloquant (0030).
+    personnes: { items: (doc.personnes ?? []).map((p) => ({ ...p, identifiants: normaliserIdentifiants(p?.identifiants) })) },
     // `icone` : valeur hors liste (fichier modifié à la main) → `null`, jamais bloquant (0029).
     tournees: { items: (doc.tournees ?? []).map((t) => ({ ...t, icone: normaliserIconeTournee(t?.icone) })) },
     absences: { items: doc.absences ?? [] },

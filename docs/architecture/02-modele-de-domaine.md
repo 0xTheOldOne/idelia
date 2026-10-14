@@ -55,8 +55,22 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | initialesVega | string `^[A-Z0-9]{2,4}$` \| null | non | code « PS » de la personne dans Vega ; `null` si non renseigné ; **unique** parmi toutes les personnes (actives et archivées) ; stocké en majuscules, sans espaces [0034] |
 | joursTravaillesParMois | integer 1..31 | null | non | rythme habituel en **jours travaillés par mois complet** ; `null` = pas de rythme (l'équité utilise alors `quotite`) [0020] |
 | titulaireId | uuid → Personne | null | non | titulaire remplacée **en priorité** ; renseigné **seulement si `statut = REMPLACANT`** (sinon `null`) ; une seule titulaire par remplaçante, une titulaire peut avoir plusieurs remplaçantes ; jamais soi-même ; conservé si la titulaire est archivée [0020] ; lu par le moteur : priorité les jours où cette titulaire ne travaille pas [0021] |
+| identifiants | IdentifiantsPro | oui (bloc toujours présent) | identifiants professionnels ; 6 clés, chacune `string` (1 à 30 caractères, sans espace, majuscules) ou `null` ; toutes `null` par défaut [0030] |
 | preferences | Preference[] | oui (`[]` possible) | imbriqué |
 | createdAt / updatedAt | ISO UTC | oui | |
+
+### IdentifiantsPro (imbriqué dans Personne)
+
+Objet sans `id`, clés toujours présentes (valeur `null` si non renseignée), dans l'ordre d'affichage [0030]. Normalisation (`normaliserIdentifiant`) : tous les espaces retirés (insécables compris), majuscules, vide → `null`, 30 caractères maximum. Le contrôle de forme est un **avertissement non bloquant** (`avertissementIdentifiant`), jamais une erreur.
+
+| clé | libellé | contrôle de forme (non bloquant) |
+|---|---|---|
+| rpps | Numéro RPPS | exactement 11 chiffres |
+| adeli | Numéro ADELI | `^(\d{2}\|2A\|2B)\d{7}$` |
+| ordinal | Numéro ordinal (Ordre des infirmiers) | aucun |
+| cps | Numéro de carte CPS | aucun |
+| carteProfessionnelle | Numéro de carte professionnelle | aucun |
+| siret | Numéro SIRET | 14 chiffres et clé de Luhn |
 
 ### Preference (imbriquée dans Personne)
 

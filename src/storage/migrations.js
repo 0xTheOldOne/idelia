@@ -9,9 +9,10 @@
 
 import { genId } from '@/domain/utils/id.js';
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
+import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -249,6 +250,31 @@ MIGRATIONS[6] = (doc) => {
     ? doc.tournees.map((tournee) => ({ ...tournee, icone: normaliserIconeTournee(tournee.icone) }))
     : doc.tournees;
   return { ...doc, tournees };
+};
+
+/**
+ * Migration v7 → v8 (feature 0030) : ajout de `Personne.identifiants`, bloc
+ * des identifiants professionnels (rpps, adeli, ordinal, cps,
+ * carteProfessionnelle, siret).
+ *
+ * - Chaque `Personne` de `doc.personnes` reçoit
+ *   `identifiants: normaliserIdentifiants(personne.identifiants)` (idempotent :
+ *   absent → 6 `null` ; valeurs existantes normalisées ; clés inconnues ignorées).
+ * - `tournees`, `absences`, `plannings`, `cabinet` : inchangés.
+ *
+ * @param {object} doc - Document de version 7.
+ * @returns {object} Document équivalent en version 8 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[7] = (doc) => {
+  const personnes = Array.isArray(doc.personnes)
+    ? doc.personnes.map((personne) =>
+      // Élément non objet laissé tel quel : `verifierIntegrite` le rejettera.
+      personne && typeof personne === 'object' && !Array.isArray(personne)
+        ? { ...personne, identifiants: normaliserIdentifiants(personne.identifiants) }
+        : personne
+    )
+    : doc.personnes;
+  return { ...doc, personnes };
 };
 
 /**

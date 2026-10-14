@@ -11,6 +11,17 @@ import { genId } from '@/domain/utils/id.js';
 import { normaliserInitialesVega } from '@/domain/initialesVega.js';
 import { estCouleurFoncee } from '@/domain/utils/couleurs.js';
 import { normaliserRythmeMensuel } from '@/domain/rythmeMensuel.js';
+import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
+
+/**
+ * @typedef {Object} IdentifiantsPro
+ * @property {(string|null)} rpps
+ * @property {(string|null)} adeli
+ * @property {(string|null)} ordinal
+ * @property {(string|null)} cps
+ * @property {(string|null)} carteProfessionnelle
+ * @property {(string|null)} siret
+ */
 
 /**
  * @typedef {Object} ContactPersonne
@@ -34,6 +45,7 @@ import { normaliserRythmeMensuel } from '@/domain/rythmeMensuel.js';
  * @property {ContactPersonne} contact
  * @property {string} notes
  * @property {(string|null)} initialesVega - Code « PS » dans Vega (2-4 car. A-Z0-9, majuscules), ou null.
+ * @property {IdentifiantsPro} identifiants - Identifiants professionnels, bloc toujours complet (6 clés, `null` par défaut) (0030).
  * @property {(number|null)} ordreAffichage - Réordonnancement manuel (non édité en 0004).
  * @property {Array} preferences - `Preference[]`, initialisé vide (édité en 0005).
  * @property {string} createdAt - Horodatage ISO UTC.
@@ -74,6 +86,7 @@ export function creerPersonne(champs = {}) {
     },
     notes: champs.notes ?? '',
     initialesVega: normaliserInitialesVega(champs.initialesVega),
+    identifiants: normaliserIdentifiants(champs.identifiants),
     ordreAffichage: champs.ordreAffichage ?? null,
     preferences: champs.preferences ?? [],
     createdAt: champs.createdAt ?? maintenant,
