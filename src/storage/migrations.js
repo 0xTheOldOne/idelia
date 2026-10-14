@@ -11,6 +11,7 @@ import { genId } from '@/domain/utils/id.js';
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
+import { verifierVersion, verifierDocument } from '@/domain/validationImport.js';
 
 /** Version courante du schéma de données. */
 export const CURRENT_SCHEMA_VERSION = 9;
@@ -333,4 +334,29 @@ export function migrate(doc) {
   }
 
   return { ...migre, schemaVersion: CURRENT_SCHEMA_VERSION };
+}
+
+/**
+ * Prépare un document brut (import ou rechargement du stockage local) :
+ * contrôle de version AVANT migration, migration, puis validation complète
+ * (structure + intégrité). Ne lève jamais ; les messages sont en français,
+ * sans détail technique, prêts à être affichés.
+ *
+ * @param {*} brut - Valeur issue de `JSON.parse` (forme quelconque).
+ * @returns {{ ok: true, doc: object } | { ok: false, message: string, erreurs?: string[] }}
+ */
+export function preparerDocument(brut) {
+  const version = verifierVersion(brut, CURRENT_SCHEMA_VERSION);
+  if (!version.ok) return { ok: false, message: version.message };
+
+  let doc;
+  try {
+    doc = migrate(brut);
+  } catch {
+    return { ok: false, message: "Cette sauvegarde n'a pas pu être lue : son contenu est invalide." };
+  }
+
+  const { ok, erreurs } = verifierDocument(doc);
+  if (!ok) return { ok: false, message: 'La sauvegarde contient des incohérences.', erreurs };
+  return { ok: true, doc };
 }

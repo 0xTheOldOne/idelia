@@ -1,12 +1,8 @@
 import { createStore } from 'vuex';
 
-import {
-  etatParDefaut,
-  toSaveDocument,
-  fromSaveDocument,
-  verifierIntegrite,
-} from '@/domain/schema.js';
-import { CURRENT_SCHEMA_VERSION, migrate } from '@/storage/migrations.js';
+import { etatParDefaut, toSaveDocument, fromSaveDocument } from '@/domain/schema.js';
+import { TAILLE_MAX_FICHIER_OCTETS } from '@/domain/validationImport.js';
+import { CURRENT_SCHEMA_VERSION, preparerDocument } from '@/storage/migrations.js';
 import { storageRepository } from '@/storage/storageRepository.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
@@ -316,18 +312,23 @@ export default createStore({
           return;
         }
 
-        doc = migrate(doc);
-        const { ok, erreurs } = verifierIntegrite(doc);
-        if (ok) {
-          commit('REPLACE_ALL', fromSaveDocument(doc));
+        const preparation = preparerDocument(doc);
+        if (preparation.ok) {
+          commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
         } else {
-          console.error(erreurs);
+          console.error(preparation.message, preparation.erreurs);
+          // Conserve une copie du contenu refusé avant qu'une écriture ne l'écrase.
+          storageRepository.conserverCopieCorrompue();
           commit('REPLACE_ALL', etatParDefaut());
+          // N'écrase pas le stockage avec l'état vide : l'erreur reste affichée
+          // jusqu'à la première vraie modification.
+          clearTimeout(timer);
           commit('SET_STATUT_SAUVEGARDE', 'ERREUR_CHARGEMENT');
         }
       } catch (e) {
         console.error(e);
         commit('REPLACE_ALL', etatParDefaut());
+        clearTimeout(timer);
         commit('SET_STATUT_SAUVEGARDE', 'ERREUR_CHARGEMENT');
       }
     },
@@ -345,43 +346,53 @@ export default createStore({
      * @returns {Promise<{ ok: boolean, message: string, erreurs?: string[] }>}
      */
     async importer({ commit, state }, fichierOuTexte) {
-      let texte;
+      const MESSAGE_GENERIQUE = "L'import a échoué. Le fichier n'a pas pu être utilisé ; vos données actuelles sont conservées.";
       try {
-        texte = typeof fichierOuTexte?.text === 'function'
-          ? await fichierOuTexte.text()
-          : fichierOuTexte;
-      } catch {
-        return { ok: false, message: 'Impossible de lire le fichier fourni.' };
-      }
+        const taille = typeof fichierOuTexte === 'string'
+          ? fichierOuTexte.length
+          : fichierOuTexte?.size;
+        if (typeof taille === 'number' && taille > TAILLE_MAX_FICHIER_OCTETS) {
+          return { ok: false, message: 'Ce fichier est trop volumineux (10 Mo maximum) pour être une sauvegarde Idelia.' };
+        }
 
-      let doc;
-      try {
-        doc = JSON.parse(texte);
-      } catch {
-        return { ok: false, message: "Fichier illisible : ce n'est pas un JSON valide." };
-      }
+        let texte;
+        try {
+          texte = typeof fichierOuTexte?.text === 'function'
+            ? await fichierOuTexte.text()
+            : fichierOuTexte;
+        } catch {
+          return { ok: false, message: 'Impossible de lire le fichier fourni.' };
+        }
+        if (typeof texte !== 'string' || texte.length > TAILLE_MAX_FICHIER_OCTETS) {
+          return { ok: false, message: "Ce fichier n'est pas une sauvegarde Idelia valide." };
+        }
 
-      try {
-        doc = migrate(doc);
+        let doc;
+        try {
+          doc = JSON.parse(texte);
+        } catch {
+          return { ok: false, message: "Fichier illisible : ce n'est pas un JSON valide." };
+        }
+
+        const preparation = preparerDocument(doc);
+        if (!preparation.ok) {
+          return { ok: false, message: preparation.message, erreurs: preparation.erreurs };
+        }
+
+        commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
+        // `flushImmediat` n'a besoin que de `state`/`commit` : on lui passe le
+        // contexte d'action local (module racine non namespacé, il est donc
+        // équivalent à ceux exposés par le store complet) plutôt que de
+        // dépendre du `this` lié en interne par Vuex aux actions.
+        await flushImmediat({ state, commit });
+        commit('SET_DERNIERE_SAUVEGARDE', new Date().toISOString());
+        commit('SET_STATUT_SAUVEGARDE', 'ENREGISTRE');
+
+        return { ok: true, message: 'Import réussi.' };
       } catch (e) {
-        return { ok: false, message: e.message };
+        console.error(e);
+        return { ok: false, message: MESSAGE_GENERIQUE };
       }
-
-      const { ok, erreurs } = verifierIntegrite(doc);
-      if (!ok) {
-        return { ok: false, message: 'La sauvegarde contient des incohérences.', erreurs };
-      }
-
-      commit('REPLACE_ALL', fromSaveDocument(doc));
-      // `flushImmediat` n'a besoin que de `state`/`commit` : on lui passe le
-      // contexte d'action local (module racine non namespacé, il est donc
-      // équivalent à ceux exposés par le store complet) plutôt que de
-      // dépendre du `this` lié en interne par Vuex aux actions.
-      await flushImmediat({ state, commit });
-      commit('SET_DERNIERE_SAUVEGARDE', new Date().toISOString());
-      commit('SET_STATUT_SAUVEGARDE', 'ENREGISTRE');
-
-      return { ok: true, message: 'Import réussi.' };
     },
 
     /**
@@ -412,9 +423,16 @@ export default createStore({
      * @param {import('vuex').ActionContext} context
      * @returns {Promise<void>}
      */
-    async reinitialiser({ commit }) {
+    async reinitialiser({ commit, dispatch }) {
       commit('REPLACE_ALL', etatParDefaut());
+      // La mutation ci-dessus planifie une écriture débouncée : on l'annule,
+      // sinon elle recréerait une clé de données juste après l'effacement.
+      clearTimeout(timer);
+      handleFichierSauvegarde = null;
       await storageRepository.clear();
+      await dispatch('ui/reinitialiserPreferences');
+      commit('SET_STATUT_SAUVEGARDE', 'INACTIF');
+      commit('SET_DERNIERE_SAUVEGARDE', null);
     },
 
     // Fichier de sauvegarde actif (feature 0019, ADR 0018) — voir les

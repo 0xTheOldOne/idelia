@@ -292,10 +292,16 @@ export default {
     async onConfirmerImport() {
       this.confirmationImportVisible = false;
       this.importEnCours = true;
-      const resultat = await this.importer(this.fichierEnAttente);
+      let resultat;
+      try {
+        resultat = await this.importer(this.fichierEnAttente);
+      } catch {
+        resultat = { ok: false, message: "L'import a échoué. Vos données actuelles sont conservées." };
+      } finally {
+        this.importEnCours = false;
+        this.fichierEnAttente = null;
+      }
       this.resultatImport = resultat;
-      this.importEnCours = false;
-      this.fichierEnAttente = null;
       if (resultat.ok) {
         this.$emit('donnees-remplacees');
       }
@@ -313,11 +319,16 @@ export default {
     async onConfirmerReset() {
       this.confirmationResetVisible = false;
       this.effacementEnCours = true;
-      await this.reinitialiser();
-      this.effacementEnCours = false;
-      this.resultatImport = null;
-      this.effacementReussi = true;
-      this.$emit('donnees-remplacees');
+      try {
+        await this.reinitialiser();
+        this.resultatImport = null;
+        this.effacementReussi = true;
+        this.$emit('donnees-remplacees');
+      } catch {
+        this.resultatImport = { ok: false, message: "L'effacement a échoué. Réessayez ou rechargez la page." };
+      } finally {
+        this.effacementEnCours = false;
+      }
     },
 
     onAnnulerReset() {

@@ -30,6 +30,9 @@ const CLE_PREFS_UI = 'idelia:prefs-ui';
  */
 const CLE_PREFS_SAUVEGARDE_AUTO = 'idelia:prefs-sauvegarde-auto';
 
+/** Fréquences (minutes) proposées par `BlocSauvegardeAutomatique.vue` : seules valeurs acceptées. */
+const INTERVALLES_SAUVEGARDE_AUTO = [5, 10, 15, 30, 60];
+
 /**
  * Indique si une erreur correspond à un dépassement de quota de stockage
  * (le nom exact varie selon les navigateurs).
@@ -94,13 +97,39 @@ async function save(doc) {
   }
 }
 
+/** Préfixe commun de toutes les clés `localStorage` d'Idelia. */
+const PREFIXE_CLES = 'idelia:';
+
 /**
- * Efface les données persistées.
+ * Efface **toutes** les données persistées par Idelia : chaque clé préfixée
+ * `idelia:` (document, copie corrompue, préférences…). Rien de sensible ne
+ * doit subsister après « Effacer toutes les données ».
  *
  * @returns {Promise<void>}
  */
 async function clear() {
-  localStorage.removeItem(CLE_DONNEES);
+  const aSupprimer = [];
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const cle = localStorage.key(i);
+    if (cle !== null && cle.startsWith(PREFIXE_CLES)) aSupprimer.push(cle);
+  }
+  aSupprimer.forEach((cle) => localStorage.removeItem(cle));
+}
+
+/**
+ * Copie le document stocké (valide en JSON mais refusé à la validation) sous
+ * `idelia:data.corrompu`, sans écraser une copie existante. Best-effort :
+ * ne lève jamais.
+ */
+function conserverCopieCorrompue() {
+  try {
+    const brut = localStorage.getItem(CLE_DONNEES);
+    if (brut !== null && localStorage.getItem(CLE_DONNEES_CORROMPUES) === null) {
+      localStorage.setItem(CLE_DONNEES_CORROMPUES, brut);
+    }
+  } catch {
+    // Best-effort : quota ou stockage indisponible.
+  }
 }
 
 /**
@@ -173,8 +202,8 @@ function lirePreferenceSauvegardeAuto() {
     if (!brut) return { active: false, intervalleMinutes: 15 };
     const valeur = JSON.parse(brut);
     return {
-      active: valeur.active === true,
-      intervalleMinutes: Number.isInteger(valeur.intervalleMinutes) ? valeur.intervalleMinutes : 15,
+      active: valeur?.active === true,
+      intervalleMinutes: INTERVALLES_SAUVEGARDE_AUTO.includes(valeur?.intervalleMinutes) ? valeur.intervalleMinutes : 15,
     };
   } catch {
     return { active: false, intervalleMinutes: 15 };
@@ -205,6 +234,7 @@ export const storageRepository = {
   load,
   save,
   clear,
+  conserverCopieCorrompue,
   isAvailable,
   lirePreferenceMenuReplie,
   enregistrerPreferenceMenuReplie,

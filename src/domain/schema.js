@@ -265,6 +265,13 @@ export function verifierIntegrite(doc) {
 
   const erreurs = [];
 
+  // Éléments non-objets (ex. `[null]`) : signalés, jamais parcourus (aucune exception).
+  for (const nom of ['personnes', 'tournees', 'absences', 'plannings']) {
+    if (Array.isArray(doc[nom]) && !doc[nom].every((e) => e !== null && typeof e === 'object')) {
+      return { ok: false, erreurs: [`Le champ « ${nom} » contient un élément invalide.`] };
+    }
+  }
+
   if (!Number.isInteger(doc.schemaVersion)) {
     erreurs.push('Le champ « schemaVersion » doit être un nombre entier.');
   }

@@ -162,6 +162,21 @@ export default {
     },
 
     /**
+     * Remet les préférences d'interface à leurs valeurs par défaut (après
+     * « Effacer toutes les données », qui supprime aussi leurs clés de
+     * stockage) et désarme le minuteur. N'écrit rien dans le stockage.
+     * @param {import('vuex').ActionContext} context
+     */
+    reinitialiserPreferences({ commit }) {
+      desarmerMinuteur();
+      commit('SET_MENU_REPLIE', false);
+      commit('SET_SAUVEGARDE_AUTO', { active: false, intervalleMinutes: 15 });
+      commit('SET_FICHIER_SAUVEGARDE_ACTIF', { actif: false, nom: null });
+      commit('SET_DERNIER_FICHIER_ENREGISTRE', null);
+      commit('SET_DERNIER_EXPORT', null);
+    },
+
+    /**
      * Change le réglage de sauvegarde automatique (activation et/ou
      * fréquence) : mémorise le nouveau choix via `storageRepository` (canal
      * dédié, hors `SaveDocument`), puis réarme ou désarme le minuteur en
