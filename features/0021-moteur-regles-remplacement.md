@@ -1,349 +1,330 @@
 # Feature 0021 — Moteur : règles de remplacement
 
-- **Statut** : En cours (plan rédigé)
-- **Dépend de** : `0009` (moteur pur : contraintes, glouton, recherche locale, validation), `0020` (`Personne.titulaireId`, `joursTravaillesParMois`, équité à deux groupes). S'appuie aussi sur `0011` (éditeur : dépôt manuel jamais bloqué, verrou, régénération), `0016` (grain = segment, recouvrement absence ↔ horaires) et `0017` (absences saisies directement en `VALIDE`).
-- **ADR liés** : [0007](../docs/adr/0007-generation-planning-hybride.md) (mode hybride : le geste manuel prime, il est signalé et non bloqué), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (moteur pur, une contrainte = une source de vérité partagée génération / validation), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (dates `"YYYY-MM-DD"`, horaires `"HH:mm"`, jours ISO), [0017](../docs/adr/0017-modelisation-tournees-coupees-segments.md) (segments, recouvrement horaire). **Aucun écart d'ADR.**
+- **Statut** : En cours — plan initial livré (commit `9ceb772`), **révisé le 2026-10-14** (« titulaires d'abord ») : tâches T5 à T7 à implémenter.
+- **Dépend de** : `0009` (moteur pur : contraintes, glouton, recherche locale, validation), `0020` (`Personne.titulaireId`, `joursTravaillesParMois`, équité à deux groupes). S'appuie aussi sur `0011` (éditeur : dépôt manuel jamais bloqué, verrou, régénération) et `0016` (grain = segment).
+- **ADR liés** : [0007](../docs/adr/0007-generation-planning-hybride.md) (mode hybride : le geste manuel prime), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (moteur pur, modèle de contraintes unique), [0010](../docs/adr/0010-conventions-dates-et-jours-iso.md) (dates `"YYYY-MM-DD"`, jours ISO). **Aucun écart d'ADR** ; le contrat `Contrainte` gagne une méthode facultative `coutGlobal` (architecture 05, §5.5 ci-dessous).
+
+## Révision du 2026-10-14 — titulaires d'abord
+
+### Pourquoi la révision
+
+La règle livrée par le plan initial (« une remplaçante ne travaille **que** pour couvrir l'absence d'une titulaire », contrainte **dure**) est fausse métier. Recette sur les données réelles du cabinet (2 titulaires, 4 remplaçantes) : en novembre, **0 affectation de remplaçante** (24 avant `0021`) et **3 tournées non couvertes**. Le cabinet fait travailler ses remplaçantes **hors absences** : jours de repos des titulaires, week-ends, limites de jours d'affilée… sinon elles ne travailleraient presque jamais.
+
+**Décision du porteur (validée)** — « Titulaires d'abord » : le moteur remplit d'abord avec les titulaires, dans le respect de **toutes** leurs règles (repos, jours d'affilée, souhaits, absences, rythme mensuel `joursTravaillesParMois` s'il est saisi) ; les remplaçantes prennent ensuite les tournées restantes. La remplaçante habituelle (`titulaireId`) passe avant les autres remplaçantes les jours où sa titulaire **ne travaille pas** (absente **ou** simplement non planifiée). Plus aucun avertissement « sans absence ».
+
+### Ce qui est retiré
+
+- La contrainte **dure** `remplacement-sur-absence` (une remplaçante candidate seulement sur absence de titulaire, plafond « pas plus de remplaçantes que de titulaires absentes »), et la gradation de sévérité selon `Affectation.origine`.
+- Les codes de violation `REMPLACANTE_SANS_ABSENCE`, `REMPLACANTES_EN_SURNOMBRE` **et** `REMPLACANTE_HABITUELLE_NON_PLANIFIEE` (gabarits de `messages.js`, libellés de `libelles.js`) : plus aucun signalement propre aux remplaçantes, ni à la génération, ni après un placement manuel.
+- Dans `src/domain/remplacement.js` : `absencesARemplacerLe`, `absencesSurHoraires`, `absencesACouvrir`, `titulairesAbsentes` (plus aucun appelant). Les exports ajoutés pour elles redeviennent privés : `horairesDeAffectation` (`contrainteAbsence.js`), `listeFrancaise` (`personnes.js`).
+- Écrans : la note « pas d'absence à remplacer sur ces horaires (choix possible) » du sélecteur ; le rappel sous « Tournées non couvertes » du panneau.
+
+### Ce qui change
+
+- **Nouvelle souple « silencieuse » `titulaires-d-abord`** : chaque case confiée à une remplaçante coûte `2` (aucun message). Une titulaire disponible et « dans sa norme » passe donc toujours avant ; un souhait souple, une absence demandée ou un dépassement de rythme de la titulaire coûtent plus cher (≥ 3) : on appelle alors une remplaçante. La couverture prime toujours (une remplaçante légale est préférée à une case vide).
+- **`remplacement-prioritaire` réécrite, silencieuse** : la priorité joue les jours où la titulaire rattachée **ne travaille pas** (absente ou non planifiée), plus seulement quand elle est absente. Poids `0,5`, aucun message.
+- **Contrat `Contrainte`** : méthode facultative `coutGlobal(ctx) → number`, pénalité de génération **jamais affichée**, ajoutée au score de la recherche locale (sans elle, la recherche locale défairait « titulaires d'abord » en silence).
+- **Équité, groupe « sans rythme »** : le coût marginal ne compte plus que la **surcharge déjà acquise** au-dessus de la moyenne des titulaires (suppression du « socle » d'une case, qui rendait une titulaire à l'équilibre plus chère qu'une remplaçante). `evaluer` inchangé.
+- **Textes de la modale personne** reformulés selon la nouvelle règle.
+
+### Ce qui reste (livré par T1–T4, conservé)
+
+- Les remplaçantes restent **hors de la moyenne d'équité** ; avec un rythme saisi, seul « Rythme de travail dépassé » peut les viser (jamais « non atteint »).
+- `estRemplacante` (`src/domain/remplacement.js`), le type `'REMPLACEMENT'`, le fichier `contrainteRemplacement.js` (contenu réécrit), l'enregistrement dans `creerContraintes`.
+- Aucune migration, aucun changement de store, génération reproductible à graine égale.
 
 ## 1. Contexte & objectif
 
-Retours de tests avec le cabinet (juillet 2026) : une **remplaçante ne travaille que pour remplacer une absence**. Aujourd'hui, le moteur la traite comme n'importe quelle titulaire : il peut la planifier « spontanément » un jour où personne n'est absent, au détriment des titulaires. `0020` a seulement enregistré à qui elle est rattachée (`titulaireId`), sans effet sur le planning.
+Le cabinet compte des titulaires et des remplaçantes (`Personne.statut`). Les remplaçantes doivent prendre les tournées que les titulaires **ne peuvent pas** assurer (repos, jours d'affilée, absences, souhaits, rythme mensuel), et seulement celles-là. Quand une titulaire ne travaille pas un jour donné, c'est en priorité « sa » remplaçante (rattachement `0020`) qui vient.
 
-`0021` :
-1. **Règle stricte de génération** : le moteur ne place une remplaçante sur une tournée que si **une titulaire est absente** sur cet horaire, et jamais plus de remplaçantes un jour donné que de titulaires absentes ce jour-là.
-2. **Priorité à la titulaire rattachée** : quand Claire est absente, c'est Léa (« Remplace en priorité Claire Martin ») qui est proposée d'abord ; une autre remplaçante ne vient que si Léa n'est pas disponible.
-3. **Geste manuel respecté** : dans l'éditeur (`0011`), le gestionnaire peut toujours poser une remplaçante hors absence (appel exceptionnel, hors cadre légal) ; c'est **signalé** dans « Points d'attention », en **avertissement**, jamais bloqué, jamais compté « à résoudre ».
-4. **Équité assainie** : les remplaçantes ne faussent plus la moyenne de charge des titulaires (elles travaillent peu par construction).
+Résultat attendu : un planning généré où chaque titulaire est utilisée autant que ses règles le permettent, où les remplaçantes comblent les trous (week-ends, jours de repos des titulaires), et où plus aucune tournée ne reste vide alors qu'une remplaçante était disponible. Aucun message spécifique : le gestionnaire voit simplement un planning cohérent.
 
-Résultat attendu : sans absence, aucune remplaçante n'apparaît dans un planning généré ; pendant l'absence d'une titulaire, sa remplaçante attitrée la couvre, et le gestionnaire comprend chaque signalement en lisant une phrase.
-
-**Hors périmètre** : dates de présence `dateEntree`/`dateSortie` (`0031`, qui pourra reprendre le même principe « manuel = avertissement ») ; récap mensuel (`0024`) ; aucune notion de « tournée habituelle » d'une titulaire (le moteur ne sait pas quelle tournée Claire aurait faite : il sait seulement qu'une place est libérée).
+**Hors périmètre** : dates de présence `dateEntree`/`dateSortie` (`0031`) ; récap mensuel (`0024`) ; équité **entre remplaçantes** (voir §12 n° 10) ; notion de « tournée habituelle » d'une titulaire.
 
 ## 2. Écrans concernés
 
-Aucun nouvel écran, aucune nouvelle route. Changements de comportement et de textes uniquement.
+Aucun nouvel écran, aucune nouvelle route.
 
 ### 2.1 Planning (`/planning`) — génération et régénération
 
-- Un planning généré **ne contient plus** de remplaçante les jours où aucune titulaire n'est absente. Si les titulaires ne suffisent pas, la tournée apparaît dans « Tournées non couvertes » (comportement existant) plutôt que d'être confiée en silence à une remplaçante.
-- Pendant l'absence (validée) d'une titulaire, une remplaçante est proposée sur les horaires concernés, **en priorité** celle qui lui est rattachée.
+- Les titulaires sont planifiées d'abord ; les remplaçantes apparaissent sur les cases que les titulaires ne pouvaient pas prendre sans enfreindre une de leurs règles (ou sans dépasser leur rythme mensuel s'il est saisi).
+- Les jours où une titulaire ne travaille pas, sa remplaçante habituelle est proposée avant les autres.
+- Une tournée n'apparaît dans « Tournées non couvertes » que si **personne** (titulaire ou remplaçante) ne pouvait la prendre.
 
 ### 2.2 Planning — panneau « Points d'attention » (`PanneauConflits`)
 
-Trois nouvelles causes (volets dépliants existants, groupés par `code`) :
-
-| Cause (titre du volet) | Section | Exemple de message |
-|---|---|---|
-| **Remplaçante planifiée sans absence à couvrir** | Avertissements si posée à la main ; Erreurs à corriger si posée par le moteur | « Zoé Blanc (remplaçante) est planifiée le jeudi 08/10/2026 (07:00 – 13:00), mais aucune titulaire n'est absente à ces horaires. Si c'est un appel exceptionnel, vous pouvez laisser ainsi ; sinon, retirez-la de cette case. » |
-| **Plus de remplaçantes que d'absences** | idem (avertissement si au moins une de ces affectations a été posée à la main) | « Le mercredi 07/10/2026, 2 remplaçantes sont planifiées (Léa Roux et Zoé Blanc) pour une seule titulaire absente (Claire Martin) : une absence ne justifie qu'une seule remplaçante. Retirez-en une si ce n'est pas voulu. » |
-| **Remplaçante habituelle non planifiée** | Avertissements | « Claire Martin est absente le mercredi 07/10/2026. Léa Roux, qui la remplace d'habitude, n'est pas planifiée ce jour-là ; Zoé Blanc l'est à sa place. » |
-
-Variante « posée par le moteur » du premier message (cas où l'absence a été supprimée **après** la génération) : « … mais aucune titulaire n'est absente à ces horaires. L'absence qu'elle couvrait a sans doute été modifiée ou supprimée : retirez-la de cette case ou regénérez le planning. »
-
-**Rappel sous « Tournées non couvertes »** (uniquement si l'équipe compte au moins une remplaçante active), petite ligne d'aide : « Une remplaçante n'est proposée automatiquement que pour remplacer une titulaire absente. Vous pouvez en ajouter une à la main pour un appel exceptionnel : le planning vous le signalera, sans l'empêcher. »
+- Aucune cause propre aux remplaçantes. Les causes « Remplaçante planifiée sans absence à couvrir », « Plus de remplaçantes que d'absences », « Remplaçante habituelle non planifiée » disparaissent.
+- Le rappel sous « Tournées non couvertes » (« Une remplaçante n'est proposée automatiquement que pour remplacer une titulaire absente… ») est **retiré** : il décrivait l'ancienne règle.
 
 ### 2.3 Planning — mini-sélecteur « Ajouter une personne » (`SelecteurPersonne`)
 
-Pour chaque **remplaçante** listée, si aucune titulaire n'est absente sur les horaires de la case : note discrète en italique (peut passer à la ligne), à la place (ou à la suite) de « déjà N affectation(s) ce jour-là » : « **pas d'absence à remplacer sur ces horaires (choix possible)** ». Elle reste cliquable (jamais bloquée). Rien ne change pour les titulaires.
+La note « pas d'absence à remplacer sur ces horaires (choix possible) » est **retirée**. Les remplaçantes sont listées comme tout le monde (pastille, nom, « déjà N affectation(s) ce jour-là »). Les placer à la main ne déclenche aucun signalement.
 
 ### 2.4 Équipe (`/equipe`) — modale « Ajouter / Modifier une personne » (`FormulairePersonne`)
 
-- Sous « Statut », aide visible **uniquement si « Remplaçant » est choisi** (`id="personne-statut-aide"`, relié par `aria-describedby`) : « Une personne remplaçante n'est planifiée automatiquement que pour couvrir l'absence d'une titulaire. »
-- Aide de « Remplace en priorité (facultatif) » complétée (honnêteté : le rattachement agit désormais) : « La titulaire que cette personne remplace d'habitude. Elle sera proposée en premier quand cette titulaire est absente. »
+- Aide sous « Statut », visible **uniquement si « Remplaçant » est choisi** (inchangé : `id="personne-statut-aide"`, `aria-describedby` conditionnel), nouveau texte : « Le planning confie d'abord les tournées aux titulaires. Une personne remplaçante prend celles qui restent (jours de repos ou absences des titulaires, par exemple). »
+- Aide de « Remplace en priorité (facultatif) », nouveau texte : « La titulaire que cette personne remplace d'habitude. Les jours où cette titulaire ne travaille pas, cette personne sera proposée avant les autres remplaçantes. » (la phrase conditionnelle « Ajoutez d'abord une personne titulaire… » est conservée).
 
 ## 3. Modèle de données touché
 
 **Aucun changement persistant, aucune migration** (`CURRENT_SCHEMA_VERSION` inchangé).
 
-- Identification d'une remplaçante : champ **existant** `Personne.statut === 'REMPLACANT'` (`STATUTS_PERSONNE`, `src/domain/schema.js`).
-- Rattachement : champ **existant** `Personne.titulaireId` (`0020`), désormais **lu par le moteur**.
-- Absences : seules les `Absence` au statut `VALIDE` comptent (en v1 toutes le sont, `0017`) ; leur `creneau` (`MATIN`/`APRES_MIDI`/`JOURNEE`) est réconcilié avec les horaires réels du segment par `creneauChevaucheHoraires` (pivot midi, `0016`).
-- Champ existant `Affectation.origine` (`'AUTO'` | `'MANUEL'`) : sert à **graduer la sévérité** des signalements (§5.3). Rien n'est ajouté.
-
-Volatil uniquement (jamais persisté) : nouveaux `Violation.code` `REMPLACANTE_SANS_ABSENCE`, `REMPLACANTES_EN_SURNOMBRE`, `REMPLACANTE_HABITUELLE_NON_PLANIFIEE`.
+- Remplaçante : `Personne.statut === 'REMPLACANT'` (existant). Rattachement : `Personne.titulaireId` (existant, `0020`), lu par le moteur.
+- Rythme : `Personne.joursTravaillesParMois` (existant, `0020`), sert de **plafond** naturel (titulaire comme remplaçante).
+- `Affectation.origine` n'est plus lu par les règles de remplacement.
+- Volatil : les trois codes `REMPLACANTE_*` / `REMPLACANTES_EN_SURNOMBRE` n'existent plus ; aucun nouveau code.
 
 ## 4. Store (Vuex)
 
-**Aucun module, getter, mutation ni action modifié.**
-
-- `plannings/assemblerEntree` transmet déjà `personnes` (actives, avec `statut` et `titulaireId`) et `absences` (toutes) : le moteur a tout ce qu'il faut.
-- `ajouterAffectation` / `deplacerAffectation` posent déjà `origine: 'MANUEL'` ; `regenerer` conserve déjà les affectations verrouillées : rien à changer.
-- Composants : `SelecteurPersonne` et `PanneauConflits` lisent en plus `absences` (state) / `personnes/actifs` (getter) **en lecture seule** pour leurs aides (§6).
+**Aucun module, getter, mutation ni action modifié.** `plannings/assemblerEntree` transmet déjà `personnes` (avec `statut`, `titulaireId`, `joursTravaillesParMois`) et `absences`. `SelecteurPersonne` et `PanneauConflits` cessent de lire `absences` / `personnes/actifs` pour les aides retirées (§6).
 
 ## 5. Domaine (logique pure)
 
-### 5.1 Règles métier retenues (synthèse)
+### 5.1 Règles métier retenues
 
 | # | Règle | Nature |
 |---|---|---|
-| R1 | Une **titulaire absente** = une `Absence` `VALIDE` d'une personne **active** de statut `TITULAIRE`. Seules ces absences « libèrent une place ». | définition |
-| R2 | Une remplaçante n'est candidate sur un segment (date + horaires) que si **au moins une titulaire est absente sur ces horaires** (recouvrement période + créneau ↔ horaires, mêmes helpers que la contrainte d'absence). | **dure** (génération) |
-| R3 | Un jour donné, le nombre de remplaçantes **distinctes** qui travaillent « sur absence » ne dépasse pas le nombre de **titulaires distinctes absentes** ce jour-là (au moins en partie). Une remplaçante déjà présente ce jour-là peut prendre un second segment (matin + reprise). | **dure** (génération) |
-| R4 | Si la titulaire rattachée d'une remplaçante est absente ce jour-là, cette remplaçante est préférée aux autres remplaçantes. | **souple** (priorité) |
-| R5 | Placement **manuel** violant R2/R3 : signalé en **avertissement**, jamais bloqué. Placement **automatique** violant R2/R3 (données modifiées depuis la génération) : **erreur** à corriger. | sévérité |
-| R6 | Les remplaçantes sortent de la **moyenne d'équité** des titulaires ; une remplaçante avec rythme peut être signalée « rythme dépassé », jamais « non atteint ». | équité |
+| R1 | **Titulaires d'abord** : pour une case, une titulaire autorisée par toutes les règles dures et « dans sa norme » (sous la moyenne des titulaires sans rythme, ou sous son rythme) est toujours préférée à une remplaçante. | souple silencieuse `titulaires-d-abord`, coût `2` par case de remplaçante |
+| R2 | **Couverture d'abord** : une remplaçante autorisée est toujours préférée à une case non couverte. | existant (glouton : tout candidat légal est affecté ; couverture = dure) |
+| R3 | **Règles de la titulaire avant R1** : souhait souple (3 / 5 / 8), absence demandée (5), dépassement de rythme (4 par jour de trop) coûtent plus que R1 → on appelle une remplaçante plutôt que d'enfreindre l'une d'elles. | ordre des poids (§5.3) |
+| R4 | **Remplaçante habituelle** : un jour où sa titulaire ne travaille pas (absente ou non planifiée), la remplaçante rattachée passe avant les autres remplaçantes. | souple silencieuse `remplacement-prioritaire`, coût `0,5` |
+| R5 | **Équité** : titulaires sans rythme équilibrées entre elles (coût = surcharge acquise, sans socle) ; remplaçantes hors moyenne ; rythme d'une remplaçante = plafond seulement. | souple `equite` (modifiée) |
+| R6 | **Aucun signalement** propre aux remplaçantes, quelle que soit l'origine (moteur ou geste manuel). | — |
 
-Remplaçante **sans titulaire rattachée** (ou rattachée à une personne archivée / qui n'est plus titulaire) : R2, R3, R5 s'appliquent normalement ; elle n'a simplement **aucune priorité** (R4) et couvre n'importe quelle absence de titulaire.
+Remplaçante **sans titulaire rattachée**, ou rattachée à une personne archivée / qui n'est plus titulaire : R1, R2, R5 s'appliquent ; aucune priorité R4.
 
-### 5.2 `src/domain/remplacement.js` (**créer**)
+### 5.2 Échelle des coûts marginaux (cohérence des poids)
 
-Module pur hors moteur (comme `rythmeMensuel.js`) : il est la **source de vérité unique** de « quelles absences ouvrent un remplacement », réutilisée par la contrainte du moteur **et** par l'aide du sélecteur (§6.2). Imports : `@/domain/absences.js` (`periodesSeChevauchent`, `creneauChevaucheHoraires`) uniquement. Ne lève jamais (entrées manquantes → listes vides). Aucun objet `Date`.
+Coût ajouté pour confier **une case** à une personne (glouton : le candidat légal le moins cher l'emporte) :
 
-```js
-/** @param {Personne} personne @returns {boolean} statut === 'REMPLACANT' */
-export function estRemplacante(personne)
+| Situation | Coût |
+|---|---|
+| Titulaire « dans sa norme » (sous la moyenne du groupe sans rythme, ou sous son rythme) | **0** |
+| Titulaire sans rythme déjà au-dessus de la moyenne des titulaires | 4 × surcharge (en cases) |
+| Remplaçante habituelle (sa titulaire ne travaille pas ce jour-là) / remplaçante sans priorité en jeu | **2** |
+| Autre remplaçante alors qu'une habituelle libre existe ce jour-là | **2,5** |
+| Titulaire : souhait souple « Peu / Assez / Très important » | 3 / 5 / 8 |
+| Titulaire avec rythme : 1er, 2e… jour au-delà du rythme | 4, 8, … |
+| Absence demandée (non validée) | 5 |
+| Case non couverte | interdit tant qu'un candidat légal existe |
 
-/**
- * Absences qui libèrent une place le jour `date` (R1) : statut 'VALIDE',
- * personne présente dans `personnes`, active (actif !== false) et 'TITULAIRE',
- * période couvrant `date` (periodesSeChevauchent(a.dateDebut, a.dateFin, date, date)).
- * Ordre : celui de `absences`.
- * @param {string} date - "YYYY-MM-DD"
- * @param {{personnes?: Personne[], absences?: Absence[]}} sources
- * @returns {Absence[]}
- */
-export function absencesARemplacerLe(date, { personnes = [], absences = [] } = {})
+Contraintes de calibrage : `titulairesDAbord + remplacementPrioritaire` (2,5) **<** plus petit souhait (3) **<** premier dépassement de rythme (4). La recherche locale voit les mêmes ordres de grandeur via `evaluer` (souhaits, rythme) et `coutGlobal` (R1, R4).
 
-/** Sous-ensemble dont le créneau recouvre les horaires "HH:mm" (creneauChevaucheHoraires). */
-export function absencesSurHoraires(absences, heureDebut, heureFin)
+### 5.3 `src/domain/remplacement.js` (**modifier**)
 
-/** Raccourci : absencesSurHoraires(absencesARemplacerLe(date, sources), heureDebut, heureFin). */
-export function absencesACouvrir(date, heureDebut, heureFin, sources)
+Ne garde que `estRemplacante(personne)` (inchangée). Supprimer `absencesARemplacerLe`, `absencesSurHoraires`, `absencesACouvrir`, `titulairesAbsentes` et l'import de `@/domain/absences.js`. En-tête : « Identification des remplaçantes (feature 0021, révisée le 2026-10-14 : titulaires d'abord) ». Module pur, aucun import.
 
-/**
- * Titulaires distinctes concernées par une liste d'absences, dans l'ordre de `personnes`
- * (déterminisme).
- * @returns {Personne[]}
- */
-export function titulairesAbsentes(absences, personnes)
-```
+### 5.4 `src/domain/scheduling/contraintes/contrainteRemplacement.js` (**réécrire**)
 
-### 5.3 Moteur — `src/domain/scheduling/contraintes/contrainteRemplacement.js` (**créer**)
+Un fichier, `type: 'REMPLACEMENT'`, deux fabriques **souples silencieuses** (`evaluer` renvoie toujours `[]`). Imports : `estRemplacante` (`@/domain/remplacement.js`), `periodesSeChevauchent` (`@/domain/absences.js`). Plus d'import de `messages.js` ni de `contrainteAbsence.js`.
 
-Un fichier, `type: 'REMPLACEMENT'`, deux fabriques (même schéma que `contrainteAbsence.js` qui en porte deux).
+**Précalcul commun** `preparerRemplacement(entree)` (closure, recréé à chaque `creerContraintes`) :
+- `remplacantes` : personnes actives `estRemplacante`, **ordre de `entree.personnes`** ; `remplacantesParId: Map` ;
+- `titulairesParId: Map` : personnes actives de statut `'TITULAIRE'` ;
+- `titulaireDe(r)` : `titulairesParId.get(r.titulaireId) ?? null` (archivée / plus titulaire → `null`) ;
+- `habituellesDe(titulaireId)` : remplaçantes avec `titulaireId === titulaireId` (ordre de l'entrée) ; `titulairesAvecHabituelles` : titulaires (ordre de l'entrée) ayant au moins une habituelle ;
+- `estDisponible(personne, date)` : aucune `Absence` `VALIDE` de la personne dont la période couvre `date` (`periodesSeChevauchent(a.dateDebut, a.dateFin, date, date)`) ;
+- `travaille(personneId, date, ctx)` : `ctx.index.joursTravaillesParPersonne.get(personneId)?.has(date) ?? false`.
 
-**Précalcul commun dans chaque fabrique (closure, recréée à chaque `creerContraintes`, donc jamais périmée)** :
-- `personnesParId: Map` des `entree.personnes` actives ; `remplacantes` = actives `estRemplacante`, **ordre de `entree.personnes`** ;
-- `absencesDuJour(date)` : mémo `Map<date, Absence[]>` rempli à la demande via `absencesARemplacerLe(date, { personnes: entree.personnes, absences: entree.absences })` ;
-- `nbTitulairesAbsentes(date)` = `titulairesAbsentes(absencesDuJour(date), entree.personnes).length`.
+#### a) `creerContrainteTitulairesDAbord(poids = 2, entree)` — **souple**, `id: 'titulaires-d-abord'`, `granularite: 'cellule'`
 
-Helper interne `remplacantesSurAbsenceLe(date, ctx)` → ids (ordre `remplacantes`) des remplaçantes ayant **au moins une** affectation ce jour-là (`ctx.index.parPersonne`) dont les horaires (`horairesDeAffectation`, voir §5.6) recouvrent une absence de `absencesDuJour(date)` (`absencesSurHoraires` non vide). C'est le **même** comptage pour `autoriseAffectation` et `evaluer` (invariant de cohérence, architecture 05 §1).
+- `coutMarginal(personneId)` : `remplacantesParId.has(personneId) ? poids : 0`.
+- `coutGlobal(ctx)` : `poids ×` nombre total d'affectations des remplaçantes (`ctx.index.parPersonne`, parcours dans l'ordre de `remplacantes`). Les affectations verrouillées / manuelles y figurent : constante pendant la recherche locale, donc sans effet sur ses choix.
+- `evaluer()` : `[]`.
 
-#### a) `creerContrainteRemplacementSurAbsence(entree)` — **dure**, `id: 'remplacement-sur-absence'`, `granularite: 'global'`
+#### b) `creerContrainteRemplacementPrioritaire(poids = 0.5, entree)` — **souple**, `id: 'remplacement-prioritaire'`, `granularite: 'global'`
 
-`autoriseAffectation(personneId, demande, ctx)` :
-1. personne introuvable ou non remplaçante → `true` (titulaires jamais concernées, test O(1)) ;
-2. `absencesSurHoraires(absencesDuJour(demande.date), demande.heureDebut, demande.heureFin)` vide → `false` (R2) ;
-3. `deja = remplacantesSurAbsenceLe(demande.date, ctx)` ; `true` si `deja` contient `personneId`, sinon `deja.length < nbTitulairesAbsentes(demande.date)` (R3).
+Pour une date `d` et une titulaire `T` de `titulairesAvecHabituelles`, `T` **attend son habituelle** le jour `d` si : `!travaille(T.id, d)`, **aucune** de `habituellesDe(T.id)` ne travaille le jour `d`, et **au moins une** est `estDisponible` le jour `d`.
 
-Le glouton reconstruit l'index avant chaque décision : R3 est donc vérifiée **dynamiquement**, comme le repos légal.
+- `coutMarginal(personneId, demande, ctx)` — avec `r = remplacantesParId.get(personneId)`, `d = demande.date` :
+  1. `r` introuvable (titulaire) → `0` ;
+  2. `travaille(r.id, d)` → `0` (déjà présente ce jour-là) ;
+  3. `titulaireDe(r)` existe et `!travaille(titulaireDe(r).id, d)` → `0` (elle remplace « sa » titulaire) ;
+  4. s'il existe `T` (≠ titulaire de `r`) qui **attend son habituelle** le jour `d` → `poids` ; sinon `0`.
+- `coutGlobal(ctx)` — dates où au moins une remplaçante travaille, **triées** ; pour chaque `T` (ordre de l'entrée) qui **attend son habituelle** le jour `d`, si au moins une **autre** remplaçante travaille ce jour-là (pas une habituelle de `T`, et dont la propre titulaire travaille ce jour-là ou qui n'en a pas) → `+ poids`.
+- `evaluer()` : `[]`.
 
-`evaluer(ctx)` — dates parcourues **triées**, personnes dans l'ordre de l'entrée :
-- **R2** : pour chaque affectation d'une remplaçante dont les horaires ne recouvrent aucune absence de `absencesDuJour(date)` → violation `REMPLACANTE_SANS_ABSENCE` :
-  - `severite: affectation.origine === 'MANUEL' ? 'avertissement' : 'erreur'` (R5), `penalite: 0` ;
-  - `cible: { personneId, tourneeId, date, segmentIndex }` (surlignage de la case existant) ;
-  - `params: { personneId, date, segmentIndex, origine }` ; message `messagePour('REMPLACANTE_SANS_ABSENCE', { nomPersonne, date, heureDebut, heureFin, origine })`.
-- **R3** : pour chaque date où `remplacantesSurAbsenceLe(date).length > nbTitulairesAbsentes(date)` → **une** violation `REMPLACANTES_EN_SURNOMBRE` :
-  - `severite: 'avertissement'` si au moins une affectation de ces remplaçantes ce jour-là est `MANUEL`, sinon `'erreur'` ; `penalite: 0` ;
-  - `cible: { date }` ; `params: { date, remplacanteIds, titulaireIds }` ; message avec les listes de noms.
-- Une remplaçante posée hors absence n'est **pas** comptée dans R3 (déjà signalée par R2 : pas de double signalement).
+Effet : Claire ne travaille pas le mercredi → Léa (2) passe avant Zoé (2,5). Si Léa est absente, ou travaille déjà ce jour-là, Zoé n'est pas pénalisée. Les titulaires ne sont jamais concernées.
 
-**Pourquoi la sévérité dépend de `origine`** : le moteur, lui, ne crée que des affectations `AUTO` ; la recherche locale ne peut donc jamais introduire une violation R2/R3 sans augmenter le nombre d'erreurs (elle le refuse déjà, `rechercheLocale.js` — **aucune modification**). À l'inverse, un dépôt ou un ajout manuel pose `origine: 'MANUEL'` : le signalement devient un avertissement (non compté « à résoudre » par `resumerDiagnostic`, `meta.faisable` reste vrai même si l'affectation est verrouillée puis régénérée). Une affectation `AUTO` devenue illégitime (absence supprimée après coup) reste une **erreur** : le planning est périmé et doit être corrigé.
+Limite connue (acceptée) : pendant le glouton, « ne travaille pas » s'apprécie sur le planning **en cours de construction** ; la recherche locale, qui évalue le planning complet via `coutGlobal`, corrige les écarts.
 
-#### b) `creerContrainteRemplacementPrioritaire(poids, entree)` — **souple**, `id: 'remplacement-prioritaire'`, `granularite: 'global'`
+### 5.5 Contrat `Contrainte` — `coutGlobal` (**nouveau, facultatif**)
 
-Définitions pour une date `d` : `absentes(d)` = `titulairesAbsentes(absencesDuJour(d), entree.personnes)` ; pour une titulaire `T`, `habituelles(T)` = remplaçantes actives avec `titulaireId === T.id` (ordre de l'entrée) ; une habituelle est **disponible** le jour `d` si elle n'a aucune absence `VALIDE` touchant `d` ; elle **travaille** si `ctx.index.joursTravaillesParPersonne.get(id)?.has(d)`.
+- `src/domain/scheduling/modele/types.js` (**modifier**) : ajouter au typedef `Contrainte` `@property {function(ContexteEvaluation): number} [coutGlobal] - Souples « silencieuses » : pénalité de génération sur le planning entier, jamais affichée ; ajoutée au score de la recherche locale (0021).` ; ramener `Violation.severite` à « Dure → `erreur` ; souple → `avertissement`. » (suppression de la mention « placement manuel », 0021 initiale).
+- `src/domain/scheduling/heuristiques/rechercheLocale.js` (**modifier**) : dans `evaluerEtat`, après la boucle des violations d'une contrainte, `if (typeof contrainte.coutGlobal === 'function') score += contrainte.coutGlobal(ctx) ?? 0;` ; compléter le JSDoc de `evaluerEtat` (« … plus les `coutGlobal` des souples silencieuses »). Rien d'autre.
+- **Non modifiés** : `glouton.js` et `scoring.js` (`coutMarginalAgrege` somme déjà tous les `coutMarginal` des souples), `validerPlanning.js`, `diagnostiquer.js` (le `score` affiché reste la somme des avertissements : une préférence silencieuse n'est pas un manquement), `genererPlanning.js`.
 
-`evaluer(ctx)` — pour chaque date travaillée triée, pour chaque `T` de `absentes(d)` :
-- `dispos` = `habituelles(T)` disponibles ; ignorer si vide ou si **l'une** des `habituelles(T)` travaille ce jour-là ;
-- `autres` = remplaçantes qui travaillent ce jour-là, hors `habituelles(T)`, **et dont la propre titulaire n'est pas dans `absentes(d)`** (elles couvrent légitimement leur titulaire) ; ignorer si vide ;
-- sinon violation `REMPLACANTE_HABITUELLE_NON_PLANIFIEE` : `severite: 'avertissement'`, `penalite: poids`, `cible: { personneId: dispos[0].id, date }` (en vue Personnes, la case vide de Léa est surlignée), `params: { titulaireId, date, habituelleIds, autreIds }`.
+Justification (ADR 0008) : la règle reste portée par **un seul objet** `Contrainte` ; une préférence de génération sans manquement à signaler n'a rien à valider, donc rien à dupliquer. `coutMarginal` (glouton) et `coutGlobal` (recherche locale) sont deux lectures de la même préférence, à garder cohérentes.
 
-`coutMarginal(personneId, demande, ctx)` — reflet glouton de la même règle :
-- `0` si la personne n'est pas remplaçante, si sa titulaire est dans `absentes(demande.date)`, ou si elle travaille déjà ce jour-là ;
-- `poids` s'il existe `T` dans `absentes(demande.date)` ayant au moins une habituelle disponible et **aucune** habituelle qui travaille déjà ce jour-là ;
-- sinon `0`.
+### 5.6 `src/domain/scheduling/contraintes/contrainteEquite.js` (**modifier**)
 
-Effet : pendant l'absence de Claire, Léa (coût 0) passe avant Zoé (coût `poids`) ; si Léa est absente elle aussi, Zoé n'est pas pénalisée. Les titulaires ne sont jamais concernées (pas de biais titulaire/remplaçante introduit ici).
+- `coutMarginal`, branche « sans rythme » : remplacer `poids × max(0, chargeApres − moy)` par **`poids × max(0, chargeNormalisee(personne, nbActuel) − moy)`** (surcharge déjà acquise). Raison : l'ancienne formule fait payer `poids` (4) à une titulaire **à l'équilibre**, donc plus cher qu'une remplaçante (2) → les remplaçantes passeraient devant. La nouvelle aligne le groupe sans rythme sur le groupe avec rythme (0 tant qu'on reste dans la norme). L'ordre entre titulaires au-dessus de la moyenne est inchangé (décalage constant) ; seules les titulaires sous la moyenne se départagent désormais par le tirage seedé.
+- Inchangé : exclusion des remplaçantes (`chargesDeLequipe`, `coutMarginal` → `0`), branche avec rythme, `evaluer` (`EQUITE_DESEQUILIBREE`, `EQUITE_RYTHME_DEPASSE`, « non atteint » jamais pour une remplaçante).
+- En-tête JSDoc : remplacer « (elles ne travaillent que sur absence) » par « (elles prennent les tournées que les titulaires ne peuvent pas assurer, 0021) » et documenter la nouvelle formule.
 
-### 5.4 Moteur — `src/domain/scheduling/contraintes/contrainteEquite.js` (**modifier**, R6)
+### 5.7 `src/domain/scheduling/contraintes/index.js` (**modifier**)
 
-Conséquence directe de R2 : une remplaçante travaille peu par construction ; laissée dans le groupe « sans rythme », elle ferait baisser la moyenne et déclencherait des « Charge de travail mal répartie » pour elle **et** pour les titulaires.
-- `chargesDeLequipe` : exclure les remplaçantes (`estRemplacante`, import `@/domain/remplacement.js`) → moyenne calculée sur les titulaires sans rythme seulement.
-- `coutMarginal`, branche « sans rythme » : `return 0` pour une remplaçante (sa venue est déjà encadrée par R2/R3/R4).
-- Groupe « avec rythme » : une remplaçante garde `coutMarginal` et l'alerte `EQUITE_RYTHME_DEPASSE` (son rythme vaut plafond), mais **jamais** `EQUITE_RYTHME_NON_ATTEINT` (elle ne travaille qu'au gré des absences).
-- En-tête JSDoc du module mis à jour. Sans remplaçante dans l'équipe : comportement **strictement identique**.
+- Retirer `creerContrainteRemplacementSurAbsence` (import + appel). Ajouter `creerContrainteTitulairesDAbord(poids.titulairesDAbord, entree)` juste **avant** `creerContrainteRemplacementPrioritaire(...)` (après l'équité).
+- `POIDS_SOUPLES_PAR_DEFAUT` : `titulairesDAbord: 2`, `remplacementPrioritaire: 0.5` (au lieu de 3) ; JSDoc du type à jour.
+- En-tête : « les **10 contraintes fixes** du cabinet (dont « titulaires d'abord » et « remplaçante habituelle », 0021) ». `TYPES_CONTRAINTE` inchangé (`'REMPLACEMENT'` reste).
 
-### 5.5 Moteur — autres fichiers
+### 5.8 Nettoyage
 
-- `contraintes/index.js` (**modifier**) : enregistrer `creerContrainteRemplacementSurAbsence(entree)` (après `creerContrainteAbsenceDemandee()`) et `creerContrainteRemplacementPrioritaire(poids.remplacementPrioritaire, entree)` (après l'équité) ; `POIDS_SOUPLES_PAR_DEFAUT.remplacementPrioritaire = 3` ; `TYPES_CONTRAINTE` + `'REMPLACEMENT'` ; en-tête (« 8 contraintes fixes » → nombre à jour).
-- `modele/messages.js` (**modifier**) : gabarits défensifs (valeurs par défaut neutres) des trois codes, textes §2.2 ; listes de noms via `listeFrancaise` (« A », « A et B », « A, B et C ») ; accords singulier/pluriel (« une seule titulaire absente » / « 2 titulaires absentes », « n'est pas planifiée » / « ne sont pas planifiées », « (remplaçante) l'est » / « (remplaçantes) le sont ») ; `REMPLACANTE_SANS_ABSENCE` choisit sa seconde phrase selon `origine` (`'MANUEL'` → « s'il s'agit d'un appel exceptionnel, vous pouvez laisser ainsi » ; sinon → « retirez-la de cette case ou régénérez le planning »).
-- `modele/types.js` (**modifier**) : JSDoc de `Violation.severite` — « dure → `erreur`, sauf placement manuel signalé en `avertissement` (`0021`) ».
-- `src/domain/libelles.js` (**modifier**) : `LIBELLES_CAUSE_VIOLATION` + `REMPLACANTE_SANS_ABSENCE: 'Remplaçante planifiée sans absence à couvrir'`, `REMPLACANTES_EN_SURNOMBRE: "Plus de remplaçantes que d'absences"`, `REMPLACANTE_HABITUELLE_NON_PLANIFIEE: 'Remplaçante habituelle non planifiée'`.
-- `src/domain/personnes.js` (**modifier**) : **exporter** `listeFrancaise` (aujourd'hui privée), sans changer son comportement.
-
-### 5.6 Réutilisé (non modifié, sauf export)
-
-- `contrainteAbsence.js` : **exporter** `horairesDeAffectation` (lookup des horaires d'une affectation, aujourd'hui privé) ; aucune autre modification.
-- `src/domain/absences.js` (`periodesSeChevauchent`, `creneauChevaucheHoraires`), `modele/planning.js` (`indexer` : `parPersonne`, `joursTravaillesParPersonne`), `src/domain/utils/dates.js` (`dateUtil.formatDateFr`, `weekdayISO`).
-- **Ne pas toucher** : `glouton.js`, `rechercheLocale.js`, `scoring.js`, `genererPlanning.js`, `validerPlanning.js`, `diagnostiquer.js`, `src/store/**`.
+- `src/domain/scheduling/modele/messages.js` (**modifier**) : supprimer les gabarits `REMPLACANTE_SANS_ABSENCE`, `REMPLACANTES_EN_SURNOMBRE`, `REMPLACANTE_HABITUELLE_NON_PLANIFIEE` et l'import de `listeFrancaise`.
+- `src/domain/libelles.js` (**modifier**) : supprimer les trois entrées correspondantes de `LIBELLES_CAUSE_VIOLATION`.
+- `src/domain/scheduling/contraintes/contrainteAbsence.js` (**modifier**) : `horairesDeAffectation` redevient privée (retirer `export`).
+- `src/domain/personnes.js` (**modifier**) : `listeFrancaise` redevient privée (retirer `export`), comportement inchangé.
+- Vérifier par recherche qu'aucun fichier n'importe plus les symboles supprimés.
 
 ## 6. Composants
 
-### 6.1 `src/components/equipe/FormulairePersonne.vue` (**modifier**)
+### 6.1 `src/components/planning/SelecteurPersonne.vue` (**modifier**)
 
-Textes d'aide §2.4 uniquement : `form-text` sous « Statut » (`v-if="estRemplacant"`, `id="personne-statut-aide"`, `aria-describedby` sur le `select` seulement quand l'aide est visible) ; aide du rattachement complétée. Aucune logique, aucune validation ajoutée.
+Retirer : l'import `@/domain/remplacement.js`, `mapState('absences')`, le getter `tournees/byId` et `segmentCible` (s'ils ne servent qu'à la note), `aucuneAbsenceACouvrir`, la propriété `sansAbsenceACouvrir` (et son JSDoc), le `<span>` de la note, le paragraphe « Feature 0021 » de l'en-tête et la mention « les absences et la tournée ciblée » de l'accès store. Conserver la note « déjà N affectation(s) ce jour-là » et le style `.selecteur-personne-note`.
 
-### 6.2 `src/components/planning/SelecteurPersonne.vue` (**modifier**)
+### 6.2 `src/components/planning/PanneauConflits.vue` (**modifier**)
 
-- `computed` `segmentCible` : `tournees/byId(tourneeId)?.segments[segmentIndex]` (horaires bruts `heureDebut`/`heureFin`) ; `absences` lues via `mapState('absences', { absences: 'items' })`.
-- Chaque entrée de `personnesDisponibles` gagne `sansAbsenceACouvrir` : `estRemplacante(p) && segmentCible && absencesACouvrir(date, segmentCible.heureDebut, segmentCible.heureFin, { personnes: personnesActives, absences }).length === 0` — **appel au domaine**, aucune règle dans le composant.
-- Gabarit : note « pas d'absence à remplacer sur ces horaires (choix possible) » (classe existante `.selecteur-personne-note`), affichée si `sansAbsenceACouvrir`. Le bouton reste actif. Mettre à jour le commentaire d'en-tête (le composant lit désormais `absences` et `tournees` en lecture seule, toujours sans import `@/domain/scheduling`).
+Retirer : le `<p class="panneau-conflits-aide">`, `equipeAvecRemplacantes`, `mapGetters('personnes', …)`, l'import `estRemplacante`, la règle SCSS `.panneau-conflits-aide` et son commentaire. Le JSDoc d'en-tête redit l'accès store limité à `tournees/byId`.
 
-### 6.3 `src/components/planning/PanneauConflits.vue` (**modifier**)
+### 6.3 `src/components/equipe/FormulairePersonne.vue` (**modifier**)
 
-- `computed` `equipeAvecRemplacantes` : `personnes/actifs` (getter existant) `.some(estRemplacante)`.
-- Dans le volet « Tournées non couvertes », sous la liste : `<p class="panneau-conflits-aide">` avec le rappel §2.2, `v-if="equipeAvecRemplacantes"`. Style : `font-size: t.$taille-texte-petite; color: t.$couleur-texte-attenue;` (sans italique) (tokens uniquement).
-- Les nouvelles causes s'affichent **sans autre code** (groupement par `code` + `libelleCauseViolation`).
-
-### 6.4 Réutilisé
-
-`ModaleBase`, `.selecteur-personne-note`, `<details>` du panneau, getters `tournees/byId`, `personnes/actifs`.
+Textes d'aide §2.4 uniquement (statut, rattachement). Aucune logique, aucune validation.
 
 ## 7. Règles de validation
 
-Aucune nouvelle saisie, aucune règle Vuelidate. Les seules « validations » sont celles du moteur (§5), restituées en messages FR dans le panneau.
+Aucune nouvelle saisie, aucune règle Vuelidate.
 
 ## 8. Points d'attention ergonomie
 
-- **Jamais bloquer le gestionnaire** : un dépôt ou un ajout de remplaçante hors absence est toujours accepté, puis signalé en **avertissement** (orange, section « Avertissements »), pas en « Erreurs à corriger » — c'est un choix assumé, pas une faute. Annulable (undo 1 niveau existant).
-- **Messages qui disent quoi faire** : chaque message nomme la personne, la date en clair (« jeudi 08/10/2026 ») et les horaires, puis la conduite à tenir (« vous pouvez laisser ainsi » / « retirez-la de cette case ou régénérez le planning »).
-- **Vocabulaire du cabinet** : « remplaçante », « titulaire », « absente », « qui la remplace d'habitude » (repris de la page Équipe, `0020`). Jamais « contrainte », « dure », « origine », « AUTO/MANUEL », « slot », « segment ».
-- **Prévenir plutôt que guérir** : la note « pas d'absence à remplacer sur ces horaires (choix possible) » dans le sélecteur informe **avant** le clic.
-- **Comprendre une tournée non couverte** : le rappel sous « Tournées non couvertes » explique pourquoi une remplaçante libre n'a pas été utilisée, et comment la poser quand même.
-- **Honnêteté de l'écran Équipe** : les aides disent désormais ce que le planning fait réellement du statut et du rattachement.
-- **Accessibilité** : aides reliées par `aria-describedby`, information jamais portée par la seule couleur (titres de section + texte), aucune nouvelle cible cliquable.
-- **Accords** : messages au féminin comme le reste du moteur (« est planifiée », « est affectée ») ; à relire par `ui-ux` avec la question ouverte de `0020` §12 n° 11 (« Remplaçant » masculin à l'écran Équipe).
+- **Rien à comprendre de plus** : le gestionnaire ne voit plus de message propre aux remplaçantes ; le planning « fait ce qu'on attend » (titulaires d'abord, remplaçante habituelle ensuite).
+- **Geste manuel libre** : poser, déplacer, verrouiller une remplaçante ne déclenche aucun signalement ; seules les règles générales (absence, chevauchement, repos…) restent signalées. Annuler (1 niveau) inchangé.
+- **Honnêteté de l'écran Équipe** : les deux aides décrivent la règle réelle, en vocabulaire du cabinet (« titulaires », « remplaçante », « jours de repos », « souhaits »). Jamais « contrainte », « poids », « coût ».
+- **Plafonner une personne** : le levier compréhensible est le **rythme mensuel** (`0020`) ; c'est lui qui limite une titulaire (sinon chargée jusqu'à ses limites) ou une remplaçante (sinon répartie au hasard). À rappeler au porteur lors de la recette (§12 n° 9 et 10).
+- **Accessibilité** : `aria-describedby` de l'aide du statut conservé ; aucune nouvelle cible cliquable.
 
 ## 9. Étapes d'implémentation
 
-**3 tâches, une par sous-agent `dev-front`** ([workflow](../docs/instructions/workflow-implementation.md)). Ordre **T1 → T2 → T3** (T2 et T3 utilisent `src/domain/remplacement.js` créé en T1 ; T2 et T3 sont indépendantes entre elles mais T2 et T1 touchent les mêmes fichiers moteur : ne pas paralléliser T1/T2).
+**Déjà livré (commit `9ceb772`, tâches T1 à T4)** : notamment la contrainte dure « sur absence » et `remplacement.js` (T1), la priorité et l'équité sans remplaçantes (T2), les aides à l'écran (T3). Ces livraisons sont en partie **défaites** par la révision ci-dessous ; les nouvelles tâches sont numérotées à partir de T5.
 
-### Tâche 1 — Règle « une remplaçante ne vient que pour une absence » (contrainte dure)
+**Révision : 3 tâches, une par sous-agent `dev-front`** ([workflow](../docs/instructions/workflow-implementation.md)). **T5 et T6 sont indépendantes** (fichiers disjoints) et peuvent être menées en parallèle ; **T7 après T5 et T6** (elle supprime des symboles encore utilisés par l'ancien code de T5/T6).
+
+### Tâche 5 — Moteur : « titulaires d'abord » à la place de la règle dure
 
 **Fichiers** :
-- `src/domain/remplacement.js` (**créer**) — §5.2.
-- `src/domain/scheduling/contraintes/contrainteRemplacement.js` (**créer**) — précalcul commun + `creerContrainteRemplacementSurAbsence` (§5.3 a). Prévoir l'emplacement de la seconde fabrique (T2) sans l'écrire.
-- `src/domain/scheduling/contraintes/contrainteAbsence.js` (**modifier**) — `export` de `horairesDeAffectation`, rien d'autre.
-- `src/domain/scheduling/contraintes/index.js` (**modifier**) — enregistrement de la dure, `TYPES_CONTRAINTE` + `'REMPLACEMENT'`, en-tête.
-- `src/domain/scheduling/modele/messages.js` (**modifier**) — gabarits `REMPLACANTE_SANS_ABSENCE`, `REMPLACANTES_EN_SURNOMBRE`.
-- `src/domain/scheduling/modele/types.js` (**modifier**) — JSDoc `severite` (§5.5).
-- `src/domain/libelles.js` (**modifier**) — deux causes.
-- `src/domain/personnes.js` (**modifier**) — `export` de `listeFrancaise`.
-- `docs/architecture/05-moteur-de-planification.md` (**modifier**) — catalogue des **dures** : « `remplacementSurAbsence` (une remplaçante n'est candidate que si une titulaire est absente sur les horaires du segment ; pas plus de remplaçantes un jour que de titulaires absentes ; placement **manuel** signalé en `avertissement` [0021]) » ; objet `Violation` : nuance « dure → erreur, sauf placement manuel » ; §7 : `contrainteRemplacement.js` dans l'arborescence.
-- `docs/architecture/02-modele-de-domaine.md` (**modifier**) — ligne `statut` : « … ; un `REMPLACANT` n'est planifié automatiquement que pour couvrir l'absence d'un titulaire [0021] » ; ligne `titulaireId` : « lu par le moteur (priorité de remplacement) [0021] ».
-- `docs/architecture/06-structure-du-code.md` (**modifier**) — sous `domain/` : `remplacement.js  # absences de titulaires qui libèrent une place (règle de remplacement) [0021]`.
+- `src/domain/scheduling/contraintes/contrainteRemplacement.js` (**réécrire**) — §5.4.
+- `src/domain/scheduling/contraintes/index.js` (**modifier**) — §5.7.
+- `src/domain/scheduling/heuristiques/rechercheLocale.js` (**modifier**) — §5.5 (une ligne + JSDoc).
+- `src/domain/scheduling/modele/types.js` (**modifier**) — §5.5.
+- `src/domain/scheduling/contraintes/contrainteEquite.js` (**modifier**) — §5.6.
+- `docs/architecture/05-moteur-de-planification.md` (**modifier**) :
+  - §1 typedef `Contrainte` : ajouter `@property {(ctx) => number} [coutGlobal] // souples silencieuses : pénalité de génération jamais affichée (recherche locale) [0021]` et une puce : « `coutGlobal(ctx)` : facultatif, pour une **préférence de génération** sans manquement à signaler (`evaluer` → `[]`) ; ajouté au score de la recherche locale, jamais au `score` affiché ; doit rester cohérent avec `coutMarginal`. »
+  - Objet `Violation` : `severite` → « dure->erreur ; souple->avertissement » (retirer la mention 0021 « placement manuel »).
+  - Catalogue **dures** : retirer `remplacementSurAbsence`.
+  - Catalogue **souples** : remplacer l'entrée `remplacementPrioritaire` par « `titulairesDAbord` (silencieuse : une case confiée à une remplaçante coûte un peu, moins qu'un souhait ou qu'un dépassement de rythme d'une titulaire — les titulaires sont planifiées d'abord, les remplaçantes prennent le reste [0021]), `remplacementPrioritaire` (silencieuse : les jours où sa titulaire ne travaille pas, la remplaçante rattachée passe avant les autres [0021]) » ; dans `equite`, remplacer « remplaçantes exclues de la moyenne ; avec rythme : seul le dépassement est signalé [0021] » par « remplaçantes exclues de la moyenne, rythme = plafond seulement ; coût marginal sans rythme = surcharge acquise au-dessus de la moyenne [0021] ».
+  - §3 « Amélioration locale » : ajouter « Le score comparé = pénalités des avertissements + `coutGlobal` des souples silencieuses. »
 
 **Critères de sortie** :
-- Script jetable (§11.1) : scénarios S1 à S7 conformes.
-- `src/domain/remplacement.js` n'importe que `@/domain/absences.js` ; aucun import Vue/Vuex dans les fichiers du moteur ; aucun fichier de la liste « Ne pas toucher » (§5.6) modifié.
+- Script jetable (§11.1) : scénarios S1 à S8 conformes.
+- `validerPlanning` ne renvoie jamais de violation `contrainteId` `'titulaires-d-abord'`, `'remplacement-prioritaire'` ou `'remplacement-sur-absence'`.
+- Aucun import Vue/Vuex dans le moteur ; `glouton.js`, `scoring.js`, `genererPlanning.js`, `validerPlanning.js`, `diagnostiquer.js` non modifiés.
 - `npm run build` réussit.
 
-### Tâche 2 — Priorité à la titulaire rattachée & équité sans les remplaçantes
-
-**Dépend de** : T1.
+### Tâche 6 — Écrans : retirer les aides de l'ancienne règle, reformuler la fiche personne
 
 **Fichiers** :
-- `src/domain/scheduling/contraintes/contrainteRemplacement.js` (**modifier**) — `creerContrainteRemplacementPrioritaire` (§5.3 b).
-- `src/domain/scheduling/contraintes/index.js` (**modifier**) — `POIDS_SOUPLES_PAR_DEFAUT.remplacementPrioritaire = 3` (+ JSDoc du type), enregistrement de la souple.
-- `src/domain/scheduling/contraintes/contrainteEquite.js` (**modifier**) — §5.4.
-- `src/domain/scheduling/modele/messages.js` (**modifier**) — gabarit `REMPLACANTE_HABITUELLE_NON_PLANIFIEE`.
-- `src/domain/libelles.js` (**modifier**) — cause `REMPLACANTE_HABITUELLE_NON_PLANIFIEE`.
-- `docs/architecture/05-moteur-de-planification.md` (**modifier**) — catalogue des **souples** : « `remplacementPrioritaire` (la remplaçante rattachée à une titulaire absente passe avant les autres remplaçantes ; avertissement si elle est disponible mais non planifiée alors qu'une autre l'est [0021]) » ; entrée `equite` complétée : « remplaçantes exclues de la moyenne ; avec rythme : seul le dépassement est signalé [0021] ».
+- `src/components/planning/SelecteurPersonne.vue` (**modifier**) — §2.3, §6.1.
+- `src/components/planning/PanneauConflits.vue` (**modifier**) — §2.2, §6.2.
+- `src/components/equipe/FormulairePersonne.vue` (**modifier**) — §2.4, §6.3.
 
-**Critères de sortie** : script jetable (§11.1) scénarios S8 à S11 ; `npm run build` réussit.
+**Critères de sortie** : critères §10 « Écrans » ; plus aucun import de `@/domain/remplacement.js` dans ces deux composants planning ; aucun import `@/domain/scheduling` ; `npm run build` réussit.
 
-### Tâche 3 — Explications à l'écran (sélecteur, panneau, fiche personne)
+### Tâche 7 — Nettoyage du domaine et de la documentation
 
-**Dépend de** : T1 (`estRemplacante`, `absencesACouvrir`).
+**Dépend de** : T5, T6.
 
 **Fichiers** :
-- `src/components/planning/SelecteurPersonne.vue` (**modifier**) — §2.3, §6.2.
-- `src/components/planning/PanneauConflits.vue` (**modifier**) — §2.2 (rappel), §6.3.
-- `src/components/equipe/FormulairePersonne.vue` (**modifier**) — §2.4, §6.1.
+- `src/domain/remplacement.js` (**modifier**) — §5.3.
+- `src/domain/scheduling/modele/messages.js` (**modifier**) — §5.8.
+- `src/domain/libelles.js` (**modifier**) — §5.8.
+- `src/domain/scheduling/contraintes/contrainteAbsence.js` (**modifier**) — §5.8.
+- `src/domain/personnes.js` (**modifier**) — §5.8.
+- `docs/architecture/02-modele-de-domaine.md` (**modifier**) — ligne `statut` : « … ; un `REMPLACANT` reçoit les tournées que les titulaires ne peuvent pas assurer (titulaires d'abord) [0021] » ; ligne `titulaireId` : « … ; lu par le moteur : priorité les jours où cette titulaire ne travaille pas [0021] ».
+- `docs/architecture/06-structure-du-code.md` (**modifier**) — ligne `remplacement.js  # identification des remplaçantes (estRemplacante) [0021]`.
 
-**Critères de sortie** : critères §10 « Écrans » ; aucun import `@/domain/scheduling` dans ces composants ; `npm run build` réussit.
+**Critères de sortie** : recherche sur le dépôt (hors `features/`) sans résultat pour `REMPLACANTE_SANS_ABSENCE`, `REMPLACANTES_EN_SURNOMBRE`, `REMPLACANTE_HABITUELLE_NON_PLANIFIEE`, `absencesACouvrir`, `absencesARemplacerLe`, `titulairesAbsentes`, `remplacement-sur-absence` ; `npm run build` réussit ; script S1 rejoué sans erreur.
 
 ## 10. Critères d'acceptation
 
-Jeu d'essai (ids GUID, fichier fabriqué hors dépôt) : cabinet ouvert du lundi au samedi ; deux tournées « Tournée A » et « Tournée B », 07:00 – 13:00, une personne chacune, tous les jours ouvrés ; une tournée « Après-midi » 14:00 – 19:00 (pour les demi-journées) ; titulaires **Claire Martin** et **Sophie Durand**, plus une troisième titulaire pour l'après-midi ; remplaçantes **Léa Roux** (« Remplace en priorité Claire Martin ») et **Zoé Blanc** (non rattachée). Période : semaine du lundi 05/10/2026 au samedi 10/10/2026.
+**Jeu d'essai** (ids GUID, fichier fabriqué hors dépôt) : cabinet ouvert du lundi au samedi, paramètres par défaut (max 6 jours d'affilée, 2 jours de repos par semaine) ; « Tournée A » et « Tournée B » 07:00 – 13:00, « Après-midi » 14:00 – 19:00, une personne chacune, du lundi au samedi ; titulaires **Claire Martin**, **Sophie Durand**, **Marc Petit** (sans rythme, sans souhait) ; remplaçantes **Léa Roux** (« Remplace en priorité Claire Martin ») et **Zoé Blanc** (non rattachée). Période générée : lundi 05/10/2026 → samedi 10/10/2026.
+**Option « manque »** : ajouter « Tournée C » 07:00 – 13:00 (lundi–samedi, une personne) et régler Paramètres → nombre maximum de jours consécutifs = **2**.
+
+« Titulaire empêchée » un jour J = absente ce jour-là, ou J ferait un 3e jour d'affilée (option manque) compte tenu de ses jours planifiés, ou J dépasserait son rythme mensuel s'il est saisi.
 
 **Génération**
-- [x] Sans aucune absence : ni Léa ni Zoé n'apparaissent dans le planning généré ; une tournée que les titulaires ne peuvent pas assurer apparaît dans « Tournées non couvertes ».
-- [x] Claire absente (journée entière) le mercredi 07/10 : une seule remplaçante travaille le 07, c'est **Léa** ; aucune remplaçante les autres jours.
-- [x] Claire absente le **matin** du 07 seulement : la remplaçante n'est placée que sur une tournée du matin, jamais sur « Après-midi ».
-- [x] Claire **et** Léa absentes le 07 : **Zoé** couvre ; aucun avertissement « Remplaçante habituelle non planifiée ».
-- [x] Claire et Sophie absentes le 07 : au plus **deux** remplaçantes ce jour-là (Léa et Zoé).
-- [x] Sophie (sans remplaçante rattachée) absente le 08 : **une** remplaçante au plus le 08 (Léa ou Zoé).
-- [x] Claire archivée avec une absence le 07 : son absence ne libère plus de place (aucune remplaçante le 07 du fait de Claire).
-- [x] Aucun message « Charge de travail mal répartie » ne vise Léa ou Zoé, et leur présence ne crée pas de tels messages pour les titulaires.
-- [x] Équipe **sans** remplaçante : aucun nouveau message, génération inchangée par rapport à avant `0021`.
+- [x] Jeu de base, sans absence : Léa et Zoé n'apparaissent pas ; aucune tournée non couverte ; aucun point d'attention mentionnant une remplaçante.
+- [x] Jeu de base, Claire absente (journée) le mercredi 07/10 : Sophie et Marc assurent A, B et Après-midi le 07 ; Léa et Zoé n'apparaissent pas de la semaine.
+- [x] Option manque : Léa et/ou Zoé apparaissent. **Chaque jour où une remplaçante travaille, chacune des trois titulaires travaille aussi ce jour-là ou est empêchée** (seule exception tolérée : une titulaire qui a déjà au moins 2 tournées de plus que la moyenne des titulaires). En pratique, chaque titulaire travaille 4 jours sur 6.
+- [x] Option manque : une tournée n'est « non couverte » que si, ce jour-là, Léa et Zoé sont elles aussi déjà planifiées sur un horaire qui se chevauche ou empêchées.
+- [x] Option manque, priorité : chaque jour où Claire ne travaille pas et où une remplaçante travaille, **Léa** est planifiée ce jour-là, sauf si elle est empêchée.
+- [x] Option manque + Léa absente (journée) un jour où Claire ne travaille pas : Zoé prend la place ; aucun message ne parle de Léa ni de remplaçante.
+- [x] Rythme : jeu de base + Sophie et Marc à **9 jours par mois** (≈ 2 jours attendus sur la semaine) : Sophie et Marc travaillent au plus 2 jours chacun, aucun « Rythme de travail dépassé » ; Claire travaille tous les jours ; Léa/Zoé ne tiennent que les tournées du matin restantes (en pratique 2 sur la semaine).
+- [x] Aucun « Charge de travail mal répartie » ne vise Léa ou Zoé.
+- [x] Équipe sans remplaçante (Léa et Zoé archivées), jeu de base : toutes les tournées couvertes, aucun nouveau type de point d'attention, aucun « Charge de travail mal répartie ».
+- [x] « Régénérer » à l'identique deux fois de suite donne le même planning.
 
 **Édition manuelle (`0011`)**
-- [x] Ajouter Zoé le jeudi 08/10 (aucune absence) : l'ajout est accepté ; « Avertissements » affiche « Remplaçante planifiée sans absence à couvrir » avec le message « … Si c'est un appel exceptionnel, vous pouvez laisser ainsi ; sinon, retirez-la de cette case. » ; la case est surlignée en avertissement ; rien dans « Erreurs à corriger » ; le tableau de bord ne la compte pas « à résoudre ».
-- [x] Verrouiller cette affectation puis « Régénérer » : Zoé reste le 08, l'avertissement aussi, et le moteur n'ajoute aucune autre remplaçante.
-- [x] Glisser Léa (posée par le moteur le 07) vers le 09 sans absence : avertissement (geste manuel), pas d'erreur.
-- [x] Planning généré avec Léa le 07 (absence de Claire), puis **suppression** de l'absence de Claire : « Erreurs à corriger » affiche le message « … retirez-la de cette case ou régénérez le planning » ; « Régénérer » retire Léa.
-- [x] Claire absente le 07, Léa planifiée par le moteur : ajouter Zoé à la main le 07 → « Plus de remplaçantes que d'absences », en avertissement, avec les deux noms.
-- [x] Claire absente le 07 : retirer Léa et poser Zoé à la main → « Remplaçante habituelle non planifiée » : « Claire Martin est absente le mercredi 07/10/2026. Léa Roux, qui la remplace d'habitude, n'est pas planifiée ce jour-là ; Zoé Blanc l'est à sa place. »
-- [x] « Annuler » après chacun de ces gestes fait disparaître le signalement correspondant.
+- [x] Jeu de base : retirer la titulaire de la Tournée A du jeudi 08/10 et y poser Zoé : accepté, aucun point d'attention ne concerne Zoé ou les remplaçantes ; « Annuler » rétablit l'état précédent.
+- [x] Verrouiller cette affectation de Zoé puis « Régénérer » : Zoé reste le 08 et le moteur n'ajoute aucune autre remplaçante dans la semaine.
 
 **Écrans**
-- [x] Sélecteur « Ajouter une personne » sur une case du 08 (aucune absence) : Léa et Zoé portent la note « pas d'absence à remplacer sur ces horaires (choix possible) » et restent cliquables ; sur une case du 07 (Claire absente) : pas de note.
-- [x] Sous « Tournées non couvertes », le rappel sur les remplaçantes s'affiche quand l'équipe compte une remplaçante active, et pas sinon.
-- [x] Modale personne : en choisissant « Remplaçant », l'aide « …n'est planifiée automatiquement que pour couvrir l'absence d'une titulaire » apparaît (lue par le lecteur d'écran) ; l'aide « Remplace en priorité » indique que la titulaire est proposée en premier.
+- [x] Sélecteur « Ajouter une personne » : Léa et Zoé sont listées sans la note « pas d'absence à remplacer… » ; la note « déjà N affectation(s) ce jour-là » fonctionne toujours.
+- [x] Panneau, volet « Tournées non couvertes » (provoquer un manque : option manque + Léa et Zoé absentes le mercredi) : plus de rappel sur les remplaçantes sous la liste.
+- [x] Modale personne : en choisissant « Remplaçant », l'aide « Le planning confie d'abord les tournées aux titulaires… » apparaît et est lue par le lecteur d'écran ; l'aide « Remplace en priorité » dit « Les jours où cette titulaire ne travaille pas, cette personne sera proposée avant les autres remplaçantes. »
 - [x] `npm run build` réussit.
+
+**Critères du plan initial retirés par la révision** (traçabilité) : ~~sans absence, aucune remplaçante~~ ; ~~une seule remplaçante pendant l'absence de Claire, aucune ailleurs~~ ; ~~absence du matin → remplaçante seulement le matin~~ ; ~~au plus autant de remplaçantes que de titulaires absentes~~ ; ~~absence d'une titulaire archivée ne libère pas de place~~ ; ~~avertissement « Remplaçante planifiée sans absence à couvrir » (manuel) / erreur (automatique)~~ ; ~~« Plus de remplaçantes que d'absences »~~ ; ~~« Remplaçante habituelle non planifiée »~~ ; ~~note du sélecteur~~ ; ~~rappel sous « Tournées non couvertes »~~ ; ~~aides « …que pour couvrir l'absence d'une titulaire »~~.
 
 ## 11. Vérification
 
-1. **Script jetable moteur (T1, T2)** — dans le dossier temporaire de session (**jamais dans le dépôt**, aucune sortie collée dans le dépôt) : un `.mjs` qui crée un serveur Vite (`createServer` depuis `node_modules/vite`, `root` = projet, `server.middlewareMode: true`), charge `src/domain/scheduling/index.js` et `src/domain/remplacement.js` par `ssrLoadModule` (les modules utilisent l'alias `@/`), puis rejoue sur l'entrée du §10 (ids `crypto.randomUUID()`, `seed` fixe, `budgetMs` réduit) :
-   - **S1** sans absence → aucune affectation de remplaçante ;
-   - **S2** Claire absente `JOURNEE` le 2026-10-07 → exactement une remplaçante le 07, aucune ailleurs ;
-   - **S3** Claire absente `MATIN` → remplaçante seulement sur un segment qui recouvre le matin ;
-   - **S4** Claire + Sophie absentes → ≤ 2 remplaçantes distinctes le 07 ;
-   - **S5** `diagnostiquer` sur une affectation `MANUEL` de Zoé le 08 → `REMPLACANTE_SANS_ABSENCE` en `avertissement` ; même affectation en `AUTO` → `erreur` ;
-   - **S6** Léa `AUTO` + Zoé `MANUEL` le 07 avec Claire seule absente → `REMPLACANTES_EN_SURNOMBRE` en `avertissement` ;
+1. **Script jetable moteur (T5)** — dans le dossier temporaire de session (**jamais dans le dépôt**) : un `.mjs` qui crée un serveur Vite (`createServer` depuis `node_modules/vite`, `root` = projet, `server.middlewareMode: true`), charge `src/domain/scheduling/index.js` par `ssrLoadModule` (alias `@/`), rejoue le jeu du §10 (ids `crypto.randomUUID()`, `seed` fixe, `budgetMs` 300) et vérifie :
+   - **S1** jeu de base → 0 affectation de remplaçante, 0 non-couverture ;
+   - **S2** Claire absente `JOURNEE` le 2026-10-07 → 0 affectation de remplaçante, 0 non-couverture ;
+   - **S3** option manque (`reglesCabinet.maxJoursConsecutifs = 2`, Tournée C) → au moins une affectation de remplaçante ; pour chaque date avec une remplaçante, chaque titulaire travaille ce jour-là ou est empêchée (absence, ou run > 2 si on ajoutait la date à ses jours) — afficher les éventuelles exceptions avec l'écart de charge à la moyenne ;
+   - **S4** S3 : pour chaque date où Claire ne travaille pas et où une remplaçante travaille, Léa travaille ou est empêchée ; puis Léa absente un tel jour → Zoé le couvre ;
+   - **S5** jeu de base + Sophie et Marc `joursTravaillesParMois: 9` → aucune `EQUITE_RYTHME_DEPASSE`, Sophie et Marc ≤ 2 jours ;
+   - **S6** `validerPlanning` sur un planning contenant Zoé `MANUEL` le 2026-10-08 → aucune violation dont le `code` commence par `REMPLACANT` ni dont le `contrainteId` vaut `titulaires-d-abord` / `remplacement-prioritaire` / `remplacement-sur-absence` ;
    - **S7** déterminisme : deux `genererPlanning` même graine → mêmes quadruplets (personne, tournée, date, segment) ;
-   - **S8** (T2) S2 → la remplaçante du 07 est Léa ; Claire + Léa absentes → Zoé, sans `REMPLACANTE_HABITUELLE_NON_PLANIFIEE` ;
-   - **S9** (T2) Zoé `MANUEL` le 07, Léa non planifiée, Claire absente → `REMPLACANTE_HABITUELLE_NON_PLANIFIEE` ciblant Léa ;
-   - **S10** (T2) aucune `EQUITE_DESEQUILIBREE` visant une remplaçante ; remplaçante avec rythme : jamais `EQUITE_RYTHME_NON_ATTEINT` ;
-   - **S11** (T2) équipe sans remplaçante : résultat identique à S7 rejoué sans les deux remplaçantes (aucun nouveau code de violation).
-   Fermer le serveur Vite à la fin ; supprimer le script après usage.
+   - **S8** équipe sans remplaçante → génération complète, aucun nouveau code ; `coutGlobal` des deux contraintes = 0.
+   Fermer le serveur Vite ; supprimer le script après usage.
 2. `npm run build`.
-3. **Recette navigateur** (MCP Playwright) : `npx vite --port 5199 --strictPort`, application sur `http://localhost:5199/idelia/#/`. Restaurer le jeu d'essai (fichier fabriqué dans le dossier temporaire de session, ids GUID) via Paramètres → « Restaurer » ; dérouler les critères §10. Les volets du panneau sont des `<details>` fermés : les ouvrir avant de lire ; le glisser-déposer nécessite des `DragEvent` synthétiques après « Modifier le planning ». Les données réelles du cabinet peuvent servir de contrôle de non-régression (génération d'un mois) mais **ne doivent jamais être copiées dans le dépôt**.
-4. Clavier seul : sélecteur (notes lues), modale personne (aide du statut annoncée), volets du panneau.
-5. Relecture `ui-ux` (messages, accords, rappel sous « Tournées non couvertes »), puis audit `security` (interpolation seule, aucun `v-html`, aucune persistance nouvelle).
+3. **Recette navigateur** (MCP Playwright) : `npx vite --port 5199 --strictPort`, application sur `http://localhost:5199/idelia/#/`. Restaurer le jeu d'essai (fichier fabriqué dans le dossier temporaire de session, ids GUID) via Paramètres → « Restaurer » ; dérouler le §10. Les volets du panneau sont des `<details>` fermés : les ouvrir avant de lire ; glisser-déposer par `DragEvent` synthétiques après « Modifier le planning ».
+4. **Contrôle sur données réelles** (novembre, mêmes réglages qu'à la recette du 2026-10-14) : affectations de remplaçantes **> 0** et réparties sur les jours de repos des titulaires / week-ends ; tournées non couvertes **< 3** (idéalement 0) ; comparer le nombre de « Rythme de travail non atteint » et « Charge de travail mal répartie » avant / après. Les données réelles ne sont **jamais** copiées dans le dépôt.
+5. Clavier seul : modale personne (aide du statut annoncée), sélecteur, panneau.
+6. Relecture `ui-ux` (textes de la modale), puis audit `security` (interpolation seule, aucun `v-html`, aucune persistance nouvelle).
 
 ## 12. Décisions à confirmer / risques
 
 **Décisions prises (KISS, à valider)**
 
-1. **Seules les absences de titulaires libèrent une place (R1)** — écart assumé avec la lettre du résumé ROADMAP (« celles d'une autre personne (titulaire ou remplaçante) »). Raison : une remplaçante ne travaille que pendant une absence ; si son absence ouvrait aussi une place, une remplaçante qui pose ses congés (cas courant pour dire « ne m'appelez pas cette semaine ») permettrait d'en planifier une autre **sans qu'aucune titulaire ne soit absente**, c'est-à-dire spontanément. Le cas visé par la ROADMAP reste couvert : si Léa, qui devait remplacer Claire, est absente, l'absence de **Claire** libère toujours la place et Zoé la prend. Pour revenir à la lettre, il suffit d'élargir le filtre de `absencesARemplacerLe` (un seul endroit).
-2. **Plafond par jour (R3)** : « pas plus de remplaçantes distinctes un jour que de titulaires absentes ce jour-là » (une demi-journée d'absence compte pour une). Une même remplaçante peut assurer matin et reprise. Plus simple et plus lisible qu'un plafond par horaire.
-3. **Priorité = contrainte souple avec avertissement visible (R4)**, plutôt qu'un simple ordre de tri : le moteur garde **une seule source de vérité** (`evaluer`), la recherche locale ne peut pas défaire la priorité en silence, et le gestionnaire voit quand la remplaçante attitrée a été écartée. Poids par défaut `3`.
-4. **Sévérité selon l'origine de l'affectation (R5)** : `MANUEL` → avertissement (geste assumé, non compté « à résoudre ») ; `AUTO` → erreur (planning devenu incohérent). Aucune modification de la recherche locale nécessaire. Principe réutilisable par `0031` (dates de présence).
-5. **Équité (R6)** : remplaçantes hors de la moyenne ; leur rythme, s'il est saisi, n'agit que comme plafond.
-6. **Remplaçante sans titulaire, ou rattachée à une titulaire archivée / qui n'est plus titulaire** : traitée comme « sans priorité », toutes les autres règles s'appliquent.
-7. **Aucune migration, aucun changement de store.**
+1. **Mécanisme = deux souples « silencieuses » + `coutGlobal`.** Écartés : une contrainte **dure** « pas de remplaçante si une titulaire est libre » (elle ne sait pas qu'un souhait ou un rythme devrait céder, et rendrait des cases vides) ; un simple **tri dans le glouton** (la recherche locale le défairait en silence) ; une violation **visible** à pénalité (un message par case de remplaçante = bruit). La règle reste dans un seul objet `Contrainte` (ADR 0008 respecté).
+2. **Poids** : `titulairesDAbord = 2`, `remplacementPrioritaire = 0,5` (§5.2). Somme (2,5) sous le plus petit souhait (3) et sous le premier jour de dépassement de rythme (4) : un souhait ou un rythme de titulaire l'emporte toujours sur « titulaires d'abord » ; la couverture prime sur tout.
+3. **Équité sans rythme sans « socle »** (§5.6) : changement **global** du coût marginal (pas seulement pour les équipes avec remplaçantes) — sans lui, une titulaire à l'équilibre (4) coûterait plus qu'une remplaçante (2). Conséquence : à graine égale, les plannings des équipes **sans** remplaçante peuvent différer d'avant (départages entre titulaires sous la moyenne) ; l'équilibre final est équivalent (alerte « mal répartie » inchangée), et les souhaits souples sont mieux respectés face à l'équité.
+4. **Remplaçantes hors équité** (conservé) plutôt qu'une moyenne propre aux remplaçantes : une équité entre remplaçantes combattrait la priorité à l'habituelle (une case d'écart coûte 4, la priorité 0,5) et produirait des « Charge de travail mal répartie » structurelles (l'habituelle travaille par construction plus que les autres). Entre remplaçantes sans priorité en jeu, le départage est le tirage seedé ; le **rythme** d'une remplaçante, s'il est saisi, la plafonne.
+5. **Aucun signalement**, y compris l'ancien « Remplaçante habituelle non planifiée » : avec 4 remplaçantes et des titulaires absentes ou au repos environ un jour sur deux, l'avertissement se déclencherait presque chaque fois que l'habituelle est retenue par ses propres règles (repos, jours d'affilée, souhaits) ou simplement par le tirage, sans action utile pour le gestionnaire. Placement manuel : jamais signalé.
+6. **« Ne travaille pas ce jour-là » au niveau du jour** (aucune affectation ce jour-là), pas de la demi-journée : une titulaire présente l'après-midi seulement « travaille ». Plus simple et suffisant pour la priorité.
+7. **Rattachement à une titulaire archivée ou qui n'est plus titulaire** : aucune priorité, toutes les autres règles s'appliquent.
+8. **Aucune migration, aucun changement de store.**
 
 **Questions ouvertes**
 
-8. Une titulaire absente un jour où elle **ne travaille pas d'habitude** (temps partiel, jour non travaillé dans ses souhaits) libère quand même une place : le moteur ne connaît pas son « planning habituel ». Le plafond R3 limite l'effet à une remplaçante. À observer sur données réelles ; affinage possible plus tard (ignorer les absences tombant sur un jour non travaillé obligatoire).
-9. Pendant une absence, une remplaçante (coût d'équité nul) passe désormais devant une titulaire au-dessus de la moyenne : c'est le comportement attendu (« une absence = une place pour une remplaçante ») ; le cabinet préfère-t-il au contraire faire travailler davantage les titulaires disponibles ?
-10. L'avertissement de priorité peut viser une remplaçante attitrée **non absente mais empêchée** par une autre règle (repos légal, jours d'affilée, souhait obligatoire). Le message reste factuel (« n'est pas planifiée ce jour-là ») ; à confirmer en relecture `ui-ux`.
+9. **Sans rythme saisi, une titulaire est chargée jusqu'à ses limites dures** (jours d'affilée, repos hebdomadaire, absences, souhaits obligatoires) : c'est le sens de « titulaires d'abord ». Le rythme mensuel (`0020`) est le levier pour la plafonner — à expliquer au porteur pendant la recette.
+10. **Répartition entre remplaçantes** : au hasard (seedé) hors priorité. Si le cabinet la juge trop inégale, saisir un rythme pour chaque remplaçante, ou ouvrir une feature « équité entre remplaçantes » (poids faible, sous la priorité).
+11. **Tolérance d'équité** : une titulaire sans rythme nettement plus chargée que ses collègues (au-delà d'une demi-case dans le glouton, et au-delà du seuil « mal répartie » — 2 cases — dans la recherche locale) peut céder une case à une remplaçante alors qu'elle était libre. Acceptable ?
+12. **Équipes mixtes (rythme / sans rythme)** : avant, une titulaire avec rythme passait devant une titulaire sans rythme à l'équilibre (effet du « socle ») ; désormais elles se départagent au tirage. Risque : un peu plus de « Rythme de travail non atteint », corrigés en principe par la recherche locale — à surveiller au contrôle §11.4.
 
 **Risques**
 
-- **Davantage de tournées non couvertes** après `0021` dans les équipes qui comptaient sur les remplaçantes en temps normal : c'est la règle voulue, mais le gestionnaire doit le comprendre (rappel §2.2, note du sélecteur).
-- **Cohérence `autoriseAffectation` ↔ `evaluer`** (architecture 05 §1) : même comptage `remplacantesSurAbsenceLe` des deux côtés ; à vérifier par S2 à S6.
-- **Performance** : mémo des absences par date dans la fabrique ; titulaires écartées en O(1) par `autoriseAffectation`. La validation reste linéaire en nombre d'affectations.
-- **Coordination** : `0031` ajoutera aussi une dure « présence » ; s'il atterrit avant, l'ordre d'enregistrement dans `creerContraintes` est indifférent.
+- **Budget de la recherche locale** : sur un mois réel, la correction des choix du glouton (priorité, titulaires d'abord) dépend du budget (`budgetMs`, ~200 ms). Contrôle §11.4 ; augmenter le budget seulement si nécessaire.
+- **Cohérence `coutMarginal` ↔ `coutGlobal`** : deux lectures de la même préférence, à garder alignées (S3, S4).
+- **Régression perçue** pour les équipes sans remplaçante (décision 3) : plannings différents à graine égale ; vérifier sur les données réelles qu'aucune alerte nouvelle n'apparaît en nombre.
+- **Coordination** : `0031` (dates de présence) ajoutera une dure « présence » ; indépendante de cette révision.

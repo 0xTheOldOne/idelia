@@ -24,12 +24,14 @@ Un **modèle de contraintes unique** alimente **à la fois** la génération (fi
  * @property {(ctx) => Violation[]}         evaluer               // SOURCE DE VÉRITÉ
  * @property {(cand, cell, ctx) => boolean} [autoriseAffectation] // pré-filtre rapide (dures)
  * @property {(cand, cell, ctx) => number}  [coutMarginal]        // optionnel (perf, souples)
+ * @property {(ctx) => number}              [coutGlobal]          // souples silencieuses : pénalité de génération jamais affichée (recherche locale) [0021]
  */
 ```
 
 - `evaluer(ctx)` : parcourt le planning, renvoie les violations — **seule** source de vérité.
 - `autoriseAffectation(...)` : pré-filtre rapide pour la génération (dures uniquement), sans reconstruire tout le planning. Sa cohérence avec `evaluer` est un invariant à préserver.
 - `coutMarginal(...)` : optionnel ; à défaut, la génération dérive le coût en ré-évaluant **seulement la portée touchée** via `evaluer` (zéro duplication).
+- `coutGlobal(ctx)` : facultatif, pour une **préférence de génération** sans manquement à signaler (`evaluer` → `[]`) ; ajouté au score de la recherche locale, jamais au `score` affiché ; doit rester cohérent avec `coutMarginal`.
 
 ### La `granularite` (clé de la performance incrémentale)
 
@@ -46,7 +48,7 @@ Un **modèle de contraintes unique** alimente **à la fois** la génération (fi
 /**
  * @typedef {Object} Violation
  * @property {string}  contrainteId
- * @property {'erreur'|'avertissement'} severite  // dure->erreur (sauf placement manuel : avertissement [0021]) ; souple->avertissement
+ * @property {'erreur'|'avertissement'} severite  // dure->erreur ; souple->avertissement
  * @property {Object}  cible        // { personneId?, tourneeId?, jour?, segmentIndex? } pour surligner l'UI
  * @property {string}  code         // stable (i18n, tests), ex 'ABSENCE_AFFECTEE'
  * @property {string}  message      // FR lisible pour l'UI
@@ -59,9 +61,9 @@ On sépare `code` (stable) de `message` (FR affiché) → prêt pour l'i18n, tes
 
 ### Catalogue
 
-**Dures** (`severite: 'erreur'`) : `absence` (personne absente non affectable — recouvrement bucket ↔ horaires du segment), `chevauchement` (une personne ne peut avoir deux affectations aux **horaires qui se chevauchent** le même jour ; les 2 segments **disjoints** d'une coupée ne se chevauchent donc pas), `remplacementSurAbsence` (une remplaçante n'est candidate que si une titulaire est absente sur les horaires du segment ; pas plus de remplaçantes un jour que de titulaires absentes ; placement **manuel** signalé en `avertissement` [0021]), `couverture` (effectif requis **par segment**), `reposLegal` (≤ `maxJoursConsecutifs`, repos mini ; deux segments d'un même jour = **un seul** jour travaillé).
+**Dures** (`severite: 'erreur'`) : `absence` (personne absente non affectable — recouvrement bucket ↔ horaires du segment), `chevauchement` (une personne ne peut avoir deux affectations aux **horaires qui se chevauchent** le même jour ; les 2 segments **disjoints** d'une coupée ne se chevauchent donc pas), `couverture` (effectif requis **par segment**), `reposLegal` (≤ `maxJoursConsecutifs`, repos mini ; deux segments d'un même jour = **un seul** jour travaillé).
 
-**Souples** (`severite: 'avertissement'`, poids configurable) : `jourOffRecurrent`, `creneauOff`, `joursConsecutifsSouhaites`, `jourReposSouhaite`, `remplacementPrioritaire` (la remplaçante rattachée à une titulaire absente passe avant les autres remplaçantes ; avertissement si elle est disponible mais non planifiée alors qu'une autre l'est [0021]), `equite` (remplaçantes exclues de la moyenne ; avec rythme : seul le dépassement est signalé [0021] ; personnes **sans** rythme : écart de charge pondéré par `quotite`, une coupée pèse ses 2 segments ; personnes **avec** `joursTravaillesParMois` : écart aux jours attendus sur la période, prorata ouverture / présence / absences validées — `domain/rythmeMensuel.js` [0020] ; alertes « Rythme de travail dépassé » dès +1 jour, « non atteint » à partir de -2 jours), `continuite` (garder la même personne sur une tournée d'un jour à l'autre), **`continuiteSegments`** (privilégier la **même personne** sur les 2 vacations d'une tournée coupée le même jour — jamais imposé, [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)).
+**Souples** (`severite: 'avertissement'`, poids configurable) : `jourOffRecurrent`, `creneauOff`, `joursConsecutifsSouhaites`, `jourReposSouhaite`, `titulairesDAbord` (silencieuse : une case confiée à une remplaçante coûte un peu, moins qu'un souhait ou qu'un dépassement de rythme d'une titulaire — les titulaires sont planifiées d'abord, les remplaçantes prennent le reste [0021]), `remplacementPrioritaire` (silencieuse : les jours où sa titulaire ne travaille pas, la remplaçante rattachée passe avant les autres [0021]), `equite` (remplaçantes exclues de la moyenne, rythme = plafond seulement ; coût marginal sans rythme = surcharge acquise au-dessus de la moyenne [0021] ; personnes **sans** rythme : écart de charge pondéré par `quotite`, une coupée pèse ses 2 segments ; personnes **avec** `joursTravaillesParMois` : écart aux jours attendus sur la période, prorata ouverture / présence / absences validées — `domain/rythmeMensuel.js` [0020] ; alertes « Rythme de travail dépassé » dès +1 jour, « non atteint » à partir de -2 jours), `continuite` (garder la même personne sur une tournée d'un jour à l'autre), **`continuiteSegments`** (privilégier la **même personne** sur les 2 vacations d'une tournée coupée le même jour — jamais imposé, [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)).
 
 ### Couverture & infaisabilité
 
@@ -131,7 +133,7 @@ pour chaque demande d = (jour, tournee, segment), triée par nb de candidats cro
 ```
 Les dures dépendant du temps (repos, consécutifs) sont **re-vérifiées dynamiquement** au fil des affectations posées. Le départage passe **toujours** par le RNG seedé (jamais `Math.random`).
 
-**Amélioration locale** — optimise les souples sans jamais casser une dure. Voisinage : `REASSIGNER` (changer la personne), `ECHANGER` (permuter deux affectations), `DEPLACER` (vers un slot non couvert légal). Budget **anytime** (`budgetMs` ~150-300 ms). Hill-climbing + redémarrages seedés ; recuit derrière un flag (KISS d'abord).
+**Amélioration locale** — optimise les souples sans jamais casser une dure. Voisinage : `REASSIGNER` (changer la personne), `ECHANGER` (permuter deux affectations), `DEPLACER` (vers un slot non couvert légal). Budget **anytime** (`budgetMs` ~150-300 ms). Hill-climbing + redémarrages seedés ; recuit derrière un flag (KISS d'abord). Le score comparé = pénalités des avertissements + `coutGlobal` des souples silencieuses.
 
 ## 4. Validation temps réel
 

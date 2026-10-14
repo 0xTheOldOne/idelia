@@ -59,7 +59,8 @@
           </option>
         </select>
         <div v-if="estRemplacant" id="personne-statut-aide" class="form-text">
-          Une personne remplaçante n'est planifiée automatiquement que pour couvrir l'absence d'une titulaire.
+          Le planning confie d'abord les tournées aux titulaires. Une personne remplaçante prend celles qui
+          restent (jours de repos ou absences des titulaires, par exemple).
         </div>
       </div>
 
@@ -78,8 +79,8 @@
           </option>
         </select>
         <div id="personne-titulaire-aide" class="form-text">
-          La titulaire que cette personne remplace d'habitude. Elle sera proposée en premier quand cette
-          titulaire est absente.
+          La titulaire que cette personne remplace d'habitude. Les jours où cette titulaire ne travaille
+          pas, cette personne sera proposée avant les autres remplaçantes.
           <template v-if="aucuneTitulaireActive">
             Ajoutez d'abord une personne titulaire pour pouvoir la choisir ici.
           </template>

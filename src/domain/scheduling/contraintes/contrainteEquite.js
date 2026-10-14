@@ -9,8 +9,11 @@
  *   ouverture / présence / absences validées journée entière). Le rythme prime
  *   sur la quotité.
  * Les **remplaçantes** (0021) sortent de la moyenne du groupe « sans rythme »
- * (elles ne travaillent que sur absence) ; avec un rythme, seul son
- * dépassement est signalé, jamais le « non atteint ».
+ * (elles prennent les tournées que les titulaires ne peuvent pas assurer) ;
+ * avec un rythme, seul son dépassement est signalé, jamais le « non atteint ».
+ * Coût marginal du groupe « sans rythme » : `poids × max(0, charge actuelle −
+ * moyenne)`, soit la seule surcharge **déjà acquise** (0 tant que la personne
+ * reste dans la norme, pour ne pas la rendre plus chère qu'une remplaçante).
  * Impacte le choix pendant la génération (`coutMarginal`) et signale les
  * déséquilibres résiduels en validation (`evaluer`).
  *
@@ -135,8 +138,7 @@ export function creerContrainteEquite(poids = POIDS_EQUITE_DEFAUT, entree = null
       const charges = chargesDeLequipe(ctx.entree, ctx.index);
       const moy = moyenne(charges);
       const nbActuel = (ctx.index.parPersonne.get(personneId) ?? []).length;
-      const chargeApres = chargeNormalisee(personne, nbActuel + 1);
-      const depassement = Math.max(0, chargeApres - moy);
+      const depassement = Math.max(0, chargeNormalisee(personne, nbActuel) - moy);
 
       return poids * depassement;
     },

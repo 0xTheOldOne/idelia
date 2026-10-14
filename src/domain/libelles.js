@@ -496,9 +496,6 @@ export const LIBELLES_CAUSE_VIOLATION = {
   EQUITE_DESEQUILIBREE: 'Charge de travail mal répartie',
   EQUITE_RYTHME_DEPASSE: 'Rythme de travail dépassé',
   EQUITE_RYTHME_NON_ATTEINT: 'Rythme de travail non atteint',
-  REMPLACANTE_SANS_ABSENCE: 'Remplaçante planifiée sans absence à couvrir',
-  REMPLACANTES_EN_SURNOMBRE: "Plus de remplaçantes que d'absences",
-  REMPLACANTE_HABITUELLE_NON_PLANIFIEE: 'Remplaçante habituelle non planifiée',
   CONTINUITE_ROMPUE: "Changement de personne d'un jour à l'autre",
   CONTINUITE_SEGMENTS_ROMPUE: 'Personnes différentes le matin et le soir',
   ...Object.fromEntries(

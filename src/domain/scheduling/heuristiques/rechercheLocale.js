@@ -45,7 +45,9 @@ function maintenant() {
 
 /**
  * Évalue un état candidat (tableau d'`Affectation`) au regard du catalogue
- * **complet** de contraintes : nombre d'erreurs dures et score souple.
+ * **complet** de contraintes : nombre d'erreurs dures et score souple
+ * (pénalités des violations, plus les `coutGlobal` des souples silencieuses
+ * de 0021, jamais affichées).
  * Réutilise directement `contrainte.evaluer(ctx)` — même source de vérité
  * que `validerPlanning`, sans réinstancier le catalogue ni trier le résultat
  * (inutile ici, seuls les agrégats comptent).
@@ -68,6 +70,7 @@ function evaluerEtat(affectationsCandidates, contraintes, ctxBase) {
         score += violation.penalite ?? 0;
       }
     }
+    if (typeof contrainte.coutGlobal === 'function') score += contrainte.coutGlobal(ctx) ?? 0;
   }
 
   return { nbErreursDures, score };

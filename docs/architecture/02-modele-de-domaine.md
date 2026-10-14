@@ -43,7 +43,7 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | id | uuid | oui | |
 | prenom | string | oui | |
 | nom | string | oui | |
-| statut | enum | oui | `TITULAIRE`, `REMPLACANT` ; un `REMPLACANT` n'est planifié automatiquement que pour couvrir l'absence d'un titulaire [0021] |
+| statut | enum | oui | `TITULAIRE`, `REMPLACANT` ; un `REMPLACANT` reçoit les tournées que les titulaires ne peuvent pas assurer (titulaires d'abord) [0021] |
 | actif | boolean | oui | défaut `true` (soft-delete = `false`) |
 | couleur | string hex `#RRGGBB` | oui | affichage calendrier |
 | quotite | number 0..100 | oui | défaut `100` (% temps de travail) |
@@ -54,7 +54,7 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | notes | string | non | |
 | initialesVega | string `^[A-Z0-9]{2,4}$` \| null | non | code « PS » de la personne dans Vega ; `null` si non renseigné ; **unique** parmi toutes les personnes (actives et archivées) ; stocké en majuscules, sans espaces [0034] |
 | joursTravaillesParMois | integer 1..31 | null | non | rythme habituel en **jours travaillés par mois complet** ; `null` = pas de rythme (l'équité utilise alors `quotite`) [0020] |
-| titulaireId | uuid → Personne | null | non | titulaire remplacée **en priorité** ; renseigné **seulement si `statut = REMPLACANT`** (sinon `null`) ; une seule titulaire par remplaçante, une titulaire peut avoir plusieurs remplaçantes ; jamais soi-même ; conservé si la titulaire est archivée [0020] ; lu par le moteur (priorité de remplacement) [0021] |
+| titulaireId | uuid → Personne | null | non | titulaire remplacée **en priorité** ; renseigné **seulement si `statut = REMPLACANT`** (sinon `null`) ; une seule titulaire par remplaçante, une titulaire peut avoir plusieurs remplaçantes ; jamais soi-même ; conservé si la titulaire est archivée [0020] ; lu par le moteur : priorité les jours où cette titulaire ne travaille pas [0021] |
 | preferences | Preference[] | oui (`[]` possible) | imbriqué |
 | createdAt / updatedAt | ISO UTC | oui | |
 

@@ -45,7 +45,7 @@ function nomPersonneDe(entree, personneId) {
  * @param {import('../modele/types.js').Entree} entree
  * @returns {({heureDebut: string, heureFin: string}|null)}
  */
-export function horairesDeAffectation(affectation, entree) {
+function horairesDeAffectation(affectation, entree) {
   const tournee = entree.tournees.find((t) => t.id === affectation.tourneeId);
   const segment = tournee ? tournee.segments[affectation.segmentIndex] : undefined;
   return segment ? { heureDebut: segment.heureDebut, heureFin: segment.heureFin } : null;

@@ -47,7 +47,7 @@
 /**
  * @typedef {Object} Violation
  * @property {string}   contrainteId
- * @property {Severite} severite - Dure -> `erreur`, sauf placement manuel signalé en `avertissement` (0021).
+ * @property {Severite} severite - Dure -> `erreur` ; souple -> `avertissement`.
  * @property {Object}   cible - `{ personneId?, tourneeId?, date?, segmentIndex? }`.
  * @property {string}   code - Stable, ex. `'ABSENCE_VALIDEE'` (voir `modele/messages.js`).
  * @property {string}   message - FR, prêt à afficher tel quel.
@@ -91,6 +91,7 @@
  * @property {function(ContexteEvaluation): Violation[]} evaluer - SOURCE DE VÉRITÉ.
  * @property {function(string, Demande, ContexteEvaluation): boolean} [autoriseAffectation] - Dures.
  * @property {function(string, Demande, ContexteEvaluation): number}  [coutMarginal] - Souples.
+ * @property {function(ContexteEvaluation): number} [coutGlobal] - Souples « silencieuses » : pénalité de génération sur le planning entier, jamais affichée ; ajoutée au score de la recherche locale (0021).
  */
 
 /**

@@ -33,9 +33,6 @@
             déjà {{ personne.nbAffectationsCeJour }} affectation{{ personne.nbAffectationsCeJour > 1 ? 's' : '' }}
             ce jour-là
           </span>
-          <span v-if="personne.sansAbsenceACouvrir" class="selecteur-personne-note">
-            pas d’absence à remplacer sur ces horaires (choix possible)
-          </span>
         </button>
       </li>
     </ul>
@@ -54,11 +51,10 @@
 </template>
 
 <script>
-import { mapGetters, mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
 import { libelleJour } from '@/domain/libelles.js';
-import { estRemplacante, absencesACouvrir } from '@/domain/remplacement.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -78,15 +74,8 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * autre fermeture (croix, Échap, clic hors fenêtre, bouton « Annuler »)
  * émet `annuler` — jamais une confirmation implicite.
  *
- * Feature 0021 : une remplaçante proposée alors qu'aucune titulaire n'est
- * absente sur les horaires de la case porte la note « pas d’absence à
- * remplacer sur ces horaires (choix possible) » (information avant le clic ; elle reste
- * proposable, le placement manuel est toléré et signalé ailleurs). Le calcul
- * est délégué à `@/domain/remplacement.js`.
- *
  * N'accède au store, en lecture seule, que pour lister les personnes actives
- * (pastille + nom), les absences et la tournée ciblée (horaires) ;
- * aucun import `@/domain/scheduling`, aucun `dispatch` : c'est `PlanningView`
+ * (pastille + nom) ; aucun import `@/domain/scheduling`, aucun `dispatch` : c'est `PlanningView`
  * qui dispatche `ajouterAffectation` sur `choisir`.
  */
 export default {
@@ -129,24 +118,6 @@ export default {
   },
   computed: {
     ...mapGetters('personnes', { personnesActives: 'actifs' }),
-    ...mapGetters('tournees', { tourneeParId: 'byId' }),
-    ...mapState('absences', { absences: 'items' }),
-
-    /** Segment ciblé (horaires bruts), ou `undefined` si la tournée est introuvable. */
-    segmentCible() {
-      return this.tourneeParId(this.tourneeId)?.segments?.[this.segmentIndex];
-    },
-
-    /** `true` si aucune absence de titulaire ne reste à couvrir sur les horaires de la case. */
-    aucuneAbsenceACouvrir() {
-      if (!this.segmentCible || !this.date) return false;
-      return (
-        absencesACouvrir(this.date, this.segmentCible.heureDebut, this.segmentCible.heureFin, {
-          personnes: this.personnesActives,
-          absences: this.absences,
-        }).length === 0
-      );
-    },
 
     /** Titre contextualisé : « Ajouter une personne — {tournée}, {date FR} ({horaires}) ». */
     titre() {
@@ -181,7 +152,7 @@ export default {
      * Personnes actives proposables (celles déjà sur le segment exact sont
      * masquées), chacune enrichie de son nombre d'affectations ce jour-là
      * (toutes tournées confondues) — note purement informative.
-     * @returns {Array<{id: string, nom: string, couleur: string, sansAbsenceACouvrir: boolean, nbAffectationsCeJour: number}>}
+     * @returns {Array<{id: string, nom: string, couleur: string, nbAffectationsCeJour: number}>}
      */
     personnesDisponibles() {
       return this.personnesActives
@@ -190,7 +161,6 @@ export default {
           id: p.id,
           nom: `${p.prenom} ${p.nom}`,
           couleur: p.couleur,
-          sansAbsenceACouvrir: estRemplacante(p) && this.aucuneAbsenceACouvrir,
           nbAffectationsCeJour: this.affectations.filter((a) => a.personneId === p.id && a.date === this.date)
             .length,
         }))

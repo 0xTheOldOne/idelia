@@ -176,7 +176,7 @@ export function remplacantsDe(personneId, personnes) {
  * @param {string[]} noms
  * @returns {string}
  */
-export function listeFrancaise(noms) {
+function listeFrancaise(noms) {
   if (noms.length <= 1) return noms.join('');
   return `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
 }
