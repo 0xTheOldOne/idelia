@@ -35,6 +35,7 @@ export const TYPES_PREFERENCE = Object.freeze([
   'NB_JOURS_SEMAINE',
   'PREFERENCE_TOURNEE',
   'INDISPO_HEBDO',
+  'UN_WEEKEND_SUR_X',
 ]);
 
 /** Types d'Absence. @type {ReadonlyArray<string>} */

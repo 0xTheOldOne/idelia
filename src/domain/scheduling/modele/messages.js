@@ -133,6 +133,13 @@ const GABARITS = {
   PREFERENCE_JOUR_OFF_RECURRENT: affecteMalgrePreference,
   PREFERENCE_JOURS_REPOS_SOUHAITES: affecteMalgrePreference,
   PREFERENCE_CRENEAU_OFF: affecteMalgrePreference,
+
+  // 0022 : affectation sur un weekend de repos d'une trame « un weekend sur X ».
+  PREFERENCE_UN_WEEKEND_SUR_X: ({ nomPersonne = 'Cette personne', frequence, date, heureDebut, heureFin } = {}) =>
+    `${nomPersonne} est affectée le ${jourFr(date)} ${date ? dateUtil.formatDateFr(date) : ''} ` +
+    `(${horairesTexte(heureDebut, heureFin)}), alors que c'est un de ses weekends de repos ` +
+    `(souhait : un weekend sur ${Number.isInteger(frequence) ? frequence : 'X'}).`,
+
   PREFERENCE_INDISPO_HEBDO: affecteMalgrePreference,
 
   PREFERENCE_MAX_JOURS_CONSECUTIFS: ({

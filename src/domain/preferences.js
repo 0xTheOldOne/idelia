@@ -17,6 +17,8 @@
 import { TYPES_PREFERENCE, CRENEAUX } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
 import { libelleJour, libelleCreneau } from '@/domain/libelles.js';
+import { samediDuWeekend } from '@/domain/trameWeekend.js';
+import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
  * @typedef {Object} Preference
@@ -123,6 +125,11 @@ function normaliserParams(type, params) {
         tourneeIds: normaliserTourneeIds(p.tourneeIds),
         sens: p.sens === 'EVITE' ? 'EVITE' : 'PREFERE',
       };
+    case 'UN_WEEKEND_SUR_X':
+      return {
+        frequence: normaliserEntier(p.frequence),
+        weekendReference: samediDuWeekend(p.weekendReference),
+      };
     default:
       return {};
   }
@@ -166,7 +173,7 @@ export function creerPreference(champs = {}) {
  * @typedef {Object} MetaTypePreference
  * @property {string} champs - Forme des champs de saisie pour ce type
  *   (`'jours'` | `'creneaux+jours?'` | `'jours+creneaux?'` | `'nombreMax'` |
- *   `'nombreMin'` | `'minMax'`), pilote le rendu dynamique du formulaire.
+ *   `'nombreMin'` | `'minMax'` | `'tournees'` | `'weekendSurX'`), pilote le rendu dynamique du formulaire.
  * @property {string} natureParDefaut - `'DURE'` ou `'SOUPLE'` suggéré par défaut.
  * @property {string} aide - Phrase d'aide FR expliquant le type.
  */
@@ -219,11 +226,16 @@ export const META_TYPES_PREFERENCE = Object.freeze({
     natureParDefaut: 'SOUPLE',
     aide: 'Choisissez une ou plusieurs tournées, puis indiquez si la personne les préfère ou souhaite les éviter.',
   }),
+  UN_WEEKEND_SUR_X: Object.freeze({
+    champs: 'weekendSurX',
+    natureParDefaut: 'DURE',
+    aide: 'Cette personne travaille un weekend sur 2, 3 ou 4… et se repose les autres.',
+  }),
 });
 
 /**
  * Liste des types de préférence proposés au sélecteur du formulaire :
- * `TYPES_PREFERENCE` dans son intégralité (les 8 types), y compris
+ * `TYPES_PREFERENCE` dans son intégralité (les 9 types), y compris
  * `PREFERENCE_TOURNEE` — réactivé en `0006` maintenant que les tournées
  * existent. Le **filtrage** « aucune tournée disponible » (retirer
  * `PREFERENCE_TOURNEE` tant qu'aucune tournée active n'existe) se fait **côté
@@ -445,6 +457,21 @@ function decrirePreferenceTournee(params, options) {
 }
 
 /**
+ * Décrit une préférence `UN_WEEKEND_SUR_X` (« Travaille un weekend sur 3 (par
+ * exemple celui du 04/07/2026) et est en repos les autres »).
+ *
+ * @param {Object} params - `{ frequence, weekendReference }`.
+ * @returns {string} Phrase FR.
+ */
+function decrireUnWeekendSurX(params) {
+  const frequence = Number.isInteger(params.frequence) ? params.frequence : null;
+  if (frequence === null) return 'Travaille un weekend sur plusieurs (fréquence non précisée) et se repose les autres weekends';
+  const samedi = samediDuWeekend(params.weekendReference);
+  if (samedi === null) return `Travaille un weekend sur ${frequence} (weekend de départ non précisé) et se repose les autres weekends`;
+  return `Travaille un weekend sur ${frequence} (repère : le weekend du ${dateUtil.formatDateFr(samedi)}) et se repose les autres weekends`;
+}
+
+/**
  * Résume une `Preference` en une phrase française, pour l'affichage dans la
  * liste des souhaits et l'aperçu du formulaire. Pure, tolérante à un type
  * inconnu (n'échoue jamais).
@@ -452,7 +479,7 @@ function decrirePreferenceTournee(params, options) {
  * @param {Preference} preference - Préférence à décrire (ou brouillon partiel).
  * @param {Object} [options] - Options additives, purement optionnelles
  *   (**rétrocompatible** : tout appel existant sans ce paramètre continue de
- *   fonctionner à l'identique pour les 7 autres types).
+ *   fonctionner à l'identique pour les 9 types).
  * @param {function(string): string} [options.nomTournee] - Résolveur
  *   id → nom de tournée, utilisé **uniquement** pour `PREFERENCE_TOURNEE`
  *   (nommer les tournées choisies). Sans résolveur, une phrase générique est
@@ -481,7 +508,9 @@ export function decrirePreference(preference, options) {
       return decrireNbJoursSemaine(p);
     case 'PREFERENCE_TOURNEE':
       return decrirePreferenceTournee(p, options);
+    case 'UN_WEEKEND_SUR_X':
+      return decrireUnWeekendSurX(p);
     default:
-      return 'Préférence de tournée';
+      return "Souhait non reconnu par cette version d'Idelia";
   }
 }

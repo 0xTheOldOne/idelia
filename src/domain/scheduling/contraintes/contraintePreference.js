@@ -2,7 +2,7 @@
  * Contrainte générique dure/souple « préférence » : une `Preference` active
  * d'une personne devient une `Contrainte` dont la **dureté est celle de la
  * donnée** (`preference.nature`), jamais d'un catalogue figé (§12 point 1 du
- * plan). Un seul fichier couvre les **8** `TYPES_PREFERENCE` (§5 du plan,
+ * plan). Un seul fichier couvre les **9** `TYPES_PREFERENCE` (§5 du plan,
  * écart KISS assumé par rapport à `05`) : une fonction d'évaluation interne
  * par type, routée par `creerContraintePreference(preference, personne)`.
  *
@@ -16,6 +16,7 @@
 import { decrirePreference } from '@/domain/preferences.js';
 import { creneauChevaucheHoraires } from '@/domain/absences.js';
 import { dateUtil } from '@/domain/utils/dates.js';
+import { estWeekendTravaille } from '@/domain/trameWeekend.js';
 import { semaineIsoDe } from '../utils/dates.js';
 import { messagePour } from '../modele/messages.js';
 
@@ -293,6 +294,25 @@ const HANDLERS = {
       }
 
       return cibles;
+    },
+  },
+
+  // 0022 : repos les weekends hors trame. Trame invalide : `null` partout,
+  // donc jamais de violation ni de blocage.
+  UN_WEEKEND_SUR_X: {
+    code: 'PREFERENCE_UN_WEEKEND_SUR_X',
+    granularite: 'cellule',
+    estCandidatViole(params, demande) {
+      return estWeekendTravaille(demande.date, params) === false;
+    },
+    listerCibles(params, ctx, personne) {
+      const affectations = ctx.index.parPersonne.get(personne.id) ?? [];
+      return affectations
+        .filter((a) => estWeekendTravaille(a.date, params) === false)
+        .map((a) => {
+          const horaires = horairesDeAffectation(a, ctx.entree) ?? {};
+          return { cible: cibleAffectation(a), params: { date: a.date, frequence: params.frequence, heureDebut: horaires.heureDebut, heureFin: horaires.heureFin } };
+        });
     },
   },
 

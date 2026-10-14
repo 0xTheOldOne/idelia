@@ -85,6 +85,7 @@ Contraintes hétérogènes modélisées par **polymorphisme** : discriminant `ty
 | `NB_JOURS_SEMAINE` | `{ min?: integer, max?: integer }` | 3 à 4 jours/semaine |
 | `PREFERENCE_TOURNEE` | `{ tourneeIds: uuid[], sens: "PREFERE"\|"EVITE" }` | préfère la tournée Nord |
 | `INDISPO_HEBDO` | `{ joursSemaine: number[], creneaux?: Creneau[] }` | indispo récurrente ciblée |
+| `UN_WEEKEND_SUR_X` | `{ frequence: integer 2..6, weekendReference: "YYYY-MM-DD" (samedi) }` | un weekend sur 3, dont celui du 04/07/2026 [0022] |
 
 > **Extensibilité** : ajouter une contrainte = ajouter une valeur d'enum + une forme de `params` + une fonction d'évaluation dans le moteur ([05](05-moteur-de-planification.md)), **sans changer le schéma**.
 

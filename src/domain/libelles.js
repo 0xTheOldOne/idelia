@@ -20,6 +20,7 @@ import {
   STATUTS_ABSENCE,
   STATUTS_PLANNING,
 } from '@/domain/schema.js';
+import { FREQUENCE_WEEKEND_MIN, FREQUENCE_WEEKEND_MAX } from '@/domain/trameWeekend.js';
 
 /**
  * @typedef {object} JourSemaine
@@ -227,7 +228,7 @@ export const NATURES_PREFERENCE_OPTIONS = NATURES_PREFERENCE.map((code) => ({
 
 /**
  * Table de correspondance code type de préférence (`schema.js` →
- * `TYPES_PREFERENCE`) → libellé FR. Couvre les **8** types, y compris
+ * `TYPES_PREFERENCE`) → libellé FR. Couvre les **9** types, y compris
  * `PREFERENCE_TOURNEE` (réactivé en `0006` maintenant que les tournées
  * existent — voir `FormulairePreference`, prop `tourneesActives`, pour le
  * filtrage « aucune tournée disponible »).
@@ -243,7 +244,22 @@ export const LIBELLES_TYPE_PREFERENCE = {
   MIN_JOURS_CONSECUTIFS: "Minimum de jours d'affilée",
   NB_JOURS_SEMAINE: 'Nombre de jours par semaine',
   PREFERENCE_TOURNEE: 'Tournée préférée ou évitée',
+  UN_WEEKEND_SUR_X: 'Un weekend sur 2, 3, 4…',
 };
+
+/**
+ * Options de fréquence du souhait « un weekend sur X » (« Un weekend sur 2 » …
+ * « Un weekend sur 6 »), dérivées des bornes de `trameWeekend.js` (0022).
+ *
+ * @type {{valeur: number, libelle: string}[]}
+ */
+export const FREQUENCES_WEEKEND_OPTIONS = Array.from(
+  { length: FREQUENCE_WEEKEND_MAX - FREQUENCE_WEEKEND_MIN + 1 },
+  (_, i) => {
+    const valeur = FREQUENCE_WEEKEND_MIN + i;
+    return { valeur, libelle: `Travaille 1 weekend sur ${valeur}` };
+  }
+);
 
 /**
  * Renvoie le libellé FR d'un type de préférence à partir de son code.

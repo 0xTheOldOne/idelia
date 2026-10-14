@@ -265,6 +265,67 @@
         </fieldset>
       </fieldset>
 
+      <div v-else-if="metaType.champs === 'weekendSurX'" class="mb-4">
+        <div class="mb-3">
+          <label for="preference-frequence" class="form-label">Tous les combien ?</label>
+          <select
+            id="preference-frequence"
+            v-model.number="formulaire.params.frequence"
+            class="form-select formulaire-select"
+            :aria-describedby="v$.formulaire.params.frequence.$error ? 'preference-frequence-erreur' : null"
+            @change="v$.formulaire.params.frequence.$touch()"
+          >
+            <option v-for="option in FREQUENCES_WEEKEND_OPTIONS" :key="option.valeur" :value="option.valeur">
+              {{ option.libelle }}
+            </option>
+          </select>
+          <p v-if="v$.formulaire.params.frequence.$error" id="preference-frequence-erreur" class="formulaire-erreur">
+            <PhWarning :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ v$.formulaire.params.frequence.$errors[0].$message }}</span>
+          </p>
+        </div>
+
+        <div>
+          <label for="preference-weekend" class="form-label">Date d'un weekend travaillé (un samedi ou un dimanche)</label>
+          <input
+            id="preference-weekend"
+            v-model="formulaire.params.weekendReference"
+            type="date"
+            class="form-control formulaire-date"
+            :class="{ 'is-invalid': v$.formulaire.params.weekendReference.$error }"
+            :aria-describedby="
+              v$.formulaire.params.weekendReference.$error
+                ? 'preference-weekend-aide preference-weekend-erreur'
+                : 'preference-weekend-aide'
+            "
+            @blur="v$.formulaire.params.weekendReference.$touch()"
+            @change="v$.formulaire.params.weekendReference.$touch()"
+          >
+          <div id="preference-weekend-aide" class="form-text">
+            Choisissez par exemple le samedi d'un weekend où cette personne travaille, passé ou à venir. Les autres
+            weekends sont calculés automatiquement.
+          </div>
+          <p
+            v-if="v$.formulaire.params.weekendReference.$error"
+            id="preference-weekend-erreur"
+            class="formulaire-erreur"
+          >
+            <PhWarning :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ v$.formulaire.params.weekendReference.$errors[0].$message }}</span>
+          </p>
+        </div>
+
+        <div v-if="prochainsWeekends.length > 0" id="preference-weekend-apercu" class="formulaire-apercu-weekends" role="status">
+          <p class="mb-1">
+            <PhCalendarCheck :size="18" weight="bold" aria-hidden="true" class="me-1" />
+            <strong>À partir d'aujourd'hui, les prochains weekends de travail seront :</strong>
+          </p>
+          <ul class="mb-0">
+            <li v-for="samedi in prochainsWeekends" :key="samedi">{{ libelleWeekend(samedi) }}</li>
+          </ul>
+        </div>
+      </div>
+
       <!-- Nature -->
       <fieldset class="mb-4">
         <legend class="formulaire-legende">
@@ -345,7 +406,7 @@
 <script>
 import { useVuelidate } from '@vuelidate/core';
 import { required, integer, between, maxLength, helpers } from '@vuelidate/validators';
-import { PhWarning } from '@phosphor-icons/vue';
+import { PhWarning, PhCalendarCheck } from '@phosphor-icons/vue';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
 import {
@@ -363,7 +424,17 @@ import {
   JOURS_SEMAINE,
   libelleCreneau,
   SENS_PREFERENCE_OPTIONS,
+  FREQUENCES_WEEKEND_OPTIONS,
 } from '@/domain/libelles.js';
+import {
+  FREQUENCE_WEEKEND_DEFAUT,
+  FREQUENCE_WEEKEND_MIN,
+  FREQUENCE_WEEKEND_MAX,
+  samediDuWeekend,
+  prochainsWeekendsTravailles,
+  libelleWeekend,
+} from '@/domain/trameWeekend.js';
+import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleHoraires } from '@/domain/tournees.js';
 import { CRENEAUX } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
@@ -374,6 +445,8 @@ import { genId } from '@/domain/utils/id.js';
  * @param {*} valeur
  * @returns {boolean}
  */
+const MESSAGE_FREQUENCE = 'Choisissez tous les combien de weekends cette personne travaille.';
+
 function estVide(valeur) {
   return valeur === '' || valeur === null || valeur === undefined;
 }
@@ -391,7 +464,7 @@ function estVide(valeur) {
  */
 export default {
   name: 'FormulairePreference',
-  components: { ModaleBase, PhWarning },
+  components: { ModaleBase, PhWarning, PhCalendarCheck },
   props: {
     /** Affiche (`true`) ou masque (`false`) la modale ; piloté par le parent. */
     visible: { type: Boolean, required: true },
@@ -427,6 +500,7 @@ export default {
       JOURS_SEMAINE,
       CRENEAUX,
       SENS_PREFERENCE_OPTIONS,
+      FREQUENCES_WEEKEND_OPTIONS,
       // Identifiant unique du `<form>`, pour relier le bouton « Enregistrer »
       // du pied de modale (hors du `<form>`) via l'attribut HTML `form`.
       idFormulaire: `formulaire-preference-${genId()}`,
@@ -449,7 +523,7 @@ export default {
       return META_TYPES_PREFERENCE[this.formulaire.type] ?? {};
     },
     /**
-     * Types proposés au sélecteur : `TYPES_PREFERENCE_OFFERTS` (les 8 types),
+     * Types proposés au sélecteur : `TYPES_PREFERENCE_OFFERTS` (les 9 types),
      * privé de `PREFERENCE_TOURNEE` tant qu'aucune tournée active n'existe —
      * **sauf** si le souhait en cours d'édition est déjà de ce type (édition
      * d'un souhait « Tournée préférée ou évitée » alors que la dernière
@@ -499,6 +573,15 @@ export default {
      */
     creneauxDemiJournee() {
       return CRENEAUX.filter((code) => code !== 'JOURNEE');
+    },
+    /** Date du jour (« YYYY-MM-DD »), point de départ de l'aperçu des weekends. */
+    aujourdhui() {
+      return dateUtil.format(new Date());
+    },
+    /** Prochains weekends travaillés (samedis) de la trame saisie ; vide tant que la saisie est invalide. */
+    prochainsWeekends() {
+      if (this.metaType.champs !== 'weekendSurX') return [];
+      return prochainsWeekendsTravailles(this.formulaire.params, this.aujourdhui, 3);
     },
     /** Phrase FR décrivant en direct le brouillon courant, pour relecture avant enregistrement. */
     apercu() {
@@ -585,6 +668,22 @@ export default {
       paramsRules.sens = {
         required: helpers.withMessage('Choisissez « Préfère » ou « Souhaite éviter ».', required),
       };
+    } else if (champs === 'weekendSurX') {
+      paramsRules.frequence = {
+        required: helpers.withMessage(MESSAGE_FREQUENCE, required),
+        integer: helpers.withMessage(MESSAGE_FREQUENCE, integer),
+        between: helpers.withMessage(
+          MESSAGE_FREQUENCE,
+          between(FREQUENCE_WEEKEND_MIN, FREQUENCE_WEEKEND_MAX)
+        ),
+      };
+      paramsRules.weekendReference = {
+        required: helpers.withMessage('Choisissez la date d\'un weekend où cette personne travaille.', required),
+        estSamediOuDimanche: helpers.withMessage(
+          'Cette date n\'est ni un samedi ni un dimanche : choisissez le samedi ou le dimanche d\'un weekend travaillé.',
+          (valeur) => !valeur || samediDuWeekend(valeur) !== null
+        ),
+      };
     }
 
     return {
@@ -599,6 +698,7 @@ export default {
   methods: {
     libelleTypePreference,
     libelleCreneau,
+    libelleWeekend,
 
     /**
      * Libellé d'une case à cocher de tournée active, nommant sans ambiguïté
@@ -695,6 +795,11 @@ export default {
           return { min: p.min ?? null, max: p.max ?? null };
         case 'tournees':
           return { tourneeIds: [...(p.tourneeIds ?? [])], sens: p.sens === 'EVITE' ? 'EVITE' : 'PREFERE' };
+        case 'weekendSurX':
+          return {
+            frequence: p.frequence ?? FREQUENCE_WEEKEND_DEFAUT,
+            weekendReference: p.weekendReference ?? '',
+          };
         default:
           return {};
       }
@@ -776,6 +881,9 @@ export default {
           });
         }
         ordre.push({ validation: this.v$.formulaire.params.sens, id: 'preference-sens-PREFERE' });
+      } else if (champs === 'weekendSurX') {
+        ordre.push({ validation: this.v$.formulaire.params.frequence, id: 'preference-frequence' });
+        ordre.push({ validation: this.v$.formulaire.params.weekendReference, id: 'preference-weekend' });
       }
 
       ordre.push({ validation: this.v$.formulaire.libelle, id: 'preference-libelle' });
@@ -828,6 +936,10 @@ export default {
 
 .formulaire-nombre {
   max-width: 12rem;
+}
+
+.formulaire-date {
+  max-width: 14rem;
 }
 
 // Cible cliquable confortable, cohérente avec le reste de l'application.
@@ -914,6 +1026,20 @@ export default {
   padding: t.$espace-3;
   margin: t.$espace-2 0 0;
   background-color: t.$couleur-fond-clair;
+  border-radius: t.$rayon-md;
+
+  strong {
+    font-weight: t.$graisse-gras;
+  }
+}
+
+// Aperçu des weekends : distinct du bloc « Ce souhait signifie » (fond blanc + barre primaire).
+.formulaire-apercu-weekends {
+  padding: t.$espace-3;
+  margin: t.$espace-3 0 0;
+  background-color: t.$couleur-fond;
+  border: 1px solid t.$couleur-bordure;
+  border-left: 4px solid t.$couleur-primaire;
   border-radius: t.$rayon-md;
 
   strong {

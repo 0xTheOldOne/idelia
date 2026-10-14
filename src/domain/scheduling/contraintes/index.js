@@ -3,8 +3,9 @@
  * source de vérité des règles métier, partagée par `genererPlanning` et
  * `validerPlanning` (§5.1). `creerContraintes(entree)` instancie, dans cet
  * ordre :
- * 1. les **10 contraintes fixes** du cabinet (dont « titulaires d'abord » et
- *    « remplaçante habituelle », 0021) (une instance chacune) ;
+ * 1. les **11 contraintes fixes** du cabinet (dont « titulaires d'abord » et
+ *    « remplaçante habituelle », 0021, et « trame des weekends », 0022)
+ *    (une instance chacune) ;
  * 2. **une contrainte par préférence active** (`preference.actif === true`)
  *    de **chaque personne active** de `entree.personnes`.
  *
@@ -17,6 +18,7 @@
 
 import { creerContrainteAbsenceValidee, creerContrainteAbsenceDemandee } from './contrainteAbsence.js';
 import { creerContrainteTitulairesDAbord, creerContrainteRemplacementPrioritaire } from './contrainteRemplacement.js';
+import { creerContrainteTrameWeekend } from './contrainteTrameWeekend.js';
 import { creerContrainteChevauchement } from './contrainteChevauchement.js';
 import { creerContrainteCouverture } from './contrainteCouverture.js';
 import { creerContrainteReposLegal } from './contrainteReposLegal.js';
@@ -34,7 +36,7 @@ import { creerContrainteContinuiteSegments } from './contrainteContinuiteSegment
  * domaine) ; `equite`/`continuite`/`continuiteSegments` sont réellement
  * surchargeables via `entree.poids`.
  *
- * @type {Readonly<{absenceDemandee: number, equite: number, continuite: number, continuiteSegments: number, remplacementPrioritaire: number, titulairesDAbord: number}>}
+ * @type {Readonly<{absenceDemandee: number, equite: number, continuite: number, continuiteSegments: number, remplacementPrioritaire: number, titulairesDAbord: number, trameWeekend: number}>}
  */
 export const POIDS_SOUPLES_PAR_DEFAUT = Object.freeze({
   absenceDemandee: 5,
@@ -43,6 +45,7 @@ export const POIDS_SOUPLES_PAR_DEFAUT = Object.freeze({
   continuiteSegments: 3,
   titulairesDAbord: 2,
   remplacementPrioritaire: 0.5,
+  trameWeekend: 3,
 });
 
 /**
@@ -69,6 +72,8 @@ export const TYPES_CONTRAINTE = Object.freeze([
   'PREFERENCE_JOURS_REPOS_SOUHAITES',
   'PREFERENCE_NB_JOURS_SEMAINE',
   'PREFERENCE_TOURNEE',
+  'TRAME_WEEKEND',
+  'PREFERENCE_UN_WEEKEND_SUR_X',
 ]);
 
 /**
@@ -92,6 +97,7 @@ export function creerContraintes(entree) {
     creerContrainteEquite(poids.equite, entree),
     creerContrainteTitulairesDAbord(poids.titulairesDAbord, entree),
     creerContrainteRemplacementPrioritaire(poids.remplacementPrioritaire, entree),
+    creerContrainteTrameWeekend(poids.trameWeekend, entree),
     // Continuité d'un jour à l'autre désactivée (retour porteur, 2026-10-07) :
     // qu'une personne travaille un jour et une autre le lendemain ne pose pas
     // problème au cabinet, inutile de le pénaliser ni de le signaler.
