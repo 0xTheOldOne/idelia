@@ -304,22 +304,22 @@ Demande ajoutée : afficher les initiales dans les pastilles de couleur des pers
 ## 10. Critères d'acceptation
 
 **Équipe**
-- [ ] La fiche d'une personne propose « Initiales Vega (facultatif) » avec son aide ; « fc » devient « FC » à la frappe.
-- [ ] Une personne enregistrée avec « FC » affiche « FC » dans sa pastille sur la page Équipe (aussi dans la liste des archivées) ; aucune mention « Initiales Vega » dans la ligne de détails.
-- [ ] Saisir des initiales déjà prises (même en minuscules) affiche « Ces initiales sont déjà utilisées par … » et bloque l'enregistrement sans perdre la saisie ; un format invalide affiche le message de format.
-- [ ] Rouvrir et enregistrer une personne sans changer ses initiales fonctionne.
+- [x] La fiche d'une personne propose « Initiales Vega (facultatif) » avec son aide ; « fc » devient « FC » à la frappe.
+- [x] Une personne enregistrée avec « FC » affiche « FC » dans sa pastille sur la page Équipe (aussi dans la liste des archivées) ; aucune mention « Initiales Vega » dans la ligne de détails.
+- [x] Saisir des initiales déjà prises (même en minuscules) affiche « Ces initiales sont déjà utilisées par … » et bloque l'enregistrement sans perdre la saisie ; un format invalide affiche le message de format.
+- [x] Rouvrir et enregistrer une personne sans changer ses initiales fonctionne.
 
 **Sauvegarde**
-- [ ] Des données existantes (avant 0034) se rechargent sans erreur ; la sauvegarde exportée contient `"schemaVersion": 5` et `"initialesVega"` pour chaque personne.
-- [ ] Importer une ancienne sauvegarde (v4) fonctionne ; les personnes ont des initiales vides.
+- [x] Des données existantes (avant 0034) se rechargent sans erreur ; la sauvegarde exportée contient `"schemaVersion": 5` et `"initialesVega"` pour chaque personne.
+- [x] Importer une ancienne sauvegarde (v4) fonctionne ; les personnes ont des initiales vides.
 
 **Feuille de route** (équipe : Claire Martin = FC, Léa Roux = LR, aucune personne pour EMM/CB)
-- [ ] `Vega_UnDoublon.pdf` : carte avec « Infirmière : Claire Martin (FC) » (matin, 20,95 €) et « Infirmière : Léa Roux (LR) » (soir, 2,75 €) ; « Total 23,70 € pour 2 passages, soit 11,85 € par passage. » ; « Claire Martin (FC) a touché 20,95 € — sa part : 11,85 € » ; « Léa Roux (LR) a touché 2,75 € — sa part : 11,85 € » ; en évidence « **FC (Claire) reverse 9,10 € à LR (Léa)** ».
-- [ ] `Vega_TroisDoublons.pdf` : 3 passages ; « Claire Martin (FC) a touché 23,70 € pour 2 passages — sa part : 17,63 € » ; « Léa Roux (LR) a touché 2,75 € — sa part : 8,82 € » ; « **FC (Claire) reverse 6,07 € à LR (Léa)** ».
-- [ ] En retirant les initiales de Léa Roux puis en ré-analysant : « Infirmière : LR » + « code Vega non relié à l'équipe », phrase « FC (Claire) reverse 9,10 € à LR », et l'encart « Le code Vega LR n'est relié à aucune personne de l'équipe… » avec un lien vers la page Équipe qui fonctionne.
-- [ ] Une personne **archivée** portant des initiales est bien nommée sur la Feuille de route.
-- [ ] Après une analyse, `localStorage` ne contient rien de nouveau (ni nom de patient, ni montant) ; la sauvegarde exportée non plus.
-- [ ] `npm run build` réussit.
+- [x] `Vega_UnDoublon.pdf` : carte avec « Infirmière : Claire Martin (FC) » (matin, 20,95 €) et « Infirmière : Léa Roux (LR) » (soir, 2,75 €) ; « Total 23,70 € pour 2 passages, soit 11,85 € par passage. » ; « Claire Martin (FC) a touché 20,95 € — sa part : 11,85 € » ; « Léa Roux (LR) a touché 2,75 € — sa part : 11,85 € » ; en évidence « **FC (Claire) reverse 9,10 € à LR (Léa)** ».
+- [x] `Vega_TroisDoublons.pdf` : 3 passages ; « Claire Martin (FC) a touché 23,70 € pour 2 passages — sa part : 17,63 € » ; « Léa Roux (LR) a touché 2,75 € — sa part : 8,82 € » ; « **FC (Claire) reverse 6,07 € à LR (Léa)** ».
+- [x] En retirant les initiales de Léa Roux puis en ré-analysant : « Infirmière : LR » + « code Vega non relié à l'équipe », phrase « FC (Claire) reverse 9,10 € à LR », et l'encart « Le code Vega LR n'est relié à aucune personne de l'équipe… » avec un lien vers la page Équipe qui fonctionne.
+- [x] Une personne **archivée** portant des initiales est bien nommée sur la Feuille de route.
+- [x] Après une analyse, `localStorage` ne contient rien de nouveau (ni nom de patient, ni montant) ; la sauvegarde exportée non plus.
+- [x] `npm run build` réussit.
 
 ## 11. Vérification
 
@@ -349,3 +349,7 @@ Demande ajoutée : afficher les initiales dans les pastilles de couleur des pers
 8. **Lien vers Équipe** : il fait quitter la Feuille de route et perdre le résultat (rien n'est conservé, choix 0033). Assumé et annoncé dans l'encart ; **pas** d'ouverture dans un nouvel onglet (deux onglets Idelia ouverts pourraient s'écraser mutuellement leurs données, le store n'étant pas synchronisé entre onglets).
 9. **Suite** : `0035` « Bilan qui doit quoi (Tricount) » cumulera les reversements de tous les cas d'une période (total par paire d'infirmières, compensation globale). Elle réutilisera `calculerReversements` sur la somme des écarts : garder cette fonction générique (entrée = liste `{ ps, ecartCentimes }`).
 10. **Aucun écart d'ADR** : champ persisté via store + plugin + migration (ADR 0005/0006), logique en modules purs (ADR 0008), Vuelidate (ADR 0011), rien d'issu du PDF n'est conservé (ADR 0002, choix 0033).
+
+## 13. Recette navigateur (2026-10-14)
+
+Critères du §10 vérifiés en navigateur. Le schéma est depuis passé en v8 (0029, 0030) : une sauvegarde v4 se recharge en v8 avec `initialesVega: null` pour chaque personne. Montants constatés : UnDoublon « FC (Claire) reverse 9,10 € à LR (Léa) » ; TroisDoublons parts 17,63 € / 8,82 €, « FC (Claire) reverse 6,07 € à LR (Léa) » ; code LR non relié et personne archivée correctement traités.

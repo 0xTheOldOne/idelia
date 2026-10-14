@@ -266,20 +266,20 @@ Pas de formulaire → pas de Vuelidate. Contrôles sur le fichier, avec messages
 
 ## 10. Critères d'acceptation
 
-- [ ] Le menu affiche « Feuille de route » entre « Planning » et « Paramètres » ; sur cet écran, seul cet item est mis en évidence.
-- [ ] En glissant `files/Listedesseancessuruneperiode.pdf` sur la zone, l'écran affiche « 348 séances lues du jeudi 08/10/2026 au … — 1 patient vu par plusieurs infirmières. » puis, sous « Jeudi 08/10/2026 », la carte **patiente de test** · Fin le 01/06/2027 · Matin FC 07:00 BSB1+IFI1 (… 20,95 € → Soir LR 17:00 IFI1 (DOM) 2,75 €, « Total 23,70 € ÷ 2 passages = 11,85 € par passage », « À verser : FC 11,85 € · LR 11,85 € ».
-- [ ] Même résultat en passant par le bouton « Choisir un fichier PDF », à la souris **et** au clavier (Tab + Entrée).
-- [ ] Choisir deux fois de suite le même fichier relance bien la lecture.
-- [ ] Pendant la lecture, « Lecture du fichier… » est affiché et la zone ne réagit pas.
-- [ ] Un fichier `.json` (ou toute autre extension) affiche le message « Ce fichier n'est pas un PDF… » ; un PDF quelconque (sans séances Vega) affiche « Aucune séance n'a été trouvée… » ; un PDF abîmé (fichier texte renommé en `.pdf`) affiche « Ce fichier PDF n'a pas pu être lu… ». Dans tous les cas, on peut réessayer immédiatement.
-- [ ] Déposer deux fichiers à la fois affiche « Déposez un seul fichier à la fois. »
-- [ ] Lâcher le PDF **à côté** de la zone n'ouvre pas le PDF dans l'onglet.
-- [ ] « Analyser un autre fichier » ramène à l'écran de départ, focus sur « Choisir un fichier PDF ».
-- [ ] Un fichier sans relais affiche l'encart « Aucun patient vu par plusieurs infirmières sur cette période. »
-- [ ] Après une analyse, `localStorage` (DevTools > Application) ne contient **rien de nouveau** et la sauvegarde exportée ne contient aucun nom de patient.
-- [ ] Onglet Réseau : aucune requête vers un autre domaine ; seuls le chunk pdf.js et son worker (même origine) sont chargés, **au premier dépôt** et pas à l'ouverture de l'application.
-- [ ] Quitter l'écran puis y revenir : écran de départ (rien n'est conservé).
-- [ ] `npm run build` réussit ; `files/` n'apparaît pas dans `git status`.
+- [x] Le menu affiche « Feuille de route » entre « Planning » et « Paramètres » ; sur cet écran, seul cet item est mis en évidence.
+- [x] En glissant `files/Listedesseancessuruneperiode.pdf` sur la zone, l'écran affiche « 348 séances lues du jeudi 08/10/2026 au … — 1 patient vu par plusieurs infirmières. » puis, sous « Jeudi 08/10/2026 », la carte **patiente de test** · Fin le 01/06/2027 · Matin FC 07:00 BSB1+IFI1 (… 20,95 € → Soir LR 17:00 IFI1 (DOM) 2,75 €, « Total 23,70 € ÷ 2 passages = 11,85 € par passage », « À verser : FC 11,85 € · LR 11,85 € ».
+- [x] Même résultat en passant par le bouton « Choisir un fichier PDF », à la souris **et** au clavier (Tab + Entrée).
+- [x] Choisir deux fois de suite le même fichier relance bien la lecture.
+- [x] Pendant la lecture, « Lecture du fichier… » est affiché et la zone ne réagit pas.
+- [x] Un fichier `.json` (ou toute autre extension) affiche le message « Ce fichier n'est pas un PDF… » ; un PDF quelconque (sans séances Vega) affiche « Aucune séance n'a été trouvée… » ; un PDF abîmé (fichier texte renommé en `.pdf`) affiche « Ce fichier PDF n'a pas pu être lu… ». Dans tous les cas, on peut réessayer immédiatement.
+- [x] Déposer deux fichiers à la fois affiche « Déposez un seul fichier à la fois. »
+- [x] Lâcher le PDF **à côté** de la zone n'ouvre pas le PDF dans l'onglet.
+- [x] « Analyser un autre fichier » ramène à l'écran de départ, focus sur « Choisir un fichier PDF ».
+- [x] Un fichier sans relais affiche l'encart « Aucun patient vu par plusieurs infirmières sur cette période. »
+- [x] Après une analyse, `localStorage` (DevTools > Application) ne contient **rien de nouveau** et la sauvegarde exportée ne contient aucun nom de patient.
+- [x] Onglet Réseau : aucune requête vers un autre domaine ; seuls le chunk pdf.js et son worker (même origine) sont chargés, **au premier dépôt** et pas à l'ouverture de l'application.
+- [x] Quitter l'écran puis y revenir : écran de départ (rien n'est conservé).
+- [x] `npm run build` réussit ; `files/` n'apparaît pas dans `git status`.
 
 ## 11. Vérification
 
@@ -313,3 +313,7 @@ Pas de formulaire → pas de Vuelidate. Contrôles sur le fichier, avec messages
 10. **Hébergement** : vérifier au premier déploiement que GitHub Pages sert le worker `.mjs` avec un type MIME JavaScript (sinon le worker ne démarre pas).
 11. **Nouveau dossier `src/adaptateurs/`** : complète l'arborescence de l'architecture 06 (mise à jour en T4) ; pas d'écart d'ADR. **Aucun autre écart** : rien n'est persisté (ADR 0005 non concerné), aucune donnée ne quitte le poste (ADR 0002), logique en modules purs (ADR 0008), dates/heures en chaînes (ADR 0010).
 12. **Données de santé** : le fichier d'exemple et toute sortie du script contiennent des noms réels — `files/` ignoré par git (T1), aucune trace dans les commits, la doc ou les journaux de la console.
+
+## 13. Recette navigateur (2026-10-14)
+
+Critères du §10 vérifiés en navigateur (Chrome piloté par script, données de test fictives côté équipe). Le PDF de démonstration cité au §10 a été remplacé par `files/Vega_UnDoublon.pdf`, `Vega_TroisDoublons.pdf` et `Vega_ZeroDoublon.pdf` (même format d'export Vega). pdf.js et son worker ne sont chargés qu'au premier dépôt, depuis la même origine ; `localStorage` inchangé après analyse. Note d'environnement : après un arrêt brutal du serveur de dev, Vite peut servir un cache de dépendances périmé (« 504 Outdated Optimize Dep ») et l'écran affiche « La lecture des PDF n'a pas pu démarrer » — relancer `vite --force` ; aucun impact sur le site publié.
