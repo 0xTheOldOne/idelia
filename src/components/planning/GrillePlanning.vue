@@ -125,6 +125,7 @@ import CellulePlanning from '@/components/planning/CellulePlanning.vue';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleJour } from '@/domain/libelles.js';
 import { estCoupee, libelleSegment } from '@/domain/tournees.js';
+import { construireIndicateurSouhait } from '@/domain/souhaitsNonRespectes.js';
 
 /**
  * @typedef {Object} LigneGrille
@@ -142,6 +143,7 @@ import { estCoupee, libelleSegment } from '@/domain/tournees.js';
  * @property {string} [libelleSecondaire]
  * @property {number} [segmentIndex] - Indice du segment couvert (orientation TOURNEES uniquement), pour le regroupement par vacation (feature 0016).
  * @property {boolean} verrouillee
+ * @property {?{obligatoire: boolean, libelle: string, details: Array<{nature: string, message: string}>}} souhait - Indicateur « souhait non respecté » (0025), `null` si aucun.
  */
 
 /**
@@ -199,6 +201,10 @@ import { estCoupee, libelleSegment } from '@/domain/tournees.js';
  * `deplacer`, ignoré sur le slot source exact, une case non éligible, ou
  * hors glisse. Reste **présentational** : n'appelle ni store ni moteur.
  *
+ * Souhaits non respectés (0025) : chaque élément reçoit `souhait` (indicateur
+ * prêt à afficher, construit par le domaine à partir de la prop
+ * `souhaitsNonRespectes`) ; la grille ne calcule rien.
+ *
  * Expose un **slot scopé `cellule`** (point de greffe `0011`), dont le
  * contenu par défaut est `CellulePlanning`.
  */
@@ -218,6 +224,12 @@ export default {
     violations: { type: Array, default: () => [] },
     /** `NonCouverture[]` du moteur — source unique de la sous-couverture affichée. */
     tourneesNonCouvertes: { type: Array, default: () => [] },
+    /**
+     * Souhaits non respectés par affectation (0025), clé = `Affectation.id`
+     * (`SouhaitsParAffectation`, calculé par `PlanningView`). Sert à poser le
+     * pouce sur l'élément concerné.
+     */
+    souhaitsNonRespectes: { type: Object, default: () => ({}) },
     /**
      * `true` en mode édition (feature 0011), piloté par `PlanningView`
      * (`:editable="modeEdition"`). Par défaut `false` : comportement `0010`
@@ -427,8 +439,10 @@ export default {
      * @returns {ElementCellule}
      */
     construireElement(affectation) {
+      const personne = this.personneParId(affectation.personneId);
+      const nomPersonne = personne ? `${personne.prenom} ${personne.nom}` : '';
+      const souhait = construireIndicateurSouhait(this.souhaitsNonRespectes[affectation.id] ?? [], nomPersonne);
       if (this.orientation === 'TOURNEES') {
-        const personne = this.personneParId(affectation.personneId);
         if (!personne) {
           return {
             id: affectation.id,
@@ -437,6 +451,7 @@ export default {
             libelleSecondaire: '',
             segmentIndex: affectation.segmentIndex,
             verrouillee: affectation.verrouillee,
+            souhait,
           };
         }
         return {
@@ -446,6 +461,7 @@ export default {
           libelleSecondaire: '',
           segmentIndex: affectation.segmentIndex,
           verrouillee: affectation.verrouillee,
+          souhait,
         };
       }
       const tournee = this.tourneeParId(affectation.tourneeId);
@@ -456,6 +472,7 @@ export default {
           libellePrincipal: 'Tournée inconnue',
           segmentIndex: affectation.segmentIndex,
           verrouillee: affectation.verrouillee,
+          souhait,
         };
       }
       const segment = tournee.segments[affectation.segmentIndex];
@@ -466,6 +483,7 @@ export default {
         libelleSecondaire: segment ? libelleSegment(segment) : '',
         segmentIndex: affectation.segmentIndex,
         verrouillee: affectation.verrouillee,
+        souhait,
       };
     },
 

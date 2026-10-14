@@ -64,6 +64,25 @@
                 <PhLockSimple :size="12" weight="bold" aria-hidden="true" />
                 <span>Verrouillée</span>
               </span>
+              <button
+                v-if="element.souhait"
+                :id="`souhait-bouton-${element.id}`"
+                type="button"
+                class="cellule-planning-bouton-souhait"
+                :class="
+                  element.souhait.obligatoire
+                    ? 'cellule-planning-bouton-souhait--obligatoire'
+                    : 'cellule-planning-bouton-souhait--souhait'
+                "
+                :aria-label="element.souhait.libelle"
+                :title="element.souhait.libelle"
+                :aria-expanded="souhaitOuvertId === element.id ? 'true' : 'false'"
+                :aria-controls="`souhait-detail-${element.id}`"
+                @click="basculerSouhait(element.id)"
+                @keydown.esc="fermerSouhait(element.id)"
+              >
+                <PhThumbsDown :size="16" :weight="element.souhait.obligatoire ? 'fill' : 'bold'" aria-hidden="true" />
+              </button>
             </span>
             <span v-if="editable" class="cellule-planning-actions-element">
               <button
@@ -86,6 +105,23 @@
                 <PhX :size="14" weight="bold" aria-hidden="true" />
               </button>
             </span>
+            <div
+              v-if="element.souhait && souhaitOuvertId === element.id"
+              :id="`souhait-detail-${element.id}`"
+              class="cellule-planning-souhait-detail"
+              :class="
+                element.souhait.obligatoire
+                  ? 'cellule-planning-souhait-detail--obligatoire'
+                  : 'cellule-planning-souhait-detail--souhait'
+              "
+              @keydown.esc="fermerSouhait(element.id)"
+            >
+              <ul>
+                <li v-for="(d, i) in element.souhait.details" :key="i">
+                  <strong>{{ d.nature }}</strong> — {{ d.message }}
+                </li>
+              </ul>
+            </div>
           </li>
         </ul>
 
@@ -124,6 +160,7 @@ import {
   PhUserPlus,
   PhLockSimple,
   PhLockSimpleOpen,
+  PhThumbsDown,
 } from '@phosphor-icons/vue';
 
 /**
@@ -190,6 +227,13 @@ import {
  * au survol (MAJ-3). Le clic sur « Retirer » (clic/clavier, pas le
  * glisser-déposer) replace ensuite le focus sur le bouton « Ajouter une
  * personne » du même groupe (même vacation), quand il existe (MAJ-2).
+ *
+ * Souhait non respecté (0025) : un élément dont `souhait` (indicateur déjà
+ * prêt, fourni par `GrillePlanning`) est non nul affiche, sous son nom, un
+ * bouton pouce baissé (icône seule + `title` + `aria-label`, bordure pleine
+ * si obligatoire, pointillée sinon). Clic/Entrée : un détail s'ouvre dans la
+ * case (`aria-expanded`/`aria-controls`) ; re-clic ou Échap le ferme, Échap
+ * rend le focus au pouce. Le détail se referme au début d'un glisser.
  */
 export default {
   name: 'CellulePlanning',
@@ -201,6 +245,7 @@ export default {
     PhUserPlus,
     PhLockSimple,
     PhLockSimpleOpen,
+    PhThumbsDown,
   },
   props: {
     /**
@@ -209,7 +254,8 @@ export default {
      * `segmentIndex` (feature 0016) sert au regroupement par vacation (voir
      * prop `segments`). `verrouillee` pilote le repère cadenas + libellé
      * « Verrouillée » (feature 0011, tâche 4), affiché que la case soit
-     * éditable ou non.
+     * éditable ou non. `souhait` (0025) : `?{ obligatoire: boolean, libelle: string,
+     * details: Array<{ nature: string, message: string }> }`, `null` si aucun.
      */
     elements: { type: Array, default: () => [] },
     /**
@@ -257,6 +303,12 @@ export default {
        * @type {number|null|undefined}
        */
       groupeSurvoleIndex: undefined,
+      /**
+       * Id de l'élément dont le détail « souhait non respecté » est ouvert
+       * (un seul à la fois par case), `null` si aucun (0025).
+       * @type {string|null}
+       */
+      souhaitOuvertId: null,
     };
   },
   computed: {
@@ -300,8 +352,29 @@ export default {
      * @param {DragEvent} event
      */
     onDebutGlisser(element, event) {
+      this.souhaitOuvertId = null;
       event.dataTransfer?.setData('text/plain', element.id);
       this.$emit('debut-glisser', { affectationId: element.id });
+    },
+
+    /**
+     * Ouvre ou ferme le détail du souhait non respecté d'un élément (0025).
+     * @param {string} id - Id de l'élément.
+     */
+    basculerSouhait(id) {
+      this.souhaitOuvertId = this.souhaitOuvertId === id ? null : id;
+    },
+
+    /**
+     * Ferme le détail du souhait et rend le focus au pouce de l'élément (0025).
+     * @param {string} id - Id de l'élément.
+     */
+    fermerSouhait(id) {
+      if (this.souhaitOuvertId !== id) return;
+      this.souhaitOuvertId = null;
+      this.$nextTick(() => {
+        document.getElementById(`souhait-bouton-${id}`)?.focus();
+      });
     },
 
     /**
@@ -490,6 +563,7 @@ export default {
 
 .cellule-planning-element {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: t.$espace-1;
 }
@@ -552,6 +626,76 @@ export default {
   min-width: t.$cible-cliquable-min;
   min-height: t.$cible-cliquable-min;
   padding: 0;
+}
+
+// Pouce « souhait non respecté » (0025) : icône seule, sous le nom ; bordure
+// pleine = obligatoire, pointillée = souhait (jamais la seule couleur : le
+// libellé et le détail l'écrivent).
+.cellule-planning-bouton-souhait {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-width: 2rem;
+  min-height: 2rem;
+  margin-top: t.$espace-1;
+  padding: 0;
+  border-radius: t.$rayon-sm;
+  background-color: transparent;
+  cursor: pointer;
+  // Zone cliquable portée à ~44 px sans grossir le visuel (cases denses).
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+
+  &--obligatoire {
+    color: t.$couleur-erreur;
+    border: 1px solid t.$couleur-erreur;
+    background-color: rgba(t.$couleur-erreur, 0.08);
+  }
+
+  &--souhait {
+    color: t.$couleur-avertissement-texte;
+    border: 1px dashed t.$couleur-avertissement;
+    background-color: rgba(t.$couleur-avertissement, 0.1);
+  }
+
+  &:focus-visible {
+    outline: t.$epaisseur-focus solid t.$couleur-focus;
+    outline-offset: 2px;
+  }
+}
+
+// Détail du souhait, dans le flux de la case, pleine largeur de l'élément.
+.cellule-planning-souhait-detail {
+  flex: 1 0 100%;
+  margin-top: t.$espace-1;
+  padding: t.$espace-2;
+  border-radius: t.$rayon-sm;
+  font-size: t.$taille-texte-petite;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: t.$espace-1;
+  }
+
+  &--obligatoire {
+    background-color: rgba(t.$couleur-erreur, 0.08);
+    border-left: 3px solid t.$couleur-erreur;
+  }
+
+  &--souhait {
+    background-color: rgba(t.$couleur-avertissement, 0.1);
+    border-left: 3px dashed t.$couleur-avertissement;
+  }
 }
 
 .cellule-planning-sous-couverture {

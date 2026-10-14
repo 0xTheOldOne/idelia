@@ -46,6 +46,7 @@
         >
           <summary class="panneau-conflits-cause-titre">
             <PhCaretRight :size="16" weight="bold" class="panneau-conflits-chevron" aria-hidden="true" />
+            <PhThumbsDown v-if="estCodeSouhait(cause.code)" :size="16" weight="bold" aria-hidden="true" />
             <span class="panneau-conflits-cause-libelle">{{ cause.libelle }}</span>
             <span class="panneau-conflits-cause-nombre">{{ cause.violations.length }}</span>
           </summary>
@@ -103,10 +104,11 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight } from '@phosphor-icons/vue';
+import { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight, PhThumbsDown } from '@phosphor-icons/vue';
 
 import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleCauseViolation } from '@/domain/libelles.js';
+import { estCodeSouhait } from '@/domain/souhaitsNonRespectes.js';
 
 /**
  * Regroupe des violations par cause (`code`), dans l'ordre de première
@@ -142,7 +144,7 @@ function grouperParCause(violations) {
  */
 export default {
   name: 'PanneauConflits',
-  components: { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight },
+  components: { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight, PhThumbsDown },
   props: {
     /** `Violation[]` du moteur, triées erreurs d'abord (voir `Resultat`/`diagnostiquer`). */
     violations: { type: Array, default: () => [] },
@@ -205,6 +207,14 @@ export default {
         };
       });
     },
+  },
+  methods: {
+    /**
+     * `true` si la cause est un souhait non respecté (pouce décoratif, 0025).
+     * @param {string} code
+     * @returns {boolean}
+     */
+    estCodeSouhait,
   },
 };
 </script>

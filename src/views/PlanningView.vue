@@ -174,6 +174,7 @@
         :date-reference="dateReference"
         :violations="diagnostics.violations"
         :tournees-non-couvertes="diagnostics.tourneesNonCouvertes"
+        :souhaits-non-respectes="souhaitsNonRespectes"
         :editable="modeEdition"
         @ajouter="onAjouter"
         @retirer="onRetirer"
@@ -256,6 +257,7 @@ import SelecteurPersonne from '@/components/planning/SelecteurPersonne.vue';
 import { libelleSegment, estCoupee } from '@/domain/tournees.js';
 import { infoGeneration } from '@/domain/planning.js';
 import { construireRecapMensuel } from '@/domain/recapMensuel.js';
+import { indexerSouhaitsNonRespectes } from '@/domain/souhaitsNonRespectes.js';
 
 /**
  * Écran « Planning » (feature 0010) : orchestre le choix d'une période, le
@@ -309,6 +311,10 @@ import { construireRecapMensuel } from '@/domain/recapMensuel.js';
  *
  * Récapitulatif mensuel (0024) : `RecapMensuel` affiche, sous la grille, le
  * compte par mois et par personne (`construireRecapMensuel`, computed réactif).
+ *
+ * Souhaits non respectés (0025) : `souhaitsNonRespectes` (computed) localise
+ * sur les affectations les violations de souhaits des diagnostics, transmis à
+ * la grille pour afficher un pouce sur la personne concernée.
  */
 export default {
   name: 'PlanningView',
@@ -378,6 +384,13 @@ export default {
     };
   },
   computed: {
+    /**
+     * Souhaits non respectés par affectation (0025), dérivés des violations.
+     * @returns {Object<string, object[]>}
+     */
+    souhaitsNonRespectes() {
+      return indexerSouhaitsNonRespectes(this.planningCourant?.affectations ?? [], this.diagnostics.violations);
+    },
     ...mapGetters('personnes', { personnesActives: 'actifs' }),
     ...mapGetters('tournees', { tourneesActives: 'actives', tourneeParId: 'byId' }),
     ...mapGetters('cabinet', { parametresCabinet: 'parametres' }),
