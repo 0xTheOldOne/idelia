@@ -44,6 +44,31 @@ function maintenant() {
 }
 
 /**
+ * Signature stable d'une violation dure (même problème = même signature).
+ *
+ * @param {import('../modele/types.js').Violation} violation
+ * @returns {string}
+ */
+function signatureDure(violation) {
+  return `${violation.contrainteId}|${violation.code}|${JSON.stringify(violation.cible)}|${violation.params?.semaineDebut ?? ''}`;
+}
+
+/**
+ * Ampleur d'une violation dure (déficit, jours en trop…), 1 par défaut.
+ *
+ * @param {import('../modele/types.js').Violation} violation
+ * @returns {number}
+ */
+function magnitudeDure(violation) {
+  const p = violation.params ?? {};
+  if (Number.isFinite(p.manque)) return p.manque;
+  if (Number.isFinite(p.excesTotal)) return p.excesTotal;
+  if (Number.isFinite(p.joursConsecutifs) && Number.isFinite(p.maxAutorise)) return p.joursConsecutifs - p.maxAutorise;
+  if (Number.isFinite(p.minRequis) && Number.isFinite(p.joursRepos)) return p.minRequis - p.joursRepos;
+  return 1;
+}
+
+/**
  * Évalue un état candidat (tableau d'`Affectation`) au regard du catalogue
  * **complet** de contraintes : nombre d'erreurs dures et score souple
  * (pénalités des violations, plus les `coutGlobal` des souples silencieuses
@@ -55,17 +80,20 @@ function maintenant() {
  * @param {import('../modele/affectation.js').Affectation[]} affectationsCandidates
  * @param {import('../modele/types.js').Contrainte[]} contraintes
  * @param {import('../modele/types.js').ContexteEvaluation} ctxBase
- * @returns {{nbErreursDures: number, score: number}}
+ * @returns {{nbErreursDures: number, score: number, dures: Map<string, number>}}
  */
 function evaluerEtat(affectationsCandidates, contraintes, ctxBase) {
   const ctx = { ...ctxBase, index: indexer(affectationsCandidates) };
   let nbErreursDures = 0;
   let score = 0;
+  const dures = new Map();
 
   for (const contrainte of contraintes) {
     for (const violation of contrainte.evaluer(ctx)) {
       if (violation.severite === 'erreur') {
         nbErreursDures += 1;
+        const signature = signatureDure(violation);
+        dures.set(signature, (dures.get(signature) ?? 0) + magnitudeDure(violation));
       } else {
         score += violation.penalite ?? 0;
       }
@@ -73,7 +101,25 @@ function evaluerEtat(affectationsCandidates, contraintes, ctxBase) {
     if (typeof contrainte.coutGlobal === 'function') score += contrainte.coutGlobal(ctx) ?? 0;
   }
 
-  return { nbErreursDures, score };
+  return { nbErreursDures, score, dures };
+}
+
+/**
+ * Indique si un candidat **aggrave** les contraintes dures par rapport à
+ * l'état courant : violation absente de l'état courant (nouvelle, y compris
+ * en échange d'une autre) ou d'ampleur supérieure. Nécessaire car certaines
+ * contraintes n'émettent qu'une violation par personne/semaine : le simple
+ * comptage laisserait passer 7 → 8 jours consécutifs.
+ *
+ * @param {{dures: Map<string, number>}} etatCandidat
+ * @param {{dures: Map<string, number>}} etatCourant
+ * @returns {boolean}
+ */
+function aggraveLesDures(etatCandidat, etatCourant) {
+  for (const [signature, ampleur] of etatCandidat.dures) {
+    if (ampleur > (etatCourant.dures.get(signature) ?? 0)) return true;
+  }
+  return false;
 }
 
 /**
@@ -239,7 +285,7 @@ export function ameliorerLocalement(affectations, contraintes, ctx, rng, budgetM
     if (!candidat) break; // aucun mouvement possible : inutile de continuer à boucler
 
     const etatCandidat = evaluerEtat(candidat, contraintes, ctx);
-    const neCasseAucuneDure = etatCandidat.nbErreursDures <= etatCourant.nbErreursDures;
+    const neCasseAucuneDure = !aggraveLesDures(etatCandidat, etatCourant);
     const ameliore = etatCandidat.nbErreursDures < etatCourant.nbErreursDures || etatCandidat.score < etatCourant.score;
 
     if (neCasseAucuneDure && ameliore) {

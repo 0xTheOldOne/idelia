@@ -44,6 +44,45 @@ function calculerRunMaxConsecutif(joursTries) {
 }
 
 /**
+ * Nombre total de jours au-delà du maximum, toutes séquences confondues
+ * (une 2e séquence trop longue compte, même plus courte que la 1re).
+ *
+ * @param {string[]} joursTries - Dates `"YYYY-MM-DD"`, triées, dédupliquées.
+ * @param {number} maxConsecutifs
+ * @returns {number}
+ */
+function calculerExcesTotal(joursTries, maxConsecutifs) {
+  let exces = 0;
+  let courant = 0;
+  let precedent = null;
+
+  for (const jour of joursTries) {
+    courant = precedent !== null && dateUtil.diffDays(precedent, jour) === 1 ? courant + 1 : 1;
+    if (courant > maxConsecutifs) exces += 1;
+    precedent = jour;
+  }
+
+  return exces;
+}
+
+/**
+ * Longueur de la séquence de jours consécutifs qui contient `jour`
+ * (0 si `jour` n'est pas dans la liste).
+ *
+ * @param {string[]} joursTries - Dates triées, dédupliquées.
+ * @param {string} jour
+ * @returns {number}
+ */
+function calculerRunAutour(joursTries, jour) {
+  const jours = new Set(joursTries);
+  if (!jours.has(jour)) return 0;
+  let longueur = 1;
+  for (let d = dateUtil.addDays(jour, -1); jours.has(d); d = dateUtil.addDays(d, -1)) longueur += 1;
+  for (let d = dateUtil.addDays(jour, 1); jours.has(d); d = dateUtil.addDays(d, 1)) longueur += 1;
+  return longueur;
+}
+
+/**
  * Liste les semaines calendaires ISO (lundi → dimanche) **entièrement
  * incluses** dans la période — les semaines coupées en bord de période ne
  * sont pas évaluées, faute de visibilité au-delà (limite documentée §12 du
@@ -91,7 +130,8 @@ export function creerContrainteReposLegal() {
       const joursExistants = ctx.index.joursTravaillesParPersonne.get(personneId) ?? new Set();
       const joursTries = [...new Set([...joursExistants, demande.date])].sort();
 
-      if (Number.isFinite(maxConsecutifs) && calculerRunMaxConsecutif(joursTries) > maxConsecutifs) {
+      if (Number.isFinite(maxConsecutifs) && calculerRunAutour(joursTries, demande.date) > maxConsecutifs) {
+        // Seule la séquence contenant la nouvelle date compte : un excès préexistant ailleurs ne bloque pas.
         return false;
       }
 
@@ -131,7 +171,12 @@ export function creerContrainteReposLegal() {
                 maxAutorise: maxConsecutifs,
               }),
               penalite: 0,
-              params: { personneId, joursConsecutifs: runMax, maxAutorise: maxConsecutifs },
+              params: {
+                personneId,
+                joursConsecutifs: runMax,
+                maxAutorise: maxConsecutifs,
+                excesTotal: calculerExcesTotal(joursTries, maxConsecutifs),
+              },
             });
           }
         }
