@@ -46,7 +46,7 @@ Un **modèle de contraintes unique** alimente **à la fois** la génération (fi
 /**
  * @typedef {Object} Violation
  * @property {string}  contrainteId
- * @property {'erreur'|'avertissement'} severite  // dure->erreur ; souple->avertissement
+ * @property {'erreur'|'avertissement'} severite  // dure->erreur (sauf placement manuel : avertissement [0021]) ; souple->avertissement
  * @property {Object}  cible        // { personneId?, tourneeId?, jour?, segmentIndex? } pour surligner l'UI
  * @property {string}  code         // stable (i18n, tests), ex 'ABSENCE_AFFECTEE'
  * @property {string}  message      // FR lisible pour l'UI
@@ -59,9 +59,9 @@ On sépare `code` (stable) de `message` (FR affiché) → prêt pour l'i18n, tes
 
 ### Catalogue
 
-**Dures** (`severite: 'erreur'`) : `absence` (personne absente non affectable — recouvrement bucket ↔ horaires du segment), `chevauchement` (une personne ne peut avoir deux affectations aux **horaires qui se chevauchent** le même jour ; les 2 segments **disjoints** d'une coupée ne se chevauchent donc pas), `couverture` (effectif requis **par segment**), `reposLegal` (≤ `maxJoursConsecutifs`, repos mini ; deux segments d'un même jour = **un seul** jour travaillé).
+**Dures** (`severite: 'erreur'`) : `absence` (personne absente non affectable — recouvrement bucket ↔ horaires du segment), `chevauchement` (une personne ne peut avoir deux affectations aux **horaires qui se chevauchent** le même jour ; les 2 segments **disjoints** d'une coupée ne se chevauchent donc pas), `remplacementSurAbsence` (une remplaçante n'est candidate que si une titulaire est absente sur les horaires du segment ; pas plus de remplaçantes un jour que de titulaires absentes ; placement **manuel** signalé en `avertissement` [0021]), `couverture` (effectif requis **par segment**), `reposLegal` (≤ `maxJoursConsecutifs`, repos mini ; deux segments d'un même jour = **un seul** jour travaillé).
 
-**Souples** (`severite: 'avertissement'`, poids configurable) : `jourOffRecurrent`, `creneauOff`, `joursConsecutifsSouhaites`, `jourReposSouhaite`, `equite` (personnes **sans** rythme : écart de charge pondéré par `quotite`, une coupée pèse ses 2 segments ; personnes **avec** `joursTravaillesParMois` : écart aux jours attendus sur la période, prorata ouverture / présence / absences validées — `domain/rythmeMensuel.js` [0020] ; alertes « Rythme de travail dépassé » dès +1 jour, « non atteint » à partir de -2 jours), `continuite` (garder la même personne sur une tournée d'un jour à l'autre), **`continuiteSegments`** (privilégier la **même personne** sur les 2 vacations d'une tournée coupée le même jour — jamais imposé, [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)).
+**Souples** (`severite: 'avertissement'`, poids configurable) : `jourOffRecurrent`, `creneauOff`, `joursConsecutifsSouhaites`, `jourReposSouhaite`, `remplacementPrioritaire` (la remplaçante rattachée à une titulaire absente passe avant les autres remplaçantes ; avertissement si elle est disponible mais non planifiée alors qu'une autre l'est [0021]), `equite` (remplaçantes exclues de la moyenne ; avec rythme : seul le dépassement est signalé [0021] ; personnes **sans** rythme : écart de charge pondéré par `quotite`, une coupée pèse ses 2 segments ; personnes **avec** `joursTravaillesParMois` : écart aux jours attendus sur la période, prorata ouverture / présence / absences validées — `domain/rythmeMensuel.js` [0020] ; alertes « Rythme de travail dépassé » dès +1 jour, « non atteint » à partir de -2 jours), `continuite` (garder la même personne sur une tournée d'un jour à l'autre), **`continuiteSegments`** (privilégier la **même personne** sur les 2 vacations d'une tournée coupée le même jour — jamais imposé, [ADR 0017](../adr/0017-modelisation-tournees-coupees-segments.md)).
 
 ### Couverture & infaisabilité
 
@@ -164,7 +164,7 @@ src/domain/scheduling/
   validerPlanning.js          // validation complète + incrémentale
   contraintes/
     index.js                  // creerContraintes(input) : fabrique + registre + enum TypeContrainte
-    contrainteAbsence.js  contrainteChevauchement.js  contrainteCouverture.js
+    contrainteAbsence.js  contrainteRemplacement.js  contrainteChevauchement.js  contrainteCouverture.js
     contrainteReposLegal.js  contrainteJourOffRecurrent.js  contrainteCreneauOff.js
     contrainteJoursConsecutifs.js  contrainteJourReposSouhaite.js
     contrainteEquite.js  contrainteContinuite.js  contrainteContinuiteSegments.js

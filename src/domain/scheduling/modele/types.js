@@ -47,7 +47,7 @@
 /**
  * @typedef {Object} Violation
  * @property {string}   contrainteId
- * @property {Severite} severite
+ * @property {Severite} severite - Dure -> `erreur`, sauf placement manuel signalé en `avertissement` (0021).
  * @property {Object}   cible - `{ personneId?, tourneeId?, date?, segmentIndex? }`.
  * @property {string}   code - Stable, ex. `'ABSENCE_VALIDEE'` (voir `modele/messages.js`).
  * @property {string}   message - FR, prêt à afficher tel quel.

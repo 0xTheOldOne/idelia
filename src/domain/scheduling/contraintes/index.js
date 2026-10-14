@@ -3,7 +3,8 @@
  * source de vérité des règles métier, partagée par `genererPlanning` et
  * `validerPlanning` (§5.1). `creerContraintes(entree)` instancie, dans cet
  * ordre :
- * 1. les **8 contraintes fixes** du cabinet (une instance chacune) ;
+ * 1. les **10 contraintes fixes** du cabinet (dont « une remplaçante ne vient
+ *    que pour une absence », 0021) (une instance chacune) ;
  * 2. **une contrainte par préférence active** (`preference.actif === true`)
  *    de **chaque personne active** de `entree.personnes`.
  *
@@ -15,6 +16,7 @@
  */
 
 import { creerContrainteAbsenceValidee, creerContrainteAbsenceDemandee } from './contrainteAbsence.js';
+import { creerContrainteRemplacementSurAbsence, creerContrainteRemplacementPrioritaire } from './contrainteRemplacement.js';
 import { creerContrainteChevauchement } from './contrainteChevauchement.js';
 import { creerContrainteCouverture } from './contrainteCouverture.js';
 import { creerContrainteReposLegal } from './contrainteReposLegal.js';
@@ -32,13 +34,14 @@ import { creerContrainteContinuiteSegments } from './contrainteContinuiteSegment
  * domaine) ; `equite`/`continuite`/`continuiteSegments` sont réellement
  * surchargeables via `entree.poids`.
  *
- * @type {Readonly<{absenceDemandee: number, equite: number, continuite: number, continuiteSegments: number}>}
+ * @type {Readonly<{absenceDemandee: number, equite: number, continuite: number, continuiteSegments: number, remplacementPrioritaire: number}>}
  */
 export const POIDS_SOUPLES_PAR_DEFAUT = Object.freeze({
   absenceDemandee: 5,
   equite: 4,
   continuite: 2,
   continuiteSegments: 3,
+  remplacementPrioritaire: 3,
 });
 
 /**
@@ -49,6 +52,7 @@ export const POIDS_SOUPLES_PAR_DEFAUT = Object.freeze({
  */
 export const TYPES_CONTRAINTE = Object.freeze([
   'ABSENCE',
+  'REMPLACEMENT',
   'CHEVAUCHEMENT',
   'COUVERTURE',
   'REPOS_LEGAL',
@@ -80,11 +84,13 @@ export function creerContraintes(entree) {
   const contraintes = [
     creerContrainteAbsenceValidee(),
     creerContrainteAbsenceDemandee(),
+    creerContrainteRemplacementSurAbsence(entree),
     creerContrainteChevauchement(),
     creerContrainteCouverture(),
     creerContrainteReposLegal(),
     creerContrainteJourOuverture(),
     creerContrainteEquite(poids.equite, entree),
+    creerContrainteRemplacementPrioritaire(poids.remplacementPrioritaire, entree),
     // Continuité d'un jour à l'autre désactivée (retour porteur, 2026-10-07) :
     // qu'une personne travaille un jour et une autre le lendemain ne pose pas
     // problème au cabinet, inutile de le pénaliser ni de le signaler.

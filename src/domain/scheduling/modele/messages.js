@@ -19,6 +19,7 @@
 import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleTypeAbsence, libelleJour } from '@/domain/libelles.js';
 import { libelleSegment } from '@/domain/tournees.js';
+import { listeFrancaise } from '@/domain/personnes.js';
 
 /**
  * Libellé FR du jour de semaine d'une date, en minuscules (« mercredi »),
@@ -184,6 +185,48 @@ const GABARITS = {
   EQUITE_RYTHME_NON_ATTEINT: ({ nomPersonne = 'Cette personne', jours = 0, rythme = 0, attendu = 0 } = {}) =>
     `${nomPersonne} ne travaille que ${jours} jour(s) sur cette période, moins que son rythme habituel : ` +
     `${rythme} jours par mois, soit environ ${attendu} jour(s) attendu(s) ici.`,
+
+  REMPLACANTE_SANS_ABSENCE: ({ nomPersonne = 'Cette personne', date, heureDebut, heureFin, origine } = {}) =>
+    `${nomPersonne} (remplaçante) est planifiée le ${jourFr(date)} ${dateUtil.formatDateFr(date)} ` +
+    `(${horairesTexte(heureDebut, heureFin)}), mais aucune titulaire n'est absente à ces horaires. ` +
+    (origine === 'MANUEL'
+      ? "Si c'est un appel exceptionnel, vous pouvez laisser ainsi ; sinon, retirez-la de cette case."
+      : "L'absence qu'elle couvrait a sans doute été modifiée ou supprimée : retirez-la de cette case ou regénérez le planning."),
+
+  REMPLACANTES_EN_SURNOMBRE: ({ date, nomsRemplacantes = [], nomsTitulaires = [] } = {}) => {
+    const nbTitulaires = nomsTitulaires.length;
+    const titulaires =
+      nbTitulaires <= 1
+        ? 'une seule titulaire absente'
+        : `${nbTitulaires} titulaires absentes`;
+    const noms = nomsTitulaires.length > 0 ? ` (${listeFrancaise(nomsTitulaires)})` : '';
+    const retrait = nbTitulaires <= 1 ? 'Retirez-en une' : 'Retirez-en';
+    return (
+      `Le ${jourFr(date)} ${dateUtil.formatDateFr(date)}, ${nomsRemplacantes.length} remplaçantes sont planifiées ` +
+      `(${listeFrancaise(nomsRemplacantes)}) pour ${titulaires}${noms} : ` +
+      `une absence ne justifie qu'une seule remplaçante. ${retrait} si ce n'est pas voulu.`
+    );
+  },
+
+  REMPLACANTE_HABITUELLE_NON_PLANIFIEE: ({
+    date,
+    nomTitulaire = 'Une titulaire',
+    nomsHabituelles = [],
+    nomsAutres = [],
+  } = {}) => {
+    const nbHabituelles = nomsHabituelles.length;
+    const nbAutres = nomsAutres.length;
+    const habituelles = nbHabituelles > 0 ? listeFrancaise(nomsHabituelles) : 'Sa remplaçante habituelle';
+    const autres = nbAutres > 0 ? listeFrancaise(nomsAutres) : 'Une autre remplaçante';
+    const relative =
+      nbHabituelles > 0 ? `, qui ${nbHabituelles > 1 ? 'la remplacent' : 'la remplace'} d'habitude,` : '';
+    const verbeHabituelles = nbHabituelles > 1 ? 'ne sont pas planifiées' : "n'est pas planifiée";
+    const verbeAutres = nbAutres > 1 ? 'le sont' : "l'est";
+    return (
+      `${nomTitulaire} est absente le ${jourFr(date)} ${dateUtil.formatDateFr(date)}. ` +
+      `${habituelles}${relative} ${verbeHabituelles} ce jour-là ; ${autres} ${verbeAutres} à sa place.`
+    );
+  },
 
   CONTINUITE_ROMPUE: ({
     nomTournee = 'Cette tournée',

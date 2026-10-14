@@ -96,6 +96,11 @@
             </span>
           </li>
         </ul>
+        <p v-if="equipeAvecRemplacantes" class="panneau-conflits-aide">
+          Une remplaçante n'est proposée automatiquement que pour remplacer une titulaire absente.
+          Vous pouvez en ajouter une à la main pour un appel exceptionnel : le planning vous le signalera,
+          sans l'empêcher.
+        </p>
       </details>
     </template>
   </section>
@@ -107,6 +112,7 @@ import { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRig
 
 import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleCauseViolation } from '@/domain/libelles.js';
+import { estRemplacante } from '@/domain/remplacement.js';
 
 /**
  * Regroupe des violations par cause (`code`), dans l'ordre de première
@@ -151,6 +157,12 @@ export default {
   },
   computed: {
     ...mapGetters('tournees', { tourneeParId: 'byId' }),
+    ...mapGetters('personnes', { personnesActives: 'actifs' }),
+
+    /** `true` si l'équipe compte au moins une remplaçante active (pilote le rappel d'aide). */
+    equipeAvecRemplacantes() {
+      return this.personnesActives.some(estRemplacante);
+    },
 
     /** Violations dures, dans l'ordre reçu (le moteur les place déjà en tête). */
     erreurs() {
@@ -386,6 +398,14 @@ export default {
   flex-direction: column;
   gap: t.$espace-1;
   min-width: 0;
+}
+
+// Rappel sous « Tournées non couvertes » (feature 0021).
+.panneau-conflits-aide {
+  margin: 0;
+  padding: 0 t.$espace-3 t.$espace-3;
+  font-size: t.$taille-texte-petite;
+  color: t.$couleur-texte-attenue;
 }
 
 .panneau-conflits-couverture-manque {

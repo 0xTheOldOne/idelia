@@ -170,8 +170,13 @@ export function remplacantsDe(personneId, personnes) {
     .sort(comparerParNom);
 }
 
-/** Liste française : « A », « A et B », « A, B et C ». */
-function listeFrancaise(noms) {
+/**
+ * Liste française : « A », « A et B », « A, B et C ».
+ *
+ * @param {string[]} noms
+ * @returns {string}
+ */
+export function listeFrancaise(noms) {
   if (noms.length <= 1) return noms.join('');
   return `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
 }

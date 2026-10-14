@@ -48,11 +48,19 @@
       <!-- Statut -->
       <div class="mb-4">
         <label for="personne-statut" class="form-label">Statut</label>
-        <select id="personne-statut" v-model="formulaire.statut" class="form-select formulaire-select">
+        <select
+          id="personne-statut"
+          v-model="formulaire.statut"
+          class="form-select formulaire-select"
+          :aria-describedby="estRemplacant ? 'personne-statut-aide' : null"
+        >
           <option v-for="option in STATUTS_PERSONNE_OPTIONS" :key="option.code" :value="option.code">
             {{ option.libelle }}
           </option>
         </select>
+        <div v-if="estRemplacant" id="personne-statut-aide" class="form-text">
+          Une personne remplaçante n'est planifiée automatiquement que pour couvrir l'absence d'une titulaire.
+        </div>
       </div>
 
       <!-- Titulaire remplacée en priorité (remplaçant uniquement) -->
@@ -70,7 +78,8 @@
           </option>
         </select>
         <div id="personne-titulaire-aide" class="form-text">
-          Le ou la titulaire que cette personne remplace d'habitude pendant ses absences.
+          La titulaire que cette personne remplace d'habitude. Elle sera proposée en premier quand cette
+          titulaire est absente.
           <template v-if="aucuneTitulaireActive">
             Ajoutez d'abord une personne titulaire pour pouvoir la choisir ici.
           </template>

@@ -28,6 +28,7 @@ Idelia/
     ├── domain/                 # LOGIQUE MÉTIER PURE (aucun import Vue/Vuex)
     │   ├── schema.js           # enums, valeurs par défaut, toSaveDocument/fromSaveDocument, verifierIntegrite
     │   ├── scheduling/         # moteur de planification (voir 05)
+    │   ├── remplacement.js     # absences de titulaires qui libèrent une place (règle de remplacement) [0021]
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
     │   ├── rythmeMensuel.js    # jours attendus d'une personne sur une période selon son rythme mensuel [0020, réutilisé par 0024]
     │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]

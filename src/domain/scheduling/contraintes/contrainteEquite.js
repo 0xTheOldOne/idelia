@@ -8,6 +8,9 @@
  *   les jours attendus sur la période (`joursAttendusSurPeriode` : prorata
  *   ouverture / présence / absences validées journée entière). Le rythme prime
  *   sur la quotité.
+ * Les **remplaçantes** (0021) sortent de la moyenne du groupe « sans rythme »
+ * (elles ne travaillent que sur absence) ; avec un rythme, seul son
+ * dépassement est signalé, jamais le « non atteint ».
  * Impacte le choix pendant la génération (`coutMarginal`) et signale les
  * déséquilibres résiduels en validation (`evaluer`).
  *
@@ -16,6 +19,7 @@
 
 import { messagePour } from '../modele/messages.js';
 import { joursAttendusSurPeriode } from '@/domain/rythmeMensuel.js';
+import { estRemplacante } from '@/domain/remplacement.js';
 
 /** Poids souple par défaut (surchargeable via `entree.poids.equite`, `contraintes/index.js`). */
 const POIDS_EQUITE_DEFAUT = 4;
@@ -63,7 +67,7 @@ function chargeNormalisee(personne, nbAffectations) {
  */
 function chargesDeLequipe(entree, index) {
   return entree.personnes
-    .filter((personne) => personne.actif !== false && !aUnRythme(personne))
+    .filter((personne) => personne.actif !== false && !aUnRythme(personne) && !estRemplacante(personne))
     .map((personne) => {
       const nbAffectations = (index.parPersonne.get(personne.id) ?? []).length;
       return { personne, nbAffectations, charge: chargeNormalisee(personne, nbAffectations) };
@@ -124,6 +128,9 @@ export function creerContrainteEquite(poids = POIDS_EQUITE_DEFAUT, entree = null
       // Rythme saisi mais invalide : exclue de l'équité (hors des deux groupes).
       if (aUnRythme(personne)) return 0;
 
+      // Remplaçante sans rythme : sa venue est encadrée par les règles de remplacement.
+      if (estRemplacante(personne)) return 0;
+
       // Groupe « sans rythme » : règle historique.
       const charges = chargesDeLequipe(ctx.entree, ctx.index);
       const moy = moyenne(charges);
@@ -175,7 +182,7 @@ export function creerContrainteEquite(poids = POIDS_EQUITE_DEFAUT, entree = null
         if (jours > cible) {
           code = 'EQUITE_RYTHME_DEPASSE';
           ecart = jours - cible;
-        } else if (jours < cible - TOLERANCE_SOUS_RYTHME) {
+        } else if (!estRemplacante(personne) && jours < cible - TOLERANCE_SOUS_RYTHME) {
           code = 'EQUITE_RYTHME_NON_ATTEINT';
           ecart = cible - jours;
         }
