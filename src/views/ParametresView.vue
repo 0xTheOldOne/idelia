@@ -181,6 +181,11 @@
       </section>
     </form>
 
+    <!-- Vacances scolaires (feature 0023) : zone enregistrée tout de suite, hors Vuelidate -->
+    <section class="parametres-section">
+      <BlocVacancesScolaires />
+    </section>
+
     <!-- Sauvegarde (hors formulaire : ce n'est pas un réglage saisi mais une action) -->
     <section class="parametres-section">
       <h2>Sauvegarde</h2>
@@ -203,6 +208,7 @@ import { PhWarning } from '@phosphor-icons/vue';
 
 import BlocSauvegarde from '@/components/parametres/BlocSauvegarde.vue';
 import BlocSauvegardeAutomatique from '@/components/parametres/BlocSauvegardeAutomatique.vue';
+import BlocVacancesScolaires from '@/components/parametres/BlocVacancesScolaires.vue';
 import { JOURS_SEMAINE, libelleCreneau } from '@/domain/libelles.js';
 import { coherenceParametres } from '@/domain/cabinet.js';
 import { CRENEAUX } from '@/domain/schema.js';
@@ -219,7 +225,7 @@ import { CRENEAUX } from '@/domain/schema.js';
  */
 export default {
   name: 'ParametresView',
-  components: { BlocSauvegarde, BlocSauvegardeAutomatique, PhWarning },
+  components: { BlocSauvegarde, BlocSauvegardeAutomatique, BlocVacancesScolaires, PhWarning },
   setup() {
     // Seul usage de la Composition API : pont requis par Vuelidate 2 en
     // Options API (ADR 0011). Le reste du composant reste en Options API.

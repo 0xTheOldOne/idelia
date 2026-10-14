@@ -248,6 +248,23 @@ function numeroSemaineIso(dateStr) {
   return diffDays(premierJeudiAnnee, jeudi) / 7 + 1;
 }
 
+/**
+ * Convertit un instant ISO 8601 avec fuseau (ex. `"2026-10-16T22:00:00+00:00"`)
+ * en date calendaire `"YYYY-MM-DD"`. Arrondi au jour calendaire le plus proche
+ * (ajout de 12 h puis date UTC) : exact pour un minuit local de UTC-12 à UTC+12,
+ * sans table de fuseaux. Une chaîne déjà `"YYYY-MM-DD"` est renvoyée telle quelle.
+ *
+ * @param {string} iso - Instant ISO 8601 ou date `"YYYY-MM-DD"`.
+ * @returns {(string|null)} Date `"YYYY-MM-DD"`, ou `null` si illisible.
+ */
+function dateCalendaireDepuisInstant(iso) {
+  if (typeof iso !== 'string') return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return null;
+  return new Date(ms + 12 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 export const dateUtil = {
   parse,
   format,
@@ -266,4 +283,5 @@ export const dateUtil = {
   moisPrecedent,
   finMois,
   numeroSemaineIso,
+  dateCalendaireDepuisInstant,
 };

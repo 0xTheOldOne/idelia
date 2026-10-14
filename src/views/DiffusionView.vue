@@ -58,6 +58,35 @@
           </div>
         </div>
 
+        <div
+          v-if="vacancesManquantes"
+          class="alert alert-warning diffusion-bandeau diffusion-alerte-vacances d-print-none"
+          role="status"
+        >
+          <PhWarning :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
+          <div>
+            <p class="mb-2">
+              Les vacances scolaires n'ont pas pu être récupérées : elles n'apparaîtront pas sur ce
+              tirage.
+            </p>
+            <button
+              type="button"
+              class="btn btn-outline-secondary diffusion-reessayer"
+              :disabled="reessaiEnCours"
+              :aria-busy="reessaiEnCours ? 'true' : 'false'"
+              @click="reessayerVacances"
+            >
+              <span
+                v-if="reessaiEnCours"
+                class="spinner-border spinner-border-sm"
+                aria-hidden="true"
+              ></span>
+              <PhArrowsClockwise v-else :size="18" aria-hidden="true" />
+              <span>Réessayer</span>
+            </button>
+          </div>
+        </div>
+
         <p v-if="diffusion.vide" class="diffusion-vide">
           <PhInfo :size="18" aria-hidden="true" class="flex-shrink-0" />
           <span>Ce planning ne contient encore aucune affectation.</span>
@@ -97,11 +126,13 @@ import {
   PhCalendarX,
   PhWarning,
   PhInfo,
+  PhArrowsClockwise,
 } from '@phosphor-icons/vue';
 
 import FeuilleDiffusion from '@/components/diffusion/FeuilleDiffusion.vue';
 import ModaleEnvoiEmail from '@/components/diffusion/ModaleEnvoiEmail.vue';
 import { preparerEnvoiEmail } from '@/domain/envoiEmail.js';
+import { construireSourcesReperes } from '@/domain/calendrier/reperes.js';
 import { construireDiffusion, titreDocumentDiffusion } from '@/domain/diffusion.js';
 
 /**
@@ -134,6 +165,7 @@ export default {
     PhCalendarX,
     PhWarning,
     PhInfo,
+    PhArrowsClockwise,
   },
   data() {
     return {
@@ -144,16 +176,35 @@ export default {
       // Visibilité de la modale d'envoi par e-mail, et navigation à faire une fois fermée.
       modaleEnvoiVisible: false,
       navigationEnAttente: null,
+      // Dernier résultat de `vacancesScolaires/assurerCouverture` (0023) ; `null` tant que non connu. Volatil.
+      resultatVacances: null,
+      reessaiEnCours: false,
     };
   },
   computed: {
     ...mapGetters('plannings', ['byId']),
     ...mapGetters('cabinet', ['parametres']),
+    ...mapGetters('vacancesScolaires', ['zoneCourante', 'periodesZoneCourante']),
     ...mapState('personnes', { personnes: 'items' }),
     ...mapState('tournees', { tournees: 'items' }),
     /** Planning à diffuser, ou `undefined` si l'identifiant est inconnu. */
     planning() {
       return this.byId(this.$route.params.id);
+    },
+    /** Repères calendaires (fériés, vacances) de la période du planning (0023). */
+    sourcesReperes() {
+      if (!this.planning) return {};
+      return construireSourcesReperes({
+        dateDebut: this.planning.dateDebut,
+        dateFin: this.planning.dateFin,
+        periodesVacances: this.periodesZoneCourante,
+        zone: this.zoneCourante,
+      });
+    },
+    /** Une zone est choisie mais les vacances de la période n'ont pas pu être récupérées. */
+    vacancesManquantes() {
+      const r = this.resultatVacances;
+      return !!this.zoneCourante && !!r && !r.ok && r.etat !== 'SANS_ZONE';
     },
     /** Modèle « planning papier » prêt à afficher. */
     diffusion() {
@@ -162,6 +213,7 @@ export default {
         personnes: this.personnes,
         tournees: this.tournees,
         joursOuverture: this.parametres?.joursOuverture ?? [],
+        sourcesReperes: this.sourcesReperes,
       });
     },
     /** Préparation de l'envoi par e-mail (domaine, pur). */
@@ -179,6 +231,7 @@ export default {
     planning() {
       this.majTitre();
       this.chargerResume();
+      this.chargerVacances();
     },
   },
   created() {
@@ -187,6 +240,7 @@ export default {
   mounted() {
     this.majTitre();
     this.chargerResume();
+    this.chargerVacances();
     if (this.$route.query.envoi === '1' && this.planning) {
       this.modaleEnvoiVisible = true;
       this.$router.replace({ query: {} });
@@ -198,6 +252,7 @@ export default {
   methods: {
     ...mapMutations('plannings', ['SELECT']),
     ...mapActions('plannings', { resumeConflitsAction: 'resumeConflits' }),
+    ...mapActions('vacancesScolaires', { assurerCouverture: 'assurerCouverture' }),
     /** Pose le titre du document (nom de fichier PDF proposé) si le planning existe. */
     majTitre() {
       if (this.planning) document.title = titreDocumentDiffusion(this.planning);
@@ -212,6 +267,32 @@ export default {
         if (this.planning?.id === id) this.resume = resume[id] ?? null;
       } catch (e) {
         console.error(e);
+      }
+    },
+    /**
+     * Vérifie que les vacances de la période sont en cache (0023), sans toast :
+     * l'alerte de l'écran suffit. Ne rejette jamais.
+     * @param {boolean} [forcer] - Réessai explicite (ignore les échecs de session).
+     */
+    async chargerVacances(forcer = false) {
+      this.resultatVacances = null;
+      if (!this.planning) return;
+      const id = this.planning.id;
+      const resultat = await this.assurerCouverture({
+        dateDebut: this.planning.dateDebut,
+        dateFin: this.planning.dateFin,
+        silencieux: true,
+        forcer,
+      });
+      if (this.planning?.id === id) this.resultatVacances = resultat ?? null;
+    },
+    /** Bouton « Réessayer » de l'alerte. */
+    async reessayerVacances() {
+      this.reessaiEnCours = true;
+      try {
+        await this.chargerVacances(true);
+      } finally {
+        this.reessaiEnCours = false;
       }
     },
     /** Rouvre l'éditeur sur ce planning. */
@@ -297,6 +378,13 @@ export default {
   &:focus-visible {
     color: t.$couleur-primaire-foncee;
   }
+}
+
+.diffusion-reessayer {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$espace-2;
+  min-height: t.$cible-cliquable-min;
 }
 
 .diffusion-vide {

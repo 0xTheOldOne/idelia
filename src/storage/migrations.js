@@ -10,9 +10,10 @@
 import { genId } from '@/domain/utils/id.js';
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
+import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -275,6 +276,27 @@ MIGRATIONS[7] = (doc) => {
     )
     : doc.personnes;
   return { ...doc, personnes };
+};
+
+/**
+ * Migration v8 → v9 (feature 0023) : ajout de `cabinet.zoneScolaire` (zone de
+ * vacances scolaires, `null` = aucune) et du cache racine `vacancesScolaires`.
+ *
+ * - `cabinet` (si objet) : `zoneScolaire` normalisée (idempotent : absent ou
+ *   inconnu → `null`).
+ * - `vacancesScolaires` normalisé (idempotent : absent ou malformé → `[]`,
+ *   entrées invalides filtrées ; jamais bloquant).
+ * - `personnes`, `tournees`, `absences`, `plannings` : inchangés.
+ *
+ * @param {object} doc - Document de version 8.
+ * @returns {object} Document équivalent en version 9 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[8] = (doc) => {
+  const cabinet =
+    doc.cabinet && typeof doc.cabinet === 'object' && !Array.isArray(doc.cabinet)
+      ? { ...doc.cabinet, zoneScolaire: normaliserZoneScolaire(doc.cabinet.zoneScolaire) }
+      : doc.cabinet;
+  return { ...doc, cabinet, vacancesScolaires: normaliserCacheVacances(doc.vacancesScolaires) };
 };
 
 /**

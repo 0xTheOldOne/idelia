@@ -16,18 +16,14 @@ import { libelleJourCourt, libelleMois } from '@/domain/libelles.js';
 import { estCoupee, libelleSegment, libelleHoraires, tourneeApplicableLe } from '@/domain/tournees.js';
 import { dateMiseAJour } from '@/domain/planning.js';
 import { normaliserInitialesVega } from '@/domain/initialesVega.js';
+import { reperesDuJour } from './calendrier/reperes.js';
 
 /** Nombre de « colonnes utiles » (jour + segments de tournées) tenant sur la largeur d'une page A4 portrait. */
 export const BUDGET_COLONNES_PAGE = 15;
 /** Plafond de mois par page, pour la lisibilité. */
 export const MOIS_PAR_PAGE_MAX = 4;
 
-/**
- * @typedef {Object} RepereJour - Repère calendaire d'un jour (affichage seul).
- * @property {string} code - `'DIMANCHE'` (0012). Réservés à 0023 : `'FERIE'`, `'VACANCES_SCOLAIRES'`.
- * @property {string} libelle - Libellé FR pour la légende (ex. « Dimanche »).
- * @property {string} court - Marqueur court affiché près du jour ('' si aucun ; ex. 0023 : « F »).
- */
+/** @typedef {import('./calendrier/reperes.js').RepereJour} RepereJour */
 
 /**
  * @typedef {Object} SegmentColonne
@@ -95,21 +91,8 @@ export const MOIS_PAR_PAGE_MAX = 4;
  * @property {boolean} vide - Aucune affectation dans le planning.
  */
 
-/**
- * Repères calendaires d'un jour — **point d'extension de la feature 0023**.
- * En 0012 : uniquement le dimanche. Le paramètre `sources` est **réservé**
- * (non lu ici) : 0023 y passera ses données (fériés, vacances scolaires) et
- * ajoutera ses codes (`'FERIE'`, `'VACANCES_SCOLAIRES'`) sans changer la
- * signature ni les composants (rendu générique par code).
- *
- * @param {string} date - `"YYYY-MM-DD"`
- * @param {Object} [sources] - Réservé à 0023.
- * @returns {RepereJour[]}
- */
-// eslint-disable-next-line no-unused-vars
-export function reperesDuJour(date, sources = {}) {
-  return dateUtil.weekdayISO(date) === 7 ? [{ code: 'DIMANCHE', libelle: 'Dimanche', court: '' }] : [];
-}
+// Source unique des repères : `calendrier/reperes.js` (ré-exporté pour compatibilité).
+export { reperesDuJour };
 
 /**
  * Première lettre en majuscule d'un texte (accents conservés), '' si vide.
@@ -240,7 +223,7 @@ function creerColonne(tournee, archivee) {
  * @param {Array<Object>} params.personnes - Collection **complète** (archivées comprises).
  * @param {Array<import('./tournees.js').Tournee>} params.tournees - Collection **complète** (archivées comprises).
  * @param {number[]} params.joursOuverture - Jours ISO d'ouverture du cabinet.
- * @param {Object} [params.sourcesReperes] - Réservé à 0023, transmis à {@link reperesDuJour}.
+ * @param {Object} [params.sourcesReperes] - Repères calendaires (0023), transmis à {@link reperesDuJour}.
  * @returns {Diffusion}
  */
 export function construireDiffusion({ planning, personnes, tournees, joursOuverture, sourcesReperes = {} }) {

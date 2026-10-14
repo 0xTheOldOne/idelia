@@ -23,6 +23,7 @@ Idelia/
     │       ├── tournees.js
     │       ├── absences.js
     │       ├── plannings.js
+    │       ├── vacancesScolaires.js # cache des vacances par zone et année scolaire, via l'adaptateur [0023]
     │       └── ui.js           # non persisté
     │
     ├── domain/                 # LOGIQUE MÉTIER PURE (aucun import Vue/Vuex)
@@ -36,6 +37,10 @@ Idelia/
     │   ├── recapMensuel.js     # récap par mois et par personne : grandes/petites tournées, jours travaillés, dépassement du rythme [0024]
     │   ├── souhaitsNonRespectes.js # localise les souhaits non respectés (violations PREFERENCE_*) sur les affectations, textes de l'indicateur [0025]
     │   ├── trameWeekend.js     # weekends travaillés / de repos d'une trame « un weekend sur X » [0022]
+    │   ├── calendrier/         # repères calendaires, logique pure, aucun fetch [0023]
+    │   │   ├── joursFeries.js  # 11 fériés nationaux, Pâques par algorithme
+    │   │   ├── vacancesScolaires.js # zones, années scolaires, normalisation de la réponse API et du cache, messages
+    │   │   └── reperes.js      # reperesDuJour / construireSourcesReperes (grille et diffusion)
     │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]
     │   ├── envoiEmail.js       # destinataires, objet, corps et lien mailto: de l'envoi du planning par e-mail [0027]
     │   ├── feuilleDeRoute/     # lecture des séances Vega, détection des relais, répartition, reversements et bilan [0033, 0034, 0035]
@@ -54,6 +59,7 @@ Idelia/
     │
     ├── adaptateurs/            # I/O navigateur + bibliothèques tierces (jamais de persistance : c'est le rôle de storage/)
     │   ├── lireGlyphesPdf.js   # lecture PDF via pdfjs-dist, chargé à la demande [ADR 0019, 0033]
+    │   ├── calendrierScolaire.js # lecture GET de l'API du calendrier scolaire, seul accès réseau [ADR 0020, 0023]
     │   └── pressePapiers.js    # copie de texte (API Clipboard) [0027]
     │
     ├── views/                  # écrans (un par route)
@@ -68,6 +74,7 @@ Idelia/
     │
     ├── components/             # composants réutilisables
     │   ├── communs/            # boutons, champs, modale, confirmation, icône, pastille de tournée [0029]…
+    │   ├── parametres/         # blocs de Paramètres : sauvegarde, sauvegarde automatique, BlocVacancesScolaires.vue [0023]
     │   ├── equipe/
     │   ├── tournees/
     │   ├── absences/

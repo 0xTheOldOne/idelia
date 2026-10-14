@@ -466,6 +466,18 @@ export default {
       'regenerer',
     ]),
     ...mapMutations('plannings', ['SELECT']),
+    ...mapActions('vacancesScolaires', ['assurerCouverture']),
+
+    /**
+     * Vérifie en arrière-plan (sans attendre ni bloquer l'affichage) que les
+     * vacances scolaires de la période du planning courant sont en cache
+     * (feature 0023). L'action ne rejette jamais ; un échec n'empêche rien.
+     */
+    verifierVacances() {
+      const planning = this.planningCourant;
+      if (!planning) return;
+      this.assurerCouverture({ dateDebut: planning.dateDebut, dateFin: planning.dateFin });
+    },
 
     /**
      * Bascule le mode édition. En entrant en édition, force l'orientation
@@ -764,6 +776,12 @@ export default {
       );
     },
   },
+  watch: {
+    // Changement de planning ou nouvelle génération : vacances de la nouvelle période (0023).
+    'planningCourant.id'() {
+      this.verifierVacances();
+    },
+  },
   /**
    * `selectionId` (state `plannings`) n'est pas persisté : au rechargement,
    * `getters['plannings/courant']` est `null` même si des plannings
@@ -779,6 +797,7 @@ export default {
       this.SELECT(plusRecent.id);
     }
     if (this.planningCourant) {
+      this.verifierVacances();
       this.dateReference = this.planningCourant.dateDebut;
       await this.rafraichirDiagnostics();
     }

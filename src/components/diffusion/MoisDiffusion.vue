@@ -45,8 +45,8 @@
             v-for="repere in jour.reperes.filter((r) => r.court)"
             :key="repere.code"
             class="mois-diffusion-marqueur"
-            :title="repere.libelle"
-          >{{ repere.court }}</span>
+            :title="repere.detail || repere.libelle"
+          ><span aria-hidden="true">{{ repere.court }}</span><span class="visually-hidden"> {{ texteRepere(repere) }}</span></span>
         </th>
 
         <td
@@ -101,6 +101,14 @@ export default {
     colonnes: { type: Array, required: true },
   },
   methods: {
+    /**
+     * Texte lu par les lecteurs d'écran pour un marqueur (« Jour férié : Toussaint »).
+     * @param {import('@/domain/diffusion.js').RepereJour} repere
+     * @returns {string}
+     */
+    texteRepere(repere) {
+      return repere.detail ? `${repere.libelle} : ${repere.detail}` : repere.libelle;
+    },
     /**
      * Classes génériques d'une ligne : une par repère calendaire
      * (`mois-diffusion-ligne--repere-dimanche`…), pour que 0023 n'ait qu'à
@@ -204,8 +212,24 @@ thead th {
   font-style: italic;
 }
 
-// Dimanche : fond grisé ET jour en gras (jamais la couleur seule).
-.mois-diffusion-ligne--repere-dimanche {
+// Vacances scolaires : fine barre à gauche + fond très léger (déclaré AVANT
+// dimanche/férié, dont le fond l'emporte ; le « V » porte le sens en noir et blanc).
+.mois-diffusion-ligne--repere-vacances-scolaires {
+  th,
+  td {
+    background-color: t.$impression-fond-repere-vacances;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mois-diffusion-jour {
+    border-left: 3px solid t.$couleur-texte;
+  }
+}
+
+// Dimanche et férié : fond grisé ET jour en gras (jamais la couleur seule).
+.mois-diffusion-ligne--repere-dimanche,
+.mois-diffusion-ligne--repere-ferie {
   th,
   td {
     background-color: t.$impression-fond-repere-dimanche;

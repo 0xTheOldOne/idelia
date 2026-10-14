@@ -128,7 +128,15 @@ export default {
   border-radius: t.$rayon-sm;
   color: t.$couleur-texte-attenue;
 
-  &--dimanche {
+  &--vacances-scolaires {
+    border-left: 3px solid t.$couleur-texte;
+    background-color: t.$impression-fond-repere-vacances;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  &--dimanche,
+  &--ferie {
     font-weight: t.$graisse-gras;
     color: t.$couleur-texte;
     background-color: t.$impression-fond-repere-dimanche;

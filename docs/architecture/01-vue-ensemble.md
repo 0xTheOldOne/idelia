@@ -2,7 +2,7 @@
 
 ## Nature de l'application
 
-Idelia est une **Single Page Application (SPA) Vue.js**, entièrement exécutée dans le navigateur, **sans backend** ([ADR 0002](../adr/0002-application-frontend-sans-backend.md)). Elle est déployable comme un simple site statique (GitHub/GitLab Pages).
+Idelia est une **Single Page Application (SPA) Vue.js**, entièrement exécutée dans le navigateur, **sans backend** ([ADR 0002](../adr/0002-application-frontend-sans-backend.md)). Elle est déployable comme un simple site statique (GitHub/GitLab Pages). Seule exception réseau : la lecture, en GET, de l'API open-data du calendrier scolaire ([ADR 0020](../adr/0020-exception-reseau-api-calendrier-scolaire.md)) ; aucune donnée du cabinet n'est envoyée, et l'application reste pleinement utilisable hors-ligne.
 
 ## Les grandes couches
 
@@ -46,3 +46,5 @@ Idelia est une **Single Page Application (SPA) Vue.js**, entièrement exécutée
 **Diffusion** : le référent imprime / exporte en PDF une vue lecture du planning pour l'équipe ([ADR 0009](../adr/0009-workflow-referent-diffusion-lecture.md)).
 
 **Feuille de route** : un PDF Vega déposé → `lireGlyphesPdf` (pdf.js, adaptateur) → `extraireSeances` → `detecterRelais` (domaine pur) → affichage des cas, des reversements et du bilan de la période. Lecture seule de l'équipe dans le store ; **rien n'est persisté** ([09](09-feuille-de-route-vega.md), [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md)).
+
+**Repères calendaires** ([feature 0023](../../features/0023-reperes-calendaires.md)) : dimanches et jours fériés sont calculés localement (`domain/calendrier/joursFeries.js`, Pâques par algorithme). Les **vacances scolaires** de la zone choisie dans les Paramètres sont lues sur `data.education.gouv.fr` par l'adaptateur `adaptateurs/calendrierScolaire.js` (seul code qui fait du réseau), normalisées par le domaine (`vacancesScolaires.js`), puis **mises en cache dans le SaveDocument** (module `vacancesScolaires`, par zone et année scolaire : exportées/importées, lisibles hors-ligne). La grille du planning et la diffusion obtiennent les repères d'un jour par `reperesDuJour` (`reperes.js`). Affichage seul : le moteur de planification n'est pas concerné.

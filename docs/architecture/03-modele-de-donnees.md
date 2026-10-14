@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 6,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants)
+  "schemaVersion": 9,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -17,7 +17,8 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   "personnes": [ /* Personne[] (preferences imbriquées) */ ],
   "tournees":  [ /* Tournee[] */ ],
   "absences":  [ /* Absence[] (à plat, avec personneId) */ ],
-  "plannings": [ /* Planning[] (affectations imbriquées) */ ]
+  "plannings": [ /* Planning[] (affectations imbriquées) */ ],
+  "vacancesScolaires": [ /* cache des vacances : { zone, anneeScolaire, recupereLe, periodes[] }[] */ ]
 }
 ```
 
@@ -25,14 +26,14 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
     "joursOuverture": [1, 2, 3, 4, 5, 6],
     "creneauxActifs": ["MATIN", "APRES_MIDI"],
     "reposHebdoMin": 2, "maxJoursConsecutifs": 6, "premierJourSemaine": 1,
-    "couleursParDefaut": ["#2E86AB", "#E4572E", "#5B8C5A", "#B5179E"],
+    "couleursParDefaut": ["#2E86AB", "#E4572E", "#5B8C5A", "#B5179E"], "zoneScolaire": "ZONE_A",
     "updatedAt": "2026-07-01T08:00:00.000Z"
   },
   "personnes": [
@@ -91,6 +92,12 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
       ],
       "createdAt": "2026-07-05T18:00:00.000Z", "updatedAt": "2026-07-05T18:00:00.000Z"
     }
+  ],
+  "vacancesScolaires": [
+    {
+      "zone": "ZONE_A", "anneeScolaire": "2026-2027", "recupereLe": "2026-10-14T08:00:00.000Z",
+      "periodes": [ { "libelle": "Vacances de la Toussaint", "debut": "2026-10-17", "fin": "2026-11-01" } ]
+    }
   ]
 }
 ```
@@ -113,7 +120,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` (= **7**) et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **9**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
@@ -124,6 +131,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[5]` (v5 → v6)** — [feature 0020](../../features/0020-equipe-rythme-mensuel-remplacante.md) : chaque `Personne` reçoit `joursTravaillesParMois: personne.joursTravaillesParMois ?? null` et `titulaireId: personne.titulaireId ?? null` (idempotent). `null` = pas de rythme / pas de titulaire rattachée. Les autres entités sont inchangées.
 - **`MIGRATIONS[6]` (v6 → v7)** — [feature 0029](../../features/0029-tournees-icone-de-repere.md) : chaque `Tournee` reçoit `icone: normaliserIconeTournee(tournee.icone)` (idempotent : absent → `null` ; code connu conservé ; valeur inconnue → `null`). `null` = pas d'icône de repère. Les autres entités sont inchangées. Une valeur hors liste dans un fichier déjà en v7 est ramenée à `null` par `fromSaveDocument`, sans erreur.
 - **`MIGRATIONS[7]` (v7 → v8)** — [feature 0030](../../features/0030-personne-informations-professionnelles.md) : chaque `Personne` reçoit `identifiants: normaliserIdentifiants(personne.identifiants)` (idempotent : absent → 6 `null` ; valeurs existantes normalisées ; clés inconnues ignorées). Les autres entités sont inchangées. Un bloc absent ou non objet dans un fichier déjà en v8 est normalisé par `fromSaveDocument`, sans erreur.
+- **`MIGRATIONS[8]` (v8 → v9)** — [feature 0023](../../features/0023-reperes-calendaires.md), [ADR 0020](../adr/0020-exception-reseau-api-calendrier-scolaire.md) : `cabinet.zoneScolaire` = `normaliserZoneScolaire(...)` (idempotent : absent ou inconnu → `null`) et racine `vacancesScolaires` = `normaliserCacheVacances(...)` (idempotent : absent → `[]` ; entrées invalides écartées). Les autres entités sont inchangées. `verifierIntegrite` n'est pas modifiée : le cache ne bloque jamais une ouverture.
 
 ## Intégrité référentielle
 

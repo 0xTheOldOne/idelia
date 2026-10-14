@@ -14,6 +14,7 @@
 
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
+import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
 
 // ---------------------------------------------------------------------------
 // Enums / constantes du domaine (codes stables, MAJUSCULES_SNAKE)
@@ -98,6 +99,7 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
  * @property {number} maxJoursConsecutifs
  * @property {number} premierJourSemaine - Jour ISO 1-7.
  * @property {string[]} couleursParDefaut
+ * @property {(string|null)} zoneScolaire - Code de zone de vacances scolaires (0023), `null` = aucune.
  * @property {string} updatedAt - Horodatage ISO UTC.
  */
 
@@ -108,6 +110,7 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
  * @property {{ items: object[] }} tournees
  * @property {{ items: object[] }} absences
  * @property {{ items: object[], selectionId: (string|null) }} plannings
+ * @property {{ entrees: import('@/domain/calendrier/vacancesScolaires.js').EntreeVacances[] }} vacancesScolaires - Cache des vacances (0023).
  */
 
 /**
@@ -119,6 +122,7 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
  * @property {object[]} tournees
  * @property {object[]} absences
  * @property {object[]} plannings
+ * @property {import('@/domain/calendrier/vacancesScolaires.js').EntreeVacances[]} vacancesScolaires - Cache des vacances scolaires (0023).
  */
 
 /**
@@ -149,6 +153,7 @@ export function etatParDefaut() {
         maxJoursConsecutifs: 6,
         premierJourSemaine: 1,
         couleursParDefaut: COULEURS_PAR_DEFAUT,
+        zoneScolaire: null,
         updatedAt: new Date().toISOString(),
       },
     },
@@ -156,6 +161,7 @@ export function etatParDefaut() {
     tournees: { items: [] },
     absences: { items: [] },
     plannings: { items: [], selectionId: null },
+    vacancesScolaires: { entrees: [] },
   };
 }
 
@@ -193,6 +199,7 @@ export function toSaveDocument(rootState, options) {
     tournees: rootState.tournees.items,
     absences: rootState.absences.items,
     plannings: rootState.plannings.items,
+    vacancesScolaires: rootState.vacancesScolaires.entrees,
   };
 }
 
@@ -211,13 +218,22 @@ export function fromSaveDocument(doc) {
     // (non éditable en v1) : on ré-applique toujours la palette courante plutôt
     // que celle figée dans une sauvegarde ancienne, pour qu'elle suive la
     // version d'Idelia. Les autres réglages du cabinet sont préservés tels quels.
-    cabinet: { parametres: { ...doc.cabinet, couleursParDefaut: COULEURS_PAR_DEFAUT } },
+    cabinet: {
+      parametres: {
+        ...doc.cabinet,
+        couleursParDefaut: COULEURS_PAR_DEFAUT,
+        // Zone inconnue → `null`, jamais bloquant (0023).
+        zoneScolaire: normaliserZoneScolaire(doc.cabinet?.zoneScolaire),
+      },
+    },
     // `identifiants` : forme garantie (6 clés), jamais bloquant (0030).
     personnes: { items: (doc.personnes ?? []).map((p) => ({ ...p, identifiants: normaliserIdentifiants(p?.identifiants) })) },
     // `icone` : valeur hors liste (fichier modifié à la main) → `null`, jamais bloquant (0029).
     tournees: { items: (doc.tournees ?? []).map((t) => ({ ...t, icone: normaliserIconeTournee(t?.icone) })) },
     absences: { items: doc.absences ?? [] },
     plannings: { items: doc.plannings ?? [], selectionId: null },
+    // Cache malformé → `[]` / entrées filtrées, jamais bloquant (0023).
+    vacancesScolaires: { entrees: normaliserCacheVacances(doc.vacancesScolaires) },
   };
 }
 

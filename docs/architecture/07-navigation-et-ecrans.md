@@ -11,10 +11,10 @@ Idelia s'organise autour d'un petit nombre d'écrans clairs, accessibles depuis 
 | `/equipe/:id/souhaits` | **Souhaits** | Souhaits & préférences d'une personne | `0005` |
 | `/tournees` | **Tournées** | Gérer les tournées et leurs horaires | `0006` |
 | `/absences` | **Absences & congés** | Saisir les absences (saisie directe, sans validation en v1) | `0007`, `0017` |
-| `/planning` | **Planning** | Générer, éditer (drag & drop), voir les conflits et les souhaits non respectés, récap mensuel par personne | `0010`, `0011`, `0024`, `0025` |
-| `/planning/:id/diffusion` | **Diffusion** | Impression / export PDF, envoi par e-mail à l'équipe (messagerie de l'utilisatrice) | `0012`, `0027` |
+| `/planning` | **Planning** | Générer, éditer (drag & drop), voir les conflits et les souhaits non respectés, récap mensuel par personne | `0010`, `0011`, `0023`, `0024`, `0025` |
+| `/planning/:id/diffusion` | **Diffusion** | Impression / export PDF (repères : dimanches, fériés « F », vacances « V »), envoi par e-mail à l'équipe (messagerie de l'utilisatrice) | `0012`, `0023`, `0027` |
 | `/feuille-de-route` | **Feuille de route** | Repérer, depuis la liste des séances exportée de Vega (PDF), les patients soignés le matin et l'après-midi par deux infirmières différentes, avec qui reverse combien à qui, patient par patient et en bilan de la période (imprimable, sans nom de patient ; noms via les initiales Vega de l'équipe) — lu sur le poste, rien n'est conservé | `0033`, `0034`, `0035` |
-| `/parametres` | **Paramètres** | Réglages cabinet + sauvegarde / import / export | `0003`, `0008` |
+| `/parametres` | **Paramètres** | Réglages cabinet, **vacances scolaires** (zone, mise à jour des dates), sauvegarde / import / export | `0003`, `0008`, `0023` |
 
 ## Principes de navigation
 
@@ -33,3 +33,12 @@ C'est l'écran central. Il enchaîne :
 4. **Verrouillage** d'affectations (préservées lors d'une régénération) et actions « regénérer » (reproductible / variante).
 
 Les principes d'ergonomie détaillés sont dans [`08-principes-ux-ergonomie.md`](08-principes-ux-ergonomie.md).
+
+## Repères calendaires (Planning et Diffusion)
+
+- **Planning** : repères dans l'en-tête de ligne du jour uniquement (dimanche et férié : fond teinté, « Férié : Toussaint » ; vacances : barre à gauche et ligne « Vacances »). Les vacances manquantes sont récupérées en arrière-plan, sans bloquer l'écran.
+- **Diffusion / impression** : marqueurs « F » (férié) et « V » (vacances) lisibles en noir et blanc, légende « Repères » ; si la zone est choisie mais les vacances non récupérables, alerte non imprimée avec « Réessayer ».
+
+## Écran Paramètres : vacances scolaires
+
+Section « Vacances scolaires » (composant `BlocVacancesScolaires`), entre « Affichage » et « Sauvegarde » : liste de la zone (« Aucune » par défaut), bouton « Mettre à jour » à droite du titre (visible seulement avec une zone), état du cache et résultat annoncés (`role="status"`). Changer de zone enregistre aussitôt et récupère l'année en cours ; revenir à « Aucune » oublie les dates, sans requête. Dimanches et jours fériés sont toujours indiqués, même sans zone ([ADR 0020](../adr/0020-exception-reseau-api-calendrier-scolaire.md)).

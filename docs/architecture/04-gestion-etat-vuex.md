@@ -11,6 +11,7 @@ Le store Vuex ([ADR 0003](../adr/0003-stack-vue-vite-optionsapi-vuex-router.md))
 | `tournees` | `{ items: [] }` | `actives`, `applicablesLe(date)` | CRUD, `archiver` · `REPLACE` |
 | `absences` | `{ items: [] }` | `parPersonne`, `validesSur(periode)`, `enConflit(affectation)` | CRUD, `changerStatut` · `REPLACE` |
 | `plannings` | `{ items: [], selectionId }` | `courant`, `affectationsDe(id)`, `besoinsNonCouverts`, `conflits` | CRUD planning + CRUD affectation, `generer`, `verrouiller` · `REPLACE` |
+| `vacancesScolaires` | `{ entrees: [] }` (cache par zone et année scolaire) | `entrees`, `zoneCourante`, `periodesZoneCourante`, `entreesZoneCourante` | `assurerCouverture`, `mettreAJour`, `changerZone` · `ENREGISTRER`, `GARDER_ZONE`, `REPLACE` |
 | `ui` (**non persisté**) | mode d'affichage, filtres, état drag&drop, panneaux | — | mutations UI |
 | racine `app` | `schemaVersion`, statut de sauvegarde (ex. `derniereSauvegarde`) | — | `bootstrap`, `importer`, `exporter`, `reinitialiser` + mutation `REPLACE_ALL` |
 
@@ -47,6 +48,15 @@ flush immédiat de la persistance
 
 ## Où va quoi
 
-- **Données persistées** : `cabinet`, `personnes`, `tournees`, `absences`, `plannings`.
+- **Données persistées** : `cabinet`, `personnes`, `tournees`, `absences`, `plannings`, `vacancesScolaires` (cache).
 - **État volatile** (jamais persisté) : `ui` (sélection courante, filtres d'affichage, état du drag & drop, ouverture de panneaux).
 - **Calculé, jamais stocké** : les diagnostics/conflits d'un planning (via getters s'appuyant sur le moteur, [05](05-moteur-de-planification.md)).
+
+## Module `vacancesScolaires` (feature 0023)
+
+Cache des vacances scolaires de la zone choisie (`cabinet.parametres.zoneScolaire`), persisté dans le SaveDocument. Les actions **ne rejettent jamais** : elles renvoient `{ ok, etat: 'SANS_ZONE'|'A_JOUR'|'MIS_A_JOUR'|'ECHEC', message }`.
+
+- `assurerCouverture({ dateDebut, dateFin, silencieux, forcer })` : récupère les années scolaires manquantes pour la période (requêtes dédoublonnées). Un échec n'est pas retenté dans la session sauf `forcer` ; un seul toast d'avertissement par session (sauf `silencieux`).
+- `mettreAJour()` : redemande les années en cache et l'année en cours (bouton des Paramètres).
+- `changerZone(code)` : enregistre la zone via `cabinet/majParametres`, purge les autres zones (`GARDER_ZONE`), puis met à jour. Sans zone : cache vidé, aucune requête.
+- Le réseau passe par l'adaptateur `recupererCalendrierScolaire`, la logique de dates par `src/domain/calendrier/` ; échecs de session et requêtes en cours sont des variables de module, **jamais persistées**.

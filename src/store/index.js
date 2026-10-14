@@ -17,6 +17,7 @@ import absences from './modules/absences';
 import plannings from './modules/plannings';
 import ui from './modules/ui';
 import notifications from './modules/notifications';
+import vacancesScolaires from './modules/vacancesScolaires';
 
 /**
  * Store racine de l'application (feature 0002).
@@ -270,6 +271,7 @@ export default createStore({
       state.absences.items = etatRacine.absences.items;
       state.plannings.items = etatRacine.plannings.items;
       state.plannings.selectionId = etatRacine.plannings.selectionId ?? null;
+      state.vacancesScolaires.entrees = etatRacine.vacancesScolaires.entrees;
     },
 
     /**
@@ -431,6 +433,7 @@ export default createStore({
     plannings,
     ui,
     notifications,
+    vacancesScolaires,
   },
 
   plugins: [persistancePlugin],

@@ -24,6 +24,7 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | **Planning** | Période bornée + ensemble d'Affectations + statut. |
 | **Referent** | Personne qui tient le planning et le diffuse ([ADR 0009](../adr/0009-workflow-referent-diffusion-lecture.md)). |
 | **Besoin** | Notion **calculée** (non stockée) : effectif requis d'une tournée un jour/créneau vs affectations réelles. |
+| **Repère calendaire** | Information d'affichage attachée à un jour : **dimanche**, **jour férié** (calculé localement) ou **vacances scolaires** (zone du cabinet, cache issu de l'API de l'Éducation nationale, [ADR 0020](../adr/0020-exception-reseau-api-calendrier-scolaire.md)). Calculé, jamais stocké par jour ; sans effet sur la génération. |
 | **Diagnostic / Conflit** | Résultat **calculé** de l'évaluation d'un planning (contrainte dure violée, sous-effectif, souhait non tenu). |
 
 ## Choix d'agrégats
@@ -191,7 +192,23 @@ Modèle **segments** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segme
 | maxJoursConsecutifs | integer | oui | défaut `6` |
 | premierJourSemaine | number 1..7 | oui | défaut `1` (affichage) |
 | couleursParDefaut | string[] | non | palette de suggestion |
+| zoneScolaire | string \| null | oui (`null` possible) | code de zone des vacances scolaires (`ZONE_A`, `ZONE_B`, `ZONE_C`, `CORSE`, `GUADELOUPE`, `MARTINIQUE`, `GUYANE`, `REUNION`, `MAYOTTE`) ; défaut `null` = aucune zone, aucune requête réseau ; valeur inconnue ramenée à `null` ([feature 0023](../../features/0023-reperes-calendaires.md)) |
 | updatedAt | ISO UTC | oui | |
+
+### VacancesScolaires (cache, racine du SaveDocument)
+
+Cache de données publiques, **pas une entité** : pas d'`id`, clé = (`zone`, `anneeScolaire`), une seule entrée par couple. Seules les entrées de la zone courante sont conservées.
+
+| champ | type | oblig. | notes |
+|---|---|---|---|
+| zone | string | oui | code de zone (cf. `ParametresCabinet.zoneScolaire`) |
+| anneeScolaire | string | oui | `"AAAA-AAAA"` (2e année = 1re + 1) |
+| recupereLe | ISO UTC \| null | oui | horodatage de la récupération |
+| periodes | `{ libelle, debut, fin }[]` | oui | `debut` = dernier jour de cours, `fin` = **veille de la reprise** (bornes incluses, `"YYYY-MM-DD"`) |
+
+Source (API Opendatasoft, CORS `*`) : dates en instants UTC correspondant au minuit local (`2026-10-16T22:00:00+00:00` = samedi 17/10), converties par `dateUtil.dateCalendaireDepuisInstant` ; `end_date` = jour de reprise donc `fin` = veille ; pont d'un jour possible (`debut` = `fin`) ; lignes « Enseignants » écartées ; zone « La Réunion » incluse.
+
+Non bloquant : un cache absent ou malformé est normalisé (`[]`/filtré), jamais refusé ; `verifierIntegrite` n'est pas concernée.
 
 ## Relations
 

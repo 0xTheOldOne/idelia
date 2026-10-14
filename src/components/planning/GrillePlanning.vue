@@ -74,10 +74,29 @@
               :class="{
                 'grille-planning-entete-jour--fermee': ligneJour.colonne.ferme,
                 'grille-planning-entete-jour--hors-periode': ligneJour.colonne.horsPeriode,
+                'grille-planning-entete-jour--dimanche': aRepere(ligneJour.colonne, 'DIMANCHE'),
+                'grille-planning-entete-jour--ferie': aRepere(ligneJour.colonne, 'FERIE'),
+                'grille-planning-entete-jour--vacances': aRepere(ligneJour.colonne, 'VACANCES_SCOLAIRES'),
               }"
+              :title="titreVacances(ligneJour.colonne) || null"
             >
               <span class="grille-planning-jour-nom">{{ libelleJour(ligneJour.colonne.jourIso) }}</span>
               <span class="grille-planning-jour-date">{{ dateCourte(ligneJour.colonne.date) }}</span>
+              <span
+                v-if="detailRepere(ligneJour.colonne, 'FERIE') !== null"
+                class="grille-planning-jour-statut grille-planning-jour-statut--ferie"
+              >
+                <PhFlag :size="12" aria-hidden="true" />
+                <span>Férié : {{ detailRepere(ligneJour.colonne, 'FERIE') }}</span>
+              </span>
+              <span
+                v-if="aRepere(ligneJour.colonne, 'VACANCES_SCOLAIRES')"
+                class="grille-planning-jour-statut grille-planning-jour-statut--vacances"
+              >
+                <PhBackpack :size="12" aria-hidden="true" />
+                <span aria-hidden="true">Vacances</span>
+                <span class="grille-planning-texte-invisible">{{ titreVacances(ligneJour.colonne) }}</span>
+              </span>
               <span v-if="ligneJour.colonne.ferme" class="grille-planning-jour-statut">
                 <PhLock :size="12" aria-hidden="true" />
                 <span>Fermé</span>
@@ -128,7 +147,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { PhLock, PhWarning, PhWarningOctagon } from '@phosphor-icons/vue';
+import { PhBackpack, PhFlag, PhLock, PhWarning, PhWarningOctagon } from '@phosphor-icons/vue';
 
 import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import CellulePlanning from '@/components/planning/CellulePlanning.vue';
@@ -137,6 +156,7 @@ import { libelleJour } from '@/domain/libelles.js';
 import { libellePresenceLe, precisionPresenceLe } from '@/domain/presence.js';
 import { estCoupee, libelleSegment } from '@/domain/tournees.js';
 import { construireIndicateurSouhait } from '@/domain/souhaitsNonRespectes.js';
+import { construireSourcesReperes, reperesDuJour } from '@/domain/calendrier/reperes.js';
 
 /**
  * @typedef {Object} LigneGrille
@@ -219,12 +239,19 @@ import { construireIndicateurSouhait } from '@/domain/souhaitsNonRespectes.js';
  * prêt à afficher, construit par le domaine à partir de la prop
  * `souhaitsNonRespectes`) ; la grille ne calcule rien.
  *
+ * Repères calendaires (0023) : dimanche, férié et vacances scolaires sont
+ * affichés **uniquement dans l'en-tête de ligne du jour** (fond teinté pour
+ * dimanche/férié, ligne « Férié : … », ligne « Vacances » + barre à gauche,
+ * détail en infobulle et texte pour lecteurs d'écran). Affichage seul : aucun
+ * impact sur la génération ni sur les cases. Sources lues dans le store
+ * `vacancesScolaires` et assemblées par `src/domain/calendrier/reperes.js`.
+ *
  * Expose un **slot scopé `cellule`** (point de greffe `0011`), dont le
  * contenu par défaut est `CellulePlanning`.
  */
 export default {
   name: 'GrillePlanning',
-  components: { PhLock, PhWarning, PhWarningOctagon, CellulePlanning, PastilleTournee },
+  components: { PhBackpack, PhFlag, PhLock, PhWarning, PhWarningOctagon, CellulePlanning, PastilleTournee },
   props: {
     /** Le `Planning` affiché (`dateDebut`, `dateFin`, `affectations`). */
     planning: { type: Object, required: true },
@@ -273,6 +300,20 @@ export default {
     ...mapGetters('tournees', { tourneesActives: 'actives', tourneeParId: 'byId' }),
     ...mapGetters('personnes', { personnesActives: 'actifs', personneParId: 'byId' }),
     ...mapGetters('cabinet', ['parametres']),
+    ...mapGetters('vacancesScolaires', ['periodesZoneCourante', 'zoneCourante']),
+
+    /**
+     * Sources des repères calendaires (férié, vacances) pour la fenêtre affichée.
+     * @returns {import('@/domain/calendrier/reperes.js').SourcesReperes}
+     */
+    sourcesReperes() {
+      return construireSourcesReperes({
+        dateDebut: this.datesFenetre[0],
+        dateFin: this.datesFenetre[this.datesFenetre.length - 1],
+        periodesVacances: this.periodesZoneCourante,
+        zone: this.zoneCourante,
+      });
+    },
 
     /**
      * Édition réellement active : `editable` **et** orientation `TOURNEES`
@@ -318,6 +359,7 @@ export default {
           jourIso,
           ferme: !this.parametres.joursOuverture.includes(jourIso),
           horsPeriode: date < this.planning.dateDebut || date > this.planning.dateFin,
+          reperes: reperesDuJour(date, this.sourcesReperes),
         };
       });
     },
@@ -414,6 +456,37 @@ export default {
   },
   methods: {
     libelleJour,
+
+    /**
+     * `true` si la colonne-jour porte le repère `code` (0023).
+     * @param {{reperes: Array<{code: string}>}} colonne
+     * @param {string} code
+     * @returns {boolean}
+     */
+    aRepere(colonne, code) {
+      return colonne.reperes.some((r) => r.code === code);
+    },
+
+    /**
+     * Détail du repère `code` (ex. « Toussaint »), `null` si absent.
+     * @param {{reperes: Array<{code: string, detail: string}>}} colonne
+     * @param {string} code
+     * @returns {(string|null)}
+     */
+    detailRepere(colonne, code) {
+      return colonne.reperes.find((r) => r.code === code)?.detail ?? null;
+    },
+
+    /**
+     * Texte complet des vacances (infobulle + lecteurs d'écran), vide sinon.
+     * @param {{reperes: Array<{code: string, detail: string}>}} colonne
+     * @returns {string}
+     */
+    titreVacances(colonne) {
+      const detail = this.detailRepere(colonne, 'VACANCES_SCOLAIRES');
+      if (detail === null) return '';
+      return detail ? `Vacances scolaires : ${detail}` : 'Vacances scolaires';
+    },
 
     /**
      * Date courte lisible `"JJ/MM/AAAA"` pour un en-tête de colonne.
@@ -894,6 +967,16 @@ export default {
   vertical-align: top;
   white-space: nowrap;
 
+  // Repères calendaires (0023) : déclarés avant `--fermee`, qui reste prioritaire.
+  &--dimanche,
+  &--ferie {
+    background-color: t.$couleur-fond-repere-majore;
+  }
+
+  &--vacances {
+    border-left: 4px solid t.$couleur-bordure-repere-vacances;
+  }
+
   &--fermee {
     background-color: t.$couleur-bordure;
     color: t.$couleur-texte-attenue;
@@ -923,6 +1006,12 @@ export default {
 
   &--attenue {
     font-style: italic;
+  }
+
+  // Le nom du férié peut être long : retour à la ligne autorisé.
+  &--ferie {
+    align-items: flex-start;
+    white-space: normal;
   }
 }
 

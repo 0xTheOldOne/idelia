@@ -1,6 +1,6 @@
 # ADR 0002 — Application frontend, sans backend
 
-- **Statut** : Accepté
+- **Statut** : Accepté — **amendé par l'[ADR 0020](0020-exception-reseau-api-calendrier-scolaire.md)** (lecture de l'API du calendrier scolaire)
 - **Date** : 2026-07-07
 
 ## Contexte

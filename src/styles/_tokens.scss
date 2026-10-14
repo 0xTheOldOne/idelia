@@ -117,3 +117,10 @@ $impression-taille-titre: 18pt;
 $impression-taille-sous-titre: 12pt;
 $impression-hauteur-logo: 20mm;
 $impression-fond-repere-dimanche: $couleur-fond-clair; // ligne de dimanche grisée
+
+// ---------------------------------------------------------------------------
+// Repères calendaires (feature 0023) — valeurs indicatives, ajustables par ui-ux
+// ---------------------------------------------------------------------------
+$couleur-fond-repere-majore: #faf1e5; // dimanche / férié à l'écran (accent 14 % sur blanc) — texte AA
+$couleur-bordure-repere-vacances: $couleur-primaire; // barre verticale « vacances scolaires »
+$impression-fond-repere-vacances: #ecf5f6; // fond très léger des vacances à l'impression (marque 8 % sur blanc)
