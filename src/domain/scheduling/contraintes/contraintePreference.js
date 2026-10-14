@@ -228,7 +228,13 @@ const HANDLERS = {
       const joursTries = [...joursSet].sort();
       const runMax = calculerRunMaxConsecutif(joursTries);
       if (runMax <= params.max) return [];
-      return [{ cible: { personneId: personne.id }, params: { joursConsecutifs: runMax, maxAutorise: params.max } }];
+      return [
+        {
+          cible: { personneId: personne.id },
+          ampleur: runMax - params.max,
+          params: { joursConsecutifs: runMax, maxAutorise: params.max },
+        },
+      ];
     },
   },
 
@@ -387,6 +393,7 @@ export function creerContraintePreference(preference, personne) {
         code,
         message: messagePour(code, { nomPersonne, descriptionPreference, ...brut.params }),
         penalite: durete === 'dure' ? 0 : poids,
+        ...(brut.ampleur !== undefined && { ampleur: brut.ampleur }),
         params: { preferenceId: preference.id, personneId: personne.id, ...brut.params },
       }));
     },

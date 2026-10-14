@@ -174,9 +174,6 @@ export function resumerDiagnostic(diagnostic) {
   const nbErreurs = violations.filter((v) => v.severite === 'erreur').length;
   const nbAvertissements = violations.filter((v) => v.severite === 'avertissement').length;
   const nbNonCouvertes = tourneesNonCouvertes.length;
-  // Chaque créneau non couvert est déjà une erreur SOUS_COUVERTURE dans `violations` : ne le compter qu'une fois.
-  const nbErreursHorsCouverture = violations.filter(
-    (v) => v.severite === 'erreur' && v.code !== 'SOUS_COUVERTURE'
-  ).length;
-  return { nbErreurs, nbAvertissements, nbNonCouvertes, aResoudre: nbErreursHorsCouverture + nbNonCouvertes };
+  // Chaque créneau non couvert est déjà une erreur SOUS_COUVERTURE (relation 1:1, même `calculerNonCouvertures`) : `nbErreurs` les compte déjà.
+  return { nbErreurs, nbAvertissements, nbNonCouvertes, aResoudre: nbErreurs };
 }

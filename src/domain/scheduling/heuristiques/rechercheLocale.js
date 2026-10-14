@@ -54,19 +54,25 @@ function signatureDure(violation) {
 }
 
 /**
- * Ampleur d'une violation dure (déficit, jours en trop…), 1 par défaut.
+ * Ampleur d'une violation dure (déficit, jours en trop…) : `Violation.ampleur`, 1 par défaut.
  *
  * @param {import('../modele/types.js').Violation} violation
  * @returns {number}
  */
 function magnitudeDure(violation) {
-  const p = violation.params ?? {};
-  if (Number.isFinite(p.manque)) return p.manque;
-  if (Number.isFinite(p.excesTotal)) return p.excesTotal;
-  if (Number.isFinite(p.joursConsecutifs) && Number.isFinite(p.maxAutorise)) return p.joursConsecutifs - p.maxAutorise;
-  if (Number.isFinite(p.minRequis) && Number.isFinite(p.joursRepos)) return p.minRequis - p.joursRepos;
-  return 1;
+  return violation.ampleur ?? 1;
 }
+
+/**
+ * @typedef {Object} EtatEvalue - Évaluation d'un tableau d'affectations, calculée une seule fois.
+ * @property {import('../modele/affectation.js').Affectation[]} affectations
+ * @property {import('../modele/types.js').PlanningIndexe} index - Index de `affectations`, réutilisé par le voisinage.
+ * @property {number} nbErreursDures
+ * @property {number} score
+ * @property {import('../modele/types.js').Violation[]} violationsDures
+ * @property {(Map<string, number>|null)} dures - Ampleur par signature, construite à la demande (`duresDe`).
+ * @property {({modifiables: import('../modele/affectation.js').Affectation[], slotsLibres: {tourneeId: string, date: string, segmentIndex: number}[]}|null)} voisinage - Calculé à la demande (`voisinageDe`).
+ */
 
 /**
  * Évalue un état candidat (tableau d'`Affectation`) au regard du catalogue
@@ -80,28 +86,50 @@ function magnitudeDure(violation) {
  * @param {import('../modele/affectation.js').Affectation[]} affectationsCandidates
  * @param {import('../modele/types.js').Contrainte[]} contraintes
  * @param {import('../modele/types.js').ContexteEvaluation} ctxBase
- * @returns {{nbErreursDures: number, score: number, dures: Map<string, number>}}
+ * @returns {EtatEvalue}
  */
 function evaluerEtat(affectationsCandidates, contraintes, ctxBase) {
-  const ctx = { ...ctxBase, index: indexer(affectationsCandidates) };
-  let nbErreursDures = 0;
+  const index = indexer(affectationsCandidates);
+  const ctx = { ...ctxBase, index };
   let score = 0;
-  const dures = new Map();
+  const violationsDures = [];
 
   for (const contrainte of contraintes) {
     for (const violation of contrainte.evaluer(ctx)) {
-      if (violation.severite === 'erreur') {
-        nbErreursDures += 1;
-        const signature = signatureDure(violation);
-        dures.set(signature, (dures.get(signature) ?? 0) + magnitudeDure(violation));
-      } else {
-        score += violation.penalite ?? 0;
-      }
+      if (violation.severite === 'erreur') violationsDures.push(violation);
+      else score += violation.penalite ?? 0;
     }
     if (typeof contrainte.coutGlobal === 'function') score += contrainte.coutGlobal(ctx) ?? 0;
   }
 
-  return { nbErreursDures, score, dures };
+  return {
+    affectations: affectationsCandidates,
+    index,
+    nbErreursDures: violationsDures.length,
+    score,
+    violationsDures,
+    dures: null,
+    voisinage: null,
+  };
+}
+
+/**
+ * Ampleur cumulée des violations dures d'un état, par signature (calculée au
+ * premier appel, donc seulement pour les candidats qui améliorent).
+ *
+ * @param {EtatEvalue} etat
+ * @returns {Map<string, number>}
+ */
+function duresDe(etat) {
+  if (!etat.dures) {
+    const dures = new Map();
+    for (const violation of etat.violationsDures) {
+      const signature = signatureDure(violation);
+      dures.set(signature, (dures.get(signature) ?? 0) + magnitudeDure(violation));
+    }
+    etat.dures = dures;
+  }
+  return etat.dures;
 }
 
 /**
@@ -111,13 +139,14 @@ function evaluerEtat(affectationsCandidates, contraintes, ctxBase) {
  * contraintes n'émettent qu'une violation par personne/semaine : le simple
  * comptage laisserait passer 7 → 8 jours consécutifs.
  *
- * @param {{dures: Map<string, number>}} etatCandidat
- * @param {{dures: Map<string, number>}} etatCourant
+ * @param {EtatEvalue} etatCandidat
+ * @param {EtatEvalue} etatCourant
  * @returns {boolean}
  */
 function aggraveLesDures(etatCandidat, etatCourant) {
-  for (const [signature, ampleur] of etatCandidat.dures) {
-    if (ampleur > (etatCourant.dures.get(signature) ?? 0)) return true;
+  const duresCourantes = duresDe(etatCourant);
+  for (const [signature, ampleur] of duresDe(etatCandidat)) {
+    if (ampleur > (duresCourantes.get(signature) ?? 0)) return true;
   }
   return false;
 }
@@ -227,20 +256,38 @@ function appliquerDeplacer(affectations, modifiables, slotsLibres, rng) {
 }
 
 /**
+ * Voisinage d'un état (affectations modifiables et slots libres), calculé au
+ * plus une fois par état.
+ *
+ * @param {EtatEvalue} etat
+ * @param {import('../modele/types.js').Demande[]} demandes
+ * @returns {{modifiables: import('../modele/affectation.js').Affectation[], slotsLibres: {tourneeId: string, date: string, segmentIndex: number}[]}}
+ */
+function voisinageDe(etat, demandes) {
+  if (!etat.voisinage) {
+    etat.voisinage = {
+      modifiables: etat.affectations.filter((affectation) => !affectation.verrouillee),
+      slotsLibres: listerSlotsNonCouverts(demandes, etat.index),
+    };
+  }
+  return etat.voisinage;
+}
+
+/**
  * Tire un mouvement voisin réalisable (REASSIGNER/ECHANGER/DEPLACER), en ne
  * considérant que les types effectivement possibles dans l'état courant.
  * Renvoie `null` si **aucun** mouvement n'est possible (rien à modifier, ni
  * à couvrir) — l'appelant arrête alors la boucle, jamais une exception.
  *
- * @param {import('../modele/affectation.js').Affectation[]} affectations
- * @param {import('../modele/types.js').ContexteEvaluation} ctx - `ctx.demandes`/`ctx.entree.personnes` utilisés.
+ * @param {EtatEvalue} etat - État courant (évalué).
+ * @param {import('../modele/types.js').Demande[]} demandes
+ * @param {import('@/domain/personnes.js').Personne[]} personnesActives
  * @param {function(): number} rng
  * @returns {(import('../modele/affectation.js').Affectation[]|null)}
  */
-function tirerMouvement(affectations, ctx, rng) {
-  const modifiables = affectations.filter((affectation) => !affectation.verrouillee);
-  const personnesActives = (ctx.entree.personnes ?? []).filter((personne) => personne.actif !== false);
-  const slotsLibres = listerSlotsNonCouverts(ctx.demandes ?? [], indexer(affectations));
+function tirerMouvement(etat, demandes, personnesActives, rng) {
+  const { modifiables, slotsLibres } = voisinageDe(etat, demandes);
+  const affectations = etat.affectations;
 
   const typesDisponibles = [];
   if (modifiables.length > 0 && personnesActives.length > 1) typesDisponibles.push('REASSIGNER');
@@ -271,25 +318,24 @@ function tirerMouvement(affectations, ctx, rng) {
  */
 export function ameliorerLocalement(affectations, contraintes, ctx, rng, budgetMs = 200) {
   const debut = maintenant();
+  const demandes = ctx.demandes ?? [];
+  const personnesActives = (ctx.entree.personnes ?? []).filter((personne) => personne.actif !== false);
 
   let meilleur = affectations;
   let etatMeilleur = evaluerEtat(meilleur, contraintes, ctx);
-  let courant = meilleur;
-  let etatCourant = etatMeilleur;
+  let etatCourant = etatMeilleur; // invariant : toujours l'évaluation exacte du tableau courant
   let iterationsSansAmelioration = 0;
   let redemarragesSansAmelioration = 0;
-  let etatMeilleurAuDernierRedemarrage = etatMeilleur;
+  let meilleurAuDernierRedemarrage = { nbErreursDures: etatMeilleur.nbErreursDures, score: etatMeilleur.score };
 
   while (maintenant() - debut < budgetMs) {
-    const candidat = tirerMouvement(courant, ctx, rng);
+    const candidat = tirerMouvement(etatCourant, demandes, personnesActives, rng);
     if (!candidat) break; // aucun mouvement possible : inutile de continuer à boucler
 
     const etatCandidat = evaluerEtat(candidat, contraintes, ctx);
-    const neCasseAucuneDure = !aggraveLesDures(etatCandidat, etatCourant);
     const ameliore = etatCandidat.nbErreursDures < etatCourant.nbErreursDures || etatCandidat.score < etatCourant.score;
 
-    if (neCasseAucuneDure && ameliore) {
-      courant = candidat;
+    if (ameliore && !aggraveLesDures(etatCandidat, etatCourant)) {
       etatCourant = etatCandidat;
       iterationsSansAmelioration = 0;
 
@@ -305,17 +351,16 @@ export function ameliorerLocalement(affectations, contraintes, ctx, rng, budgetM
       iterationsSansAmelioration += 1;
       if (iterationsSansAmelioration >= ITERATIONS_AVANT_REDEMARRAGE) {
         const aProgresseDepuisLeDernierRedemarrage =
-          etatMeilleur.nbErreursDures < etatMeilleurAuDernierRedemarrage.nbErreursDures ||
-          (etatMeilleur.nbErreursDures === etatMeilleurAuDernierRedemarrage.nbErreursDures &&
-            etatMeilleur.score < etatMeilleurAuDernierRedemarrage.score);
+          etatMeilleur.nbErreursDures < meilleurAuDernierRedemarrage.nbErreursDures ||
+          (etatMeilleur.nbErreursDures === meilleurAuDernierRedemarrage.nbErreursDures &&
+            etatMeilleur.score < meilleurAuDernierRedemarrage.score);
 
         redemarragesSansAmelioration = aProgresseDepuisLeDernierRedemarrage ? 0 : redemarragesSansAmelioration + 1;
-        etatMeilleurAuDernierRedemarrage = etatMeilleur;
+        meilleurAuDernierRedemarrage = { nbErreursDures: etatMeilleur.nbErreursDures, score: etatMeilleur.score };
 
         if (redemarragesSansAmelioration >= REDEMARRAGES_AVANT_CONVERGENCE) break; // convergé : arrêt anticipé, budget non consommé inutilement
 
-        courant = meilleur; // redémarrage seedé : repart du meilleur résultat connu
-        etatCourant = etatMeilleur;
+        etatCourant = etatMeilleur; // redémarrage seedé : repart du meilleur résultat connu
         iterationsSansAmelioration = 0;
       }
     }

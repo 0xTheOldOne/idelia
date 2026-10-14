@@ -104,6 +104,7 @@ export function creerContrainteCouverture() {
           manque: nonCouverture.manque,
         }),
         penalite: 0,
+        ampleur: nonCouverture.manque,
         params: { ...nonCouverture },
       }));
     },

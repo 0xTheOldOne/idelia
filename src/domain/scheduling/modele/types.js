@@ -55,6 +55,7 @@
  * @property {string}   code - Stable, ex. `'ABSENCE_VALIDEE'` (voir `modele/messages.js`).
  * @property {string}   message - FR, prêt à afficher tel quel.
  * @property {number}   penalite - Souples : `poids * amplitude` ; dures : `0`.
+ * @property {number}   [ampleur] - Dures : taille du dépassement (déficit, jours en trop…), contrepartie de `penalite` pour la recherche locale ; `1` si omise.
  * @property {Object}   [params] - Données brutes (debug / reconstruction du message).
  */
 

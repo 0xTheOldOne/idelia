@@ -23,62 +23,44 @@ function nomPersonneDe(entree, personneId) {
 }
 
 /**
- * Longueur de la plus longue séquence de jours calendaires consécutifs
- * d'une liste de dates triées et dédupliquées.
- *
- * @param {string[]} joursTries - Dates `"YYYY-MM-DD"`, triées, dédupliquées.
- * @returns {number} Longueur de la plus longue séquence consécutive (0 si vide).
- */
-function calculerRunMaxConsecutif(joursTries) {
-  let max = 0;
-  let courant = 0;
-  let precedent = null;
-
-  for (const jour of joursTries) {
-    courant = precedent !== null && dateUtil.diffDays(precedent, jour) === 1 ? courant + 1 : 1;
-    max = Math.max(max, courant);
-    precedent = jour;
-  }
-
-  return max;
-}
-
-/**
- * Nombre total de jours au-delà du maximum, toutes séquences confondues
- * (une 2e séquence trop longue compte, même plus courte que la 1re).
+ * Analyse en une passe les séquences de jours calendaires consécutifs d'une
+ * liste de dates triées et dédupliquées : longueur de la plus longue, et
+ * nombre total de jours au-delà de `maxConsecutifs` toutes séquences
+ * confondues (une 2e séquence trop longue compte, même plus courte que la 1re).
  *
  * @param {string[]} joursTries - Dates `"YYYY-MM-DD"`, triées, dédupliquées.
  * @param {number} maxConsecutifs
- * @returns {number}
+ * @returns {{runMax: number, exces: number}} `runMax` = 0 si la liste est vide.
  */
-function calculerExcesTotal(joursTries, maxConsecutifs) {
+function analyserSequences(joursTries, maxConsecutifs) {
+  let runMax = 0;
   let exces = 0;
   let courant = 0;
   let precedent = null;
 
   for (const jour of joursTries) {
     courant = precedent !== null && dateUtil.diffDays(precedent, jour) === 1 ? courant + 1 : 1;
+    if (courant > runMax) runMax = courant;
     if (courant > maxConsecutifs) exces += 1;
     precedent = jour;
   }
 
-  return exces;
+  return { runMax, exces };
 }
 
 /**
  * Longueur de la séquence de jours consécutifs qui contient `jour`
- * (0 si `jour` n'est pas dans la liste).
+ * (0 si `jour` n'est pas travaillé).
  *
- * @param {string[]} joursTries - Dates triées, dédupliquées.
+ * @param {function(string): boolean} estTravaille - Indique si une date est travaillée.
  * @param {string} jour
  * @returns {number}
  */
-function calculerRunAutour(joursTries, jour) {
-  const jours = new Set(joursTries);
-  if (!jours.has(jour)) return 0;
+function calculerRunAutour(estTravaille, jour) {
+  if (!estTravaille(jour)) return 0;
   let longueur = 1;
-  for (let d = dateUtil.addDays(jour, -1); jours.has(d); d = dateUtil.addDays(d, -1)) longueur += 1;
-  for (let d = dateUtil.addDays(jour, 1); jours.has(d); d = dateUtil.addDays(d, 1)) longueur += 1;
+  for (let d = dateUtil.addDays(jour, -1); estTravaille(d); d = dateUtil.addDays(d, -1)) longueur += 1;
+  for (let d = dateUtil.addDays(jour, 1); estTravaille(d); d = dateUtil.addDays(d, 1)) longueur += 1;
   return longueur;
 }
 
@@ -128,9 +110,9 @@ export function creerContrainteReposLegal() {
       const maxConsecutifs = reglesCabinet.maxJoursConsecutifs;
       const reposHebdoMin = reglesCabinet.reposHebdoMin;
       const joursExistants = ctx.index.joursTravaillesParPersonne.get(personneId) ?? new Set();
-      const joursTries = [...new Set([...joursExistants, demande.date])].sort();
+      const estTravaille = (d) => d === demande.date || joursExistants.has(d);
 
-      if (Number.isFinite(maxConsecutifs) && calculerRunAutour(joursTries, demande.date) > maxConsecutifs) {
+      if (Number.isFinite(maxConsecutifs) && calculerRunAutour(estTravaille, demande.date) > maxConsecutifs) {
         // Seule la séquence contenant la nouvelle date compte : un excès préexistant ailleurs ne bloque pas.
         return false;
       }
@@ -140,7 +122,10 @@ export function creerContrainteReposLegal() {
       const semaineEntierementIncluse = semaineDebut >= periode.debut && semaineFin <= periode.fin;
 
       if (semaineEntierementIncluse && Number.isFinite(reposHebdoMin)) {
-        const joursTravaillesSemaine = compterJoursDansPlage(joursTries, semaineDebut, semaineFin);
+        let joursTravaillesSemaine = 0;
+        for (let d = semaineDebut; d <= semaineFin; d = dateUtil.addDays(d, 1)) {
+          if (estTravaille(d)) joursTravaillesSemaine += 1;
+        }
         if (7 - joursTravaillesSemaine < reposHebdoMin) return false;
       }
 
@@ -158,7 +143,7 @@ export function creerContrainteReposLegal() {
         const joursTries = [...joursSet].sort();
 
         if (Number.isFinite(maxConsecutifs)) {
-          const runMax = calculerRunMaxConsecutif(joursTries);
+          const { runMax, exces } = analyserSequences(joursTries, maxConsecutifs);
           if (runMax > maxConsecutifs) {
             violations.push({
               contrainteId: 'repos-legal',
@@ -171,11 +156,11 @@ export function creerContrainteReposLegal() {
                 maxAutorise: maxConsecutifs,
               }),
               penalite: 0,
+              ampleur: exces,
               params: {
                 personneId,
                 joursConsecutifs: runMax,
                 maxAutorise: maxConsecutifs,
-                excesTotal: calculerExcesTotal(joursTries, maxConsecutifs),
               },
             });
           }
@@ -199,6 +184,7 @@ export function creerContrainteReposLegal() {
                   semaineDebut: semaine.debut,
                 }),
                 penalite: 0,
+                ampleur: reposHebdoMin - joursRepos,
                 params: { personneId, semaineDebut: semaine.debut, joursRepos, minRequis: reposHebdoMin },
               });
             }
