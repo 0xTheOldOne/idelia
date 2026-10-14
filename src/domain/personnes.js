@@ -216,5 +216,6 @@ export function libelleRemplacement(personne, personnes) {
  */
 export function libelleRythme(personne) {
   const rythme = normaliserRythmeMensuel(personne?.joursTravaillesParMois);
-  return rythme === null ? '' : `${rythme} jours par mois`;
+  if (rythme === null) return '';
+  return `${rythme} jour${rythme > 1 ? 's' : ''} par mois`;
 }

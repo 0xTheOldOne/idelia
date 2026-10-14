@@ -196,6 +196,8 @@
         </template>
       </GrillePlanning>
 
+      <RecapMensuel :mois="recapMensuel" />
+
       <PanneauConflits
         :violations="diagnostics.violations"
         :tournees-non-couvertes="diagnostics.tourneesNonCouvertes"
@@ -249,9 +251,11 @@ import ControlesGrille from '@/components/planning/ControlesGrille.vue';
 import GrillePlanning from '@/components/planning/GrillePlanning.vue';
 import ReglagesAffichageGrille from '@/components/planning/ReglagesAffichageGrille.vue';
 import PanneauConflits from '@/components/planning/PanneauConflits.vue';
+import RecapMensuel from '@/components/planning/RecapMensuel.vue';
 import SelecteurPersonne from '@/components/planning/SelecteurPersonne.vue';
 import { libelleSegment, estCoupee } from '@/domain/tournees.js';
 import { infoGeneration } from '@/domain/planning.js';
+import { construireRecapMensuel } from '@/domain/recapMensuel.js';
 
 /**
  * Écran « Planning » (feature 0010) : orchestre le choix d'une période, le
@@ -302,6 +306,9 @@ import { infoGeneration } from '@/domain/planning.js';
  * `Resultat` retourné (pas de second passage moteur), avec le même pattern de
  * chargement que `onGenerer` (bascule + `$nextTick`, `chargement` toujours
  * remis à `false` en `finally`).
+ *
+ * Récapitulatif mensuel (0024) : `RecapMensuel` affiche, sous la grille, le
+ * compte par mois et par personne (`construireRecapMensuel`, computed réactif).
  */
 export default {
   name: 'PlanningView',
@@ -323,6 +330,7 @@ export default {
     GrillePlanning,
     ReglagesAffichageGrille,
     PanneauConflits,
+    RecapMensuel,
     SelecteurPersonne,
   },
   data() {
@@ -372,6 +380,7 @@ export default {
   computed: {
     ...mapGetters('personnes', { personnesActives: 'actifs' }),
     ...mapGetters('tournees', { tourneesActives: 'actives', tourneeParId: 'byId' }),
+    ...mapGetters('cabinet', { parametresCabinet: 'parametres' }),
     ...mapGetters('plannings', { planningCourant: 'courant', peutAnnuler: 'peutAnnuler' }),
     // Nombre total de personnes/tournées (actives + archivées), pour
     // distinguer « aucune donnée du tout » d'« entièrement archivée » dans
@@ -379,6 +388,23 @@ export default {
     ...mapState('personnes', { totalPersonnes: (state) => state.items.length }),
     ...mapState('tournees', { totalTournees: (state) => state.items.length }),
     ...mapState('plannings', { planningsExistants: (state) => state.items }),
+    // Listes complètes (archivés compris) pour le récapitulatif mensuel (0024).
+    ...mapState('personnes', { toutesLesPersonnes: (state) => state.items }),
+    ...mapState('tournees', { toutesLesTournees: (state) => state.items }),
+    ...mapState('absences', { toutesLesAbsences: (state) => state.items }),
+    /**
+     * Récapitulatif par mois du planning courant (0024) : dérivé, jamais
+     * stocké, réactif à chaque modification (ajout, retrait, déplacement, undo).
+     * @returns {object[]} `MoisRecap[]`
+     */
+    recapMensuel() {
+      return construireRecapMensuel(this.planningCourant, {
+        personnes: this.toutesLesPersonnes,
+        tournees: this.toutesLesTournees,
+        absences: this.toutesLesAbsences,
+        joursOuverture: this.parametresCabinet?.joursOuverture ?? [],
+      });
+    },
     /** Le formulaire de génération n'est utile que si les deux ingrédients indispensables existent. */
     peutGenerer() {
       return this.personnesActives.length > 0 && this.tourneesActives.length > 0;

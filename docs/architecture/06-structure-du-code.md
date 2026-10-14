@@ -31,6 +31,7 @@ Idelia/
     │   ├── remplacement.js     # identification des remplaçantes (estRemplacante) [0021]
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
     │   ├── rythmeMensuel.js    # jours attendus d'une personne sur une période selon son rythme mensuel [0020, réutilisé par 0024]
+    │   ├── recapMensuel.js     # récap par mois et par personne : grandes/petites tournées, jours travaillés, dépassement du rythme [0024]
     │   ├── trameWeekend.js     # weekends travaillés / de repos d'une trame « un weekend sur X » [0022]
     │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]
     │   ├── feuilleDeRoute/     # lecture des séances Vega, détection des relais, répartition et reversements [0033, 0034]
@@ -64,7 +65,7 @@ Idelia/
     │   ├── equipe/
     │   ├── tournees/
     │   ├── absences/
-    │   ├── planning/           # grille, cellule, panneau de conflits, drag & drop
+    │   ├── planning/           # grille, cellule, panneau de conflits, récap mensuel [0024], drag & drop
     │   ├── diffusion/          # feuille A4, tableau de mois, légende, pastille de personne [0012]
     │   └── feuilleDeRoute/     # zone de dépôt, résumé, cartes de relais [0033]
     │
