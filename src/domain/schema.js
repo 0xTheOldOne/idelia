@@ -229,7 +229,8 @@ export function fromSaveDocument(doc) {
  *   `personnes`/`tournees`/`absences`/`plannings` sont des tableaux ;
  * - intégrité référentielle (si la structure ci-dessus est saine) :
  *   `absence.personneId`, `affectation.personneId`, `affectation.tourneeId`,
- *   `planning.referentId` (s'il est non nul) et `preference.params.tourneeIds`
+ *   `planning.referentId` (s'il est non nul), `personne.titulaireId` (s'il est
+ *   non nul, vers une personne active ou archivée) et `preference.params.tourneeIds`
  *   (souhaits `PREFERENCE_TOURNEE`) doivent résoudre vers une entité existante.
  *
  * @param {*} doc - Document à vérifier (forme quelconque, non garantie).
@@ -289,6 +290,17 @@ export function verifierIntegrite(doc) {
             );
           }
         }
+      }
+    }
+  }
+
+  // Titulaire remplacée en priorité (`Personne.titulaireId`, 0020) : doit exister.
+  if (personnesOk && idsPersonnes) {
+    for (const personne of doc.personnes) {
+      if (personne.titulaireId != null && !idsPersonnes.has(personne.titulaireId)) {
+        erreurs.push(
+          `Personne « ${personne.id} » : la personne remplacée en priorité « ${personne.titulaireId} » est introuvable.`
+        );
       }
     }
   }

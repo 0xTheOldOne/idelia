@@ -84,7 +84,7 @@ export function creerContraintes(entree) {
     creerContrainteCouverture(),
     creerContrainteReposLegal(),
     creerContrainteJourOuverture(),
-    creerContrainteEquite(poids.equite),
+    creerContrainteEquite(poids.equite, entree),
     // Continuité d'un jour à l'autre désactivée (retour porteur, 2026-10-07) :
     // qu'une personne travaille un jour et une autre le lendemain ne pose pas
     // problème au cabinet, inutile de le pénaliser ni de le signaler.

@@ -53,6 +53,8 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | ordreAffichage | integer | non | |
 | notes | string | non | |
 | initialesVega | string `^[A-Z0-9]{2,4}$` \| null | non | code « PS » de la personne dans Vega ; `null` si non renseigné ; **unique** parmi toutes les personnes (actives et archivées) ; stocké en majuscules, sans espaces [0034] |
+| joursTravaillesParMois | integer 1..31 | null | non | rythme habituel en **jours travaillés par mois complet** ; `null` = pas de rythme (l'équité utilise alors `quotite`) [0020] |
+| titulaireId | uuid → Personne | null | non | titulaire remplacée **en priorité** ; renseigné **seulement si `statut = REMPLACANT`** (sinon `null`) ; une seule titulaire par remplaçante, une titulaire peut avoir plusieurs remplaçantes ; jamais soi-même ; conservé si la titulaire est archivée [0020] |
 | preferences | Preference[] | oui (`[]` possible) | imbriqué |
 | createdAt / updatedAt | ISO UTC | oui | |
 
@@ -181,12 +183,13 @@ Modèle **segments** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segme
 Personne 1─* Preference (imbriquée)      Cabinet  (singleton)
 Personne 1─* Absence                     Planning 1─* Affectation (imbriquée)
 Personne 1─* Affectation (par id)        Tournee  1─* Affectation (par id)
+Personne 0..1─* Personne (titulaireId, remplaçante → titulaire)
 ```
 
 ## Intégrité & cycle de vie (points de vigilance)
 
 1. **Ne jamais supprimer physiquement** une Personne ou une Tournee référencée : **soft-delete** (`actif=false` / `archivee=true`). Les plannings historiques gardent la référence.
 2. À la **publication** d'un planning, figer un **snapshot d'affichage** (nom, couleur) dans chaque affectation → les exports/PDF restent stables même si la personne est désactivée plus tard. *(Différé : la publication est hors périmètre de la feature 0012. La vue de diffusion résout noms et couleurs en direct ; le figeage viendra avec la publication, cf. `features/0012` §12 n°1.)*
-3. **À l'import**, valider l'intégrité référentielle (`personneId`/`tourneeId`/`referentId` résolvent bien) avant de remplacer l'état ([03](03-modele-de-donnees.md)).
+3. **À l'import**, valider l'intégrité référentielle (`personneId`/`tourneeId`/`referentId`/`titulaireId` résolvent bien) avant de remplacer l'état ([03](03-modele-de-donnees.md)).
 4. **Demi-journées** : le champ `creneau` sur Absence (bucket `MATIN`/`APRES_MIDI`/`JOURNEE`) gère les arrêts partiels ; il est **réconcilié avec les horaires réels** des segments par le moteur (recouvrement horaire autour d'un pivot midi, [05](05-moteur-de-planification.md)) — les absences restent volontairement à la granularité demi-journée.
 5. **Chevauchements** (calculés) : affectation vs absence `VALIDE` recouvrant les **horaires du segment** (bloquant) ; double affectation d'une même personne le même jour sur des **horaires qui se chevauchent** (interdit) ; sous-effectif **par segment** (avertissement, non bloquant). Les deux segments **disjoints** d'une tournée coupée ne se chevauchent pas → une même personne peut assurer matin + soir (compté comme **un seul** jour travaillé).

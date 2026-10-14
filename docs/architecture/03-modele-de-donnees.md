@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 5,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega)
+  "schemaVersion": 6,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -25,7 +25,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -39,7 +39,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
     {
       "id": "89efbb0f-5e16-4188-b64b-029c88a7e1b2", "prenom": "Claire", "nom": "Martin",
       "statut": "TITULAIRE", "actif": true, "couleur": "#2E86AB",
-      "quotite": 100, "dateEntree": "2019-09-01", "dateSortie": null,
+      "quotite": 100, "joursTravaillesParMois": 15, "titulaireId": null, "dateEntree": "2019-09-01", "dateSortie": null,
       "contact": { "email": null, "telephone": "0600000000" },
       "ordreAffichage": 1, "notes": "", "initialesVega": "CM",
       "preferences": [
@@ -112,7 +112,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` (= **5**) et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **6**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
@@ -120,7 +120,8 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[2]` (v2 → v3)** — [feature 0026](../../features/0026-date-de-generation-visible.md) : chaque `Planning` reçoit `genereLe: planning.genereLe ?? null` (idempotent). Pas de rétro-remplissage depuis `createdAt` (date potentiellement fausse) : `null` = inconnu, rien n'est affiché. Les autres entités sont inchangées.
 - **`MIGRATIONS[3]` (v3 → v4)** — identifiants en GUID : tout `id` d'entité (personne, souhait, tournée, absence, planning, affectation) qui n'est pas un GUID est remplacé par un GUID (`genId()`), et **toutes ses références** sont réécrites avec la même correspondance (`absence.personneId`, `preference.params.tourneeIds`, `planning.referentId`, `affectation.personneId` / `tourneeId`). Les GUID existants sont conservés (idempotent). Corrige les données issues de saisies à la main / d'anciens jeux de test (`p-claire`, `t-t1`…).
 - **`MIGRATIONS[4]` (v4 → v5)** — [feature 0034](../../features/0034-initiales-vega-et-reversements.md) : chaque `Personne` reçoit `initialesVega: personne.initialesVega ?? null` (idempotent). `null` = non renseigné. Les autres entités sont inchangées.
+- **`MIGRATIONS[5]` (v5 → v6)** — [feature 0020](../../features/0020-equipe-rythme-mensuel-remplacante.md) : chaque `Personne` reçoit `joursTravaillesParMois: personne.joursTravaillesParMois ?? null` et `titulaireId: personne.titulaireId ?? null` (idempotent). `null` = pas de rythme / pas de titulaire rattachée. Les autres entités sont inchangées.
 
 ## Intégrité référentielle
 
-`verifierIntegrite(doc)` (dans `src/domain/schema.js`) vérifie que chaque `personneId` / `tourneeId` / `referentId` résout vers une entité existante. Utilisée avant tout `REPLACE_ALL` (import et chargement).
+`verifierIntegrite(doc)` (dans `src/domain/schema.js`) vérifie que chaque `personneId` / `tourneeId` / `referentId` / `titulaireId` (personne active ou archivée) résout vers une entité existante. Utilisée avant tout `REPLACE_ALL` (import et chargement).

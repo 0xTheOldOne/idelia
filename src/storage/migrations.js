@@ -10,7 +10,7 @@
 import { genId } from '@/domain/utils/id.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -203,6 +203,30 @@ MIGRATIONS[3] = (doc) => {
 MIGRATIONS[4] = (doc) => {
   const personnes = Array.isArray(doc.personnes)
     ? doc.personnes.map((personne) => ({ ...personne, initialesVega: personne.initialesVega ?? null }))
+    : doc.personnes;
+  return { ...doc, personnes };
+};
+
+/**
+ * Migration v5 → v6 (feature 0020) : ajout de `Personne.joursTravaillesParMois`
+ * (rythme, jours travaillés par mois) et de `Personne.titulaireId` (titulaire
+ * remplacée en priorité).
+ *
+ * - Chaque `Personne` de `doc.personnes` reçoit
+ *   `joursTravaillesParMois: personne.joursTravaillesParMois ?? null` et
+ *   `titulaireId: personne.titulaireId ?? null` (idempotent).
+ * - `tournees`, `absences`, `plannings`, `cabinet` : inchangés.
+ *
+ * @param {object} doc - Document de version 5.
+ * @returns {object} Document équivalent en version 6 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[5] = (doc) => {
+  const personnes = Array.isArray(doc.personnes)
+    ? doc.personnes.map((personne) => ({
+        ...personne,
+        joursTravaillesParMois: personne.joursTravaillesParMois ?? null,
+        titulaireId: personne.titulaireId ?? null,
+      }))
     : doc.personnes;
   return { ...doc, personnes };
 };

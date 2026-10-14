@@ -177,6 +177,14 @@ const GABARITS = {
     `${nomPersonne} a une charge de travail de ${arrondi1(charge)} affectation(s) sur la période, ` +
     `contre une moyenne d'équipe de ${arrondi1(moyenne)} : la répartition est déséquilibrée.`,
 
+  EQUITE_RYTHME_DEPASSE: ({ nomPersonne = 'Cette personne', jours = 0, rythme = 0, attendu = 0 } = {}) =>
+    `${nomPersonne} travaille ${jours} jour(s) sur cette période, plus que son rythme habituel : ` +
+    `${rythme} jours par mois, soit environ ${attendu} jour(s) attendu(s) ici.`,
+
+  EQUITE_RYTHME_NON_ATTEINT: ({ nomPersonne = 'Cette personne', jours = 0, rythme = 0, attendu = 0 } = {}) =>
+    `${nomPersonne} ne travaille que ${jours} jour(s) sur cette période, moins que son rythme habituel : ` +
+    `${rythme} jours par mois, soit environ ${attendu} jour(s) attendu(s) ici.`,
+
   CONTINUITE_ROMPUE: ({
     nomTournee = 'Cette tournée',
     dateB,

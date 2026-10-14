@@ -29,6 +29,7 @@ Idelia/
     │   ├── schema.js           # enums, valeurs par défaut, toSaveDocument/fromSaveDocument, verifierIntegrite
     │   ├── scheduling/         # moteur de planification (voir 05)
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
+    │   ├── rythmeMensuel.js    # jours attendus d'une personne sur une période selon son rythme mensuel [0020, réutilisé par 0024]
     │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]
     │   ├── feuilleDeRoute/     # lecture des séances Vega, détection des relais, répartition et reversements [0033, 0034]
     │   │   ├── extraireSeances.js

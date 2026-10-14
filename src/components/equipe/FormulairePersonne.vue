@@ -55,6 +55,28 @@
         </select>
       </div>
 
+      <!-- Titulaire remplacée en priorité (remplaçant uniquement) -->
+      <div v-if="estRemplacant" class="mb-4">
+        <label for="personne-titulaire" class="form-label">Remplace en priorité (facultatif)</label>
+        <select
+          id="personne-titulaire"
+          v-model="formulaire.titulaireId"
+          class="form-select formulaire-select"
+          aria-describedby="personne-titulaire-aide"
+        >
+          <option value="">— Non précisé —</option>
+          <option v-for="option in optionsTitulaireListe" :key="option.id" :value="option.id">
+            {{ option.libelle }}
+          </option>
+        </select>
+        <div id="personne-titulaire-aide" class="form-text">
+          Le ou la titulaire que cette personne remplace d'habitude pendant ses absences.
+          <template v-if="aucuneTitulaireActive">
+            Ajoutez d'abord une personne titulaire pour pouvoir la choisir ici.
+          </template>
+        </div>
+      </div>
+
       <!-- Initiales Vega -->
       <div class="mb-4">
         <label for="personne-initiales-vega" class="form-label">Initiales Vega (facultatif)</label>
@@ -149,32 +171,74 @@
       </div>
 
       <!-- Temps de travail -->
-      <div class="mb-4">
-        <label for="personne-quotite" class="form-label">Temps de travail</label>
-        <div class="input-group formulaire-quotite">
-          <input
-            id="personne-quotite"
-            v-model.number="formulaire.quotite"
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            class="form-control"
-            :class="{ 'is-invalid': v$.formulaire.quotite.$error }"
-            :aria-describedby="
-              describedBy('personne-quotite-aide', v$.formulaire.quotite.$error ? 'personne-quotite-erreur' : null)
-            "
-            @blur="v$.formulaire.quotite.$touch()"
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6">
+          <label for="personne-quotite" class="form-label">Temps de travail</label>
+          <div class="input-group formulaire-quotite">
+            <input
+              id="personne-quotite"
+              v-model.number="formulaire.quotite"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              class="form-control"
+              :class="{ 'is-invalid': v$.formulaire.quotite.$error }"
+              :aria-describedby="
+                describedBy('personne-quotite-aide', v$.formulaire.quotite.$error ? 'personne-quotite-erreur' : null)
+              "
+              @blur="v$.formulaire.quotite.$touch()"
+            >
+            <span class="input-group-text">%</span>
+          </div>
+          <div id="personne-quotite-aide" class="form-text">
+            Proportion du temps plein travaillé par cette personne.
+          </div>
+          <p v-if="v$.formulaire.quotite.$error" id="personne-quotite-erreur" class="formulaire-erreur">
+            <PhWarning :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ v$.formulaire.quotite.$errors[0].$message }}</span>
+          </p>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="personne-rythme" class="form-label">Rythme de travail (facultatif)</label>
+          <div class="input-group formulaire-rythme">
+            <input
+              id="personne-rythme"
+              v-model.number="formulaire.joursTravaillesParMois"
+              type="number"
+              min="1"
+              max="31"
+              step="1"
+              inputmode="numeric"
+              placeholder="15"
+              class="form-control"
+              :class="{ 'is-invalid': v$.formulaire.joursTravaillesParMois.$error }"
+              :aria-describedby="
+                describedBy(
+                  'personne-rythme-aide',
+                  v$.formulaire.joursTravaillesParMois.$error ? 'personne-rythme-erreur' : null
+                )
+              "
+              @blur="v$.formulaire.joursTravaillesParMois.$touch()"
+            >
+            <span class="input-group-text">jours par mois</span>
+          </div>
+          <div id="personne-rythme-aide" class="form-text">
+            Nombre de jours travaillés dans un mois complet, par exemple 15. Le planning cherche à
+            s'en approcher, en tenant compte des jours d'ouverture et des absences. Si ce champ est
+            rempli, c'est lui qui compte pour répartir le travail (et non le pourcentage). Laissez
+            vide si ce n'est pas fixé.
+          </div>
+          <p
+            v-if="v$.formulaire.joursTravaillesParMois.$error"
+            id="personne-rythme-erreur"
+            class="formulaire-erreur"
           >
-          <span class="input-group-text">%</span>
+            <PhWarning :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ v$.formulaire.joursTravaillesParMois.$errors[0].$message }}</span>
+          </p>
         </div>
-        <div id="personne-quotite-aide" class="form-text">
-          Proportion du temps plein travaillé par cette personne.
-        </div>
-        <p v-if="v$.formulaire.quotite.$error" id="personne-quotite-erreur" class="formulaire-erreur">
-          <PhWarning :size="14" weight="bold" aria-hidden="true" />
-          <span>{{ v$.formulaire.quotite.$errors[0].$message }}</span>
-        </p>
       </div>
 
       <!-- Présence -->
@@ -277,7 +341,13 @@ import { PhCheck, PhWarning } from '@phosphor-icons/vue';
 import ModaleBase from '@/components/communs/ModaleBase.vue';
 import { STATUTS_PERSONNE_OPTIONS } from '@/domain/libelles.js';
 import { genId } from '@/domain/utils/id.js';
-import { reperePersonne, couleurTexteRepere } from '@/domain/personnes.js';
+import {
+  reperePersonne,
+  couleurTexteRepere,
+  optionsTitulaire,
+  normaliserTitulaireId,
+} from '@/domain/personnes.js';
+import { estRythmeMensuelValide, normaliserRythmeMensuel } from '@/domain/rythmeMensuel.js';
 import {
   normaliserInitialesVega,
   estInitialesVegaValide,
@@ -332,6 +402,20 @@ export default {
     },
     couleurTexteApercu() {
       return couleurTexteRepere(this.formulaire.couleur);
+    },
+    estRemplacant() {
+      return this.formulaire.statut === 'REMPLACANT';
+    },
+    /** Titulaires proposables (hors la personne éditée) + rattachement actuel conservé. */
+    optionsTitulaireListe() {
+      return optionsTitulaire(this.personnes, {
+        idExclu: this.personne?.id ?? null,
+        titulaireIdActuel: this.formulaire.titulaireId || null,
+      });
+    },
+    /** Aucune titulaire active proposable (hors rattachement conservé). */
+    aucuneTitulaireActive() {
+      return this.optionsTitulaireListe.length === 0;
     },
     titreModale() {
       return this.personne ? 'Modifier la personne' : 'Ajouter une personne';
@@ -395,6 +479,12 @@ export default {
             between(0, 100)
           ),
         },
+        joursTravaillesParMois: {
+          rythme: helpers.withMessage(
+            'Indiquez un nombre entier de jours entre 1 et 31, ou laissez le champ vide.',
+            (valeur) => estRythmeMensuelValide(valeur)
+          ),
+        },
         dateSortie: {
           coherence: helpers.withMessage(
             "La date de départ doit être identique ou postérieure à la date d'arrivée.",
@@ -434,6 +524,8 @@ export default {
           initialesVega: this.personne.initialesVega ?? '',
           couleur: this.personne.couleur,
           quotite: this.personne.quotite,
+          joursTravaillesParMois: this.personne.joursTravaillesParMois ?? '',
+          titulaireId: this.personne.titulaireId ?? '',
           dateEntree: this.personne.dateEntree ?? '',
           dateSortie: this.personne.dateSortie ?? '',
           contact: {
@@ -451,6 +543,8 @@ export default {
         initialesVega: '',
         couleur: this.couleursSuggerees[0] ?? '#0E8A8F',
         quotite: 100,
+        joursTravaillesParMois: '',
+        titulaireId: '',
         dateEntree: '',
         dateSortie: '',
         contact: { email: '', telephone: '' },
@@ -555,6 +649,7 @@ export default {
         { validation: this.v$.formulaire.initialesVega, id: 'personne-initiales-vega' },
         { validation: this.v$.formulaire.couleur, id: 'personne-couleur-libre' },
         { validation: this.v$.formulaire.quotite, id: 'personne-quotite' },
+        { validation: this.v$.formulaire.joursTravaillesParMois, id: 'personne-rythme' },
         { validation: this.v$.formulaire.dateSortie, id: 'personne-date-sortie' },
         { validation: this.v$.formulaire.contact.email, id: 'personne-email' },
         { validation: this.v$.formulaire.notes, id: 'personne-notes' },
@@ -589,6 +684,8 @@ export default {
         initialesVega: normaliserInitialesVega(this.formulaire.initialesVega),
         couleur: this.formulaire.couleur,
         quotite: this.formulaire.quotite,
+        joursTravaillesParMois: normaliserRythmeMensuel(this.formulaire.joursTravaillesParMois),
+        titulaireId: normaliserTitulaireId(this.formulaire.statut, this.formulaire.titulaireId),
         dateEntree: this.formulaire.dateEntree || null,
         dateSortie: this.formulaire.dateSortie || null,
         contact: {
@@ -623,6 +720,10 @@ export default {
 
 .formulaire-quotite {
   max-width: 12rem;
+}
+
+.formulaire-rythme {
+  max-width: 14rem;
 }
 
 .formulaire-pastille {

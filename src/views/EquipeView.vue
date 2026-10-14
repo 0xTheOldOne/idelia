@@ -52,7 +52,9 @@
               <span class="equipe-nom">{{ personne.prenom }} {{ personne.nom }}</span>
               <span class="equipe-details">
                 {{ libelleStatutPersonne(personne.statut) }} · {{ personne.quotite }} %
+                <template v-if="libelleRythme(personne)"> · {{ libelleRythme(personne) }}</template>
                 <template v-if="periodeTexte(personne)"> · {{ periodeTexte(personne) }}</template>
+                <template v-if="libelleRemplacement(personne, toutesLesPersonnes)"> · {{ libelleRemplacement(personne, toutesLesPersonnes) }}</template>
               </span>
             </div>
             <div class="equipe-actions">
@@ -176,7 +178,12 @@ import {
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulairePersonne from '@/components/equipe/FormulairePersonne.vue';
 import { libelleStatutPersonne } from '@/domain/libelles.js';
-import { reperePersonne, couleurTexteRepere } from '@/domain/personnes.js';
+import {
+  reperePersonne,
+  couleurTexteRepere,
+  libelleRythme,
+  libelleRemplacement,
+} from '@/domain/personnes.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -257,6 +264,8 @@ export default {
     },
     ...mapActions('personnes', ['ajouter', 'modifier', 'desactiver', 'reactiver']),
     libelleStatutPersonne,
+    libelleRythme,
+    libelleRemplacement,
 
     /**
      * Ordre d'affichage (présentation uniquement, `ordreAffichage` n'est pas
