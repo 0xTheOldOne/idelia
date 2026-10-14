@@ -55,16 +55,6 @@ const ORDRE_STATUT = { TITULAIRE: 0, REMPLACANT: 1 };
 /** Plafond de mois traités : borne le coût d'un planning aux dates aberrantes. */
 const MAX_MOIS = 36;
 
-const FORMAT_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-/**
- * @param {*} d
- * @returns {boolean} `true` si `d` est une date `"YYYY-MM-DD"` existante au calendrier.
- */
-function estDateValide(d) {
-  return typeof d === 'string' && FORMAT_DATE.test(d) && dateUtil.format(dateUtil.parse(d)) === d;
-}
-
 /** @param {*} x */
 function estObjet(x) {
   return x !== null && typeof x === 'object';
@@ -132,7 +122,7 @@ function construireMois(planning, moisDebut, ctx) {
   const parPersonne = new Map();
   const affectations = Array.isArray(planning.affectations) ? planning.affectations : [];
   for (const a of affectations) {
-    if (!estObjet(a) || !estDateValide(a.date) || a.date < debut || a.date > fin) continue;
+    if (!estObjet(a) || !dateUtil.estDateValide(a.date) || a.date < debut || a.date > fin) continue;
     let p = parPersonne.get(a.personneId);
     if (!p) {
       p = { groupes: new Map(), dates: new Set() };
@@ -275,7 +265,7 @@ function construireMois(planning, moisDebut, ctx) {
  */
 export function construireRecapMensuel(planning, { personnes, tournees, absences, joursOuverture } = {}) {
   if (!estObjet(planning)) return [];
-  if (!estDateValide(planning.dateDebut) || !estDateValide(planning.dateFin)) return [];
+  if (!dateUtil.estDateValide(planning.dateDebut) || !dateUtil.estDateValide(planning.dateFin)) return [];
   if (planning.dateDebut > planning.dateFin) return [];
   const objets = (l) => (Array.isArray(l) ? l.filter(estObjet) : []);
   const ctx = {

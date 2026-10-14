@@ -35,9 +35,8 @@ const FORMAT_DATE = /^\d{4}-\d{2}-\d{2}$/;
  *   mal formée ou ne tombe ni un samedi ni un dimanche.
  */
 export function samediDuWeekend(date) {
-  if (typeof date !== 'string' || !FORMAT_DATE.test(date)) return null;
-  // Refuse une date non calendaire (ex. 2026-02-31) : aller-retour parse/format.
-  if (dateUtil.format(dateUtil.parse(date)) !== date) return null;
+  // Refuse une date mal formée ou non calendaire (ex. 2026-02-31).
+  if (!dateUtil.estDateValide(date)) return null;
   const jour = dateUtil.weekdayISO(date);
   if (jour === 6) return date;
   if (jour === 7) return dateUtil.addDays(date, -1);

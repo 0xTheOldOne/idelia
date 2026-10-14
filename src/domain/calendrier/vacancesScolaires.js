@@ -70,17 +70,6 @@ const ANNEES_MAX = 4;
 const MOIS_MAX = 120; // garde-fou d'itérations de anneesScolairesCouvrant
 const PERIODES_PAR_ENTREE_MAX = 50;
 const ENTREES_MAX = 10;
-const RE_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-/**
- * Date calendaire stricte : format `"YYYY-MM-DD"` ET aller-retour calendaire
- * (rejette `2026-13-45`, `2026-02-30`).
- * @param {*} d
- * @returns {boolean}
- */
-function dateCalendaireValide(d) {
-  return typeof d === 'string' && RE_DATE.test(d) && dateUtil.format(dateUtil.parse(d)) === d;
-}
 const RE_ANNEE_SCOLAIRE = /^\d{4}-\d{4}$/;
 
 /**
@@ -140,7 +129,7 @@ export function anneeScolaireDe(date) {
  * @returns {string[]} Triées, sans doublon, 4 au plus.
  */
 export function anneesScolairesCouvrant(dateDebut, dateFin) {
-  if (!dateCalendaireValide(dateDebut) || !dateCalendaireValide(dateFin) || dateDebut > dateFin) return [];
+  if (!dateUtil.estDateValide(dateDebut) || !dateUtil.estDateValide(dateFin) || dateDebut > dateFin) return [];
   const annees = new Set();
   const ajouter = (date) => {
     annees.add(anneeScolaireDe(date));
@@ -220,7 +209,7 @@ function normaliserPeriode(p) {
   if (typeof p.libelle !== 'string') return null;
   const libelle = p.libelle.trim();
   if (!libelle || libelle.length > LIBELLE_MAX) return null;
-  if (!dateCalendaireValide(p.debut) || !dateCalendaireValide(p.fin)) return null;
+  if (!dateUtil.estDateValide(p.debut) || !dateUtil.estDateValide(p.fin)) return null;
   if (p.debut > p.fin) return null;
   if (dateUtil.diffDays(p.debut, p.fin) + 1 > DUREE_MAX_JOURS) return null;
   return { libelle, debut: p.debut, fin: p.fin };
@@ -246,9 +235,12 @@ export function normaliserCacheVacances(valeur) {
     if (Number(annee.slice(5)) !== Number(annee.slice(0, 4)) + 1) continue;
     if (!Array.isArray(e.periodes)) continue;
     const periodes = e.periodes.slice(0, PERIODES_PAR_ENTREE_MAX).map(normaliserPeriode).filter(Boolean);
+    if (periodes.length === 0) continue; // jamais d'entrée vide : l'année serait réputée en cache
     const recupereLe =
       typeof e.recupereLe === 'string' && !Number.isNaN(Date.parse(e.recupereLe)) ? e.recupereLe : null;
-    parCle.set(`${zone}|${annee}`, { zone, anneeScolaire: annee, recupereLe, periodes });
+    const cle = `${zone}|${annee}`;
+    parCle.delete(cle); // la dernière occurrence passe en fin de liste (la plus récente)
+    parCle.set(cle, { zone, anneeScolaire: annee, recupereLe, periodes });
   }
   return [...parCle.values()].slice(-ENTREES_MAX);
 }

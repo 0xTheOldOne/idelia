@@ -91,9 +91,6 @@ export const MOIS_PAR_PAGE_MAX = 4;
  * @property {boolean} vide - Aucune affectation dans le planning.
  */
 
-// Source unique des repères : `calendrier/reperes.js` (ré-exporté pour compatibilité).
-export { reperesDuJour };
-
 /**
  * Première lettre en majuscule d'un texte (accents conservés), '' si vide.
  * @param {string} texte

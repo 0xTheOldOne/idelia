@@ -3,8 +3,11 @@
  * (feature 0033). Transforme des fragments de texte positionnés (issus du PDF) en séances.
  *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
- * Aucun objet `Date` : simple découpage de chaînes (ADR 0010).
+ * Aucun objet `Date` : simple découpage de chaînes (ADR 0010) ; la validité
+ * calendaire d'une date passe par `dateUtil.estDateValide`.
  */
+
+import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
  * @typedef {Object} GlyphePdf
@@ -151,7 +154,7 @@ function convertirFin(texte) {
   const m = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(texte ?? '');
   if (!m) return null;
   const iso = `20${m[3]}-${m[2]}-${m[1]}`;
-  return estDateReelle(iso) ? iso : null;
+  return dateUtil.estDateValide(iso) ? iso : null;
 }
 
 /**
@@ -162,18 +165,6 @@ function convertirFin(texte) {
 function convertirMontant(texte) {
   const m = /^(\d{1,6}),(\d{2})$/.exec((texte ?? '').replace(/\s+/g, ''));
   return m ? Number(m[1]) * 100 + Number(m[2]) : null;
-}
-
-/**
- * Vérifie qu'une date "YYYY-MM-DD" existe au calendrier (aller-retour UTC, sans fuseau).
- * Le `Date` ne sert qu'à valider : rien n'est conservé (ADR 0010).
- * @param {string} iso
- * @returns {boolean}
- */
-function estDateReelle(iso) {
-  const [a, m, j] = iso.split('-').map(Number);
-  const d = new Date(Date.UTC(a, m - 1, j));
-  return d.getUTCFullYear() === a && d.getUTCMonth() === m - 1 && d.getUTCDate() === j;
 }
 
 /**
@@ -206,7 +197,7 @@ export function extraireSeances(glyphes) {
     const jour = REGEX_JOUR.exec(texte);
     if (jour) {
       const iso = `${jour[4]}-${jour[3]}-${jour[2]}`;
-      if (!estDateReelle(iso)) {
+      if (!dateUtil.estDateValide(iso)) {
         dateCourante = null; // jour invalide : ses séances sont ignorées
         continue;
       }

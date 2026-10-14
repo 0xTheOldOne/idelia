@@ -75,6 +75,7 @@ export function joursFeriesAnnee(annee) {
  */
 export function joursFeriesEntre(dateDebut, dateFin) {
   const resultat = new Map();
+  if (!dateUtil.estDateValide(dateDebut) || !dateUtil.estDateValide(dateFin)) return resultat;
   const anneeDebut = Number(dateDebut.slice(0, 4));
   const anneeFin = Number(dateFin.slice(0, 4));
   for (let annee = anneeDebut; annee <= anneeFin; annee++) {

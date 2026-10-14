@@ -36,6 +36,18 @@ function format(date) {
 }
 
 /**
+ * Indique si une valeur est une date calendaire stricte : chaîne au format
+ * `"YYYY-MM-DD"` ET date existante (aller-retour parse/format ; rejette
+ * `2026-13-45`, `2026-02-30`, `2025-02-29`). Ne lève jamais.
+ *
+ * @param {*} valeur - Valeur à tester (tout type accepté).
+ * @returns {boolean} `true` si `valeur` est une date calendaire existante.
+ */
+function estDateValide(valeur) {
+  return typeof valeur === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valeur) && format(parse(valeur)) === valeur;
+}
+
+/**
  * Ajoute (ou retranche, si négatif) un nombre de jours à une date.
  *
  * @param {string} dateStr - Date de départ `"YYYY-MM-DD"`.
@@ -252,14 +264,15 @@ function numeroSemaineIso(dateStr) {
  * Convertit un instant ISO 8601 avec fuseau (ex. `"2026-10-16T22:00:00+00:00"`)
  * en date calendaire `"YYYY-MM-DD"`. Arrondi au jour calendaire le plus proche
  * (ajout de 12 h puis date UTC) : exact pour un minuit local de UTC-12 à UTC+12,
- * sans table de fuseaux. Une chaîne déjà `"YYYY-MM-DD"` est renvoyée telle quelle.
+ * sans table de fuseaux. Une chaîne déjà `"YYYY-MM-DD"` est renvoyée telle quelle
+ * si c'est une date existante (sinon `null`, ex. `"2026-02-30"`).
  *
  * @param {string} iso - Instant ISO 8601 ou date `"YYYY-MM-DD"`.
  * @returns {(string|null)} Date `"YYYY-MM-DD"`, ou `null` si illisible.
  */
 function dateCalendaireDepuisInstant(iso) {
   if (typeof iso !== 'string') return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return estDateValide(iso) ? iso : null;
   const ms = Date.parse(iso);
   if (Number.isNaN(ms)) return null;
   return new Date(ms + 12 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -268,6 +281,7 @@ function dateCalendaireDepuisInstant(iso) {
 export const dateUtil = {
   parse,
   format,
+  estDateValide,
   addDays,
   diffDays,
   weekdayISO,
