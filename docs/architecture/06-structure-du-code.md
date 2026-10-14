@@ -38,9 +38,10 @@ Idelia/
     │   ├── trameWeekend.js     # weekends travaillés / de repos d'une trame « un weekend sur X » [0022]
     │   ├── diffusion.js        # modèle du planning papier (construireDiffusion, titreDocumentDiffusion) [0012]
     │   ├── envoiEmail.js       # destinataires, objet, corps et lien mailto: de l'envoi du planning par e-mail [0027]
-    │   ├── feuilleDeRoute/     # lecture des séances Vega, détection des relais, répartition et reversements [0033, 0034]
+    │   ├── feuilleDeRoute/     # lecture des séances Vega, détection des relais, répartition, reversements et bilan [0033, 0034, 0035]
     │   │   ├── extraireSeances.js
     │   │   ├── detecterRelais.js
+    │   │   ├── bilanReversements.js  # cumul de la période et virements à faire [0035]
     │   │   └── relierInfirmieres.js  # code PS Vega → personne de l'équipe (initialesVega) [0034]
     │   └── utils/
     │       ├── dates.js        # dateUtil : parse/format/addDays/diffDays/weekdayISO/rangeInclusive

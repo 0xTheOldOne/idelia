@@ -45,4 +45,4 @@ Idelia est une **Single Page Application (SPA) Vue.js**, entièrement exécutée
 
 **Diffusion** : le référent imprime / exporte en PDF une vue lecture du planning pour l'équipe ([ADR 0009](../adr/0009-workflow-referent-diffusion-lecture.md)).
 
-**Feuille de route** : un PDF Vega déposé → `lireGlyphesPdf` (pdf.js, adaptateur) → `extraireSeances` → `detecterRelais` (domaine pur) → affichage des cas et des reversements. Lecture seule de l'équipe dans le store ; **rien n'est persisté** ([09](09-feuille-de-route-vega.md), [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md)).
+**Feuille de route** : un PDF Vega déposé → `lireGlyphesPdf` (pdf.js, adaptateur) → `extraireSeances` → `detecterRelais` (domaine pur) → affichage des cas, des reversements et du bilan de la période. Lecture seule de l'équipe dans le store ; **rien n'est persisté** ([09](09-feuille-de-route-vega.md), [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md)).

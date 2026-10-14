@@ -5,7 +5,7 @@
       <button
         v-if="etape === ETAPES.RESULTAT"
         type="button"
-        class="btn btn-primary feuille-de-route-bouton"
+        class="btn btn-primary feuille-de-route-bouton d-print-none"
         @click="recommencer"
       >
         <PhArrowCounterClockwise :size="20" weight="bold" aria-hidden="true" />
@@ -55,23 +55,23 @@
     <template v-if="etape === ETAPES.RESULTAT">
       <p
         ref="resume"
-        class="feuille-de-route-resume"
+        class="feuille-de-route-resume d-print-none"
         tabindex="-1"
       >
         {{ resume }}
       </p>
-      <p class="feuille-de-route-rappel">
+      <p class="feuille-de-route-rappel d-print-none">
         Rien n'est enregistré : ce résultat disparaît quand vous quittez cette page.
       </p>
 
-      <div v-if="cas.length === 0" class="alert alert-info d-flex gap-2">
+      <div v-if="cas.length === 0" class="alert alert-info d-flex gap-2 d-print-none">
         <PhInfo :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
         <p class="mb-0">
           Aucun patient vu par plusieurs infirmières sur cette période.
         </p>
       </div>
       <template v-else>
-        <div v-if="codesNonReliesListe.length > 0" class="alert alert-info d-flex gap-2">
+        <div v-if="codesNonReliesListe.length > 0" class="alert alert-info d-flex gap-2 d-print-none">
           <PhInfo :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
           <p class="mb-0">
             {{ texteCodesNonRelies }}
@@ -80,7 +80,36 @@
             Attention : ce résultat sera perdu en quittant cette page, il faudra redéposer le fichier.
           </p>
         </div>
-        <ListeRelais :cas="cas" :infirmieres="indexInfirmieres" />
+        <ListeOnglets
+          v-model="ongletActif"
+          class="d-print-none"
+          :onglets="ONGLETS"
+          prefixe-id="feuille-de-route"
+          libelle-groupe="Résultat de l'analyse"
+        />
+        <div
+          v-show="ongletActif === 'bilan'"
+          id="feuille-de-route-panneau-bilan"
+          class="feuille-de-route-panneau feuille-de-route-panneau--bilan"
+          role="tabpanel"
+          aria-labelledby="feuille-de-route-onglet-bilan"
+          tabindex="0"
+        >
+          <BilanPeriode :bilan="bilan" :periode="periode" :infirmieres="indexInfirmieres" />
+        </div>
+        <div
+          v-show="ongletActif === 'detail'"
+          id="feuille-de-route-panneau-detail"
+          class="feuille-de-route-panneau feuille-de-route-panneau--detail d-print-none"
+          role="tabpanel"
+          aria-labelledby="feuille-de-route-onglet-detail"
+          tabindex="0"
+        >
+          <p class="feuille-de-route-renvoi">
+            Pour savoir quoi virer au total sur la période, consultez l'onglet « Bilan de la période ».
+          </p>
+          <ListeRelais :cas="cas" :infirmieres="indexInfirmieres" />
+        </div>
       </template>
     </template>
   </div>
@@ -96,6 +125,8 @@ import {
 } from '@phosphor-icons/vue';
 
 import ZoneDepotFichier from '@/components/feuilleDeRoute/ZoneDepotFichier.vue';
+import BilanPeriode from '@/components/feuilleDeRoute/BilanPeriode.vue';
+import ListeOnglets from '@/components/communs/ListeOnglets.vue';
 import ListeRelais from '@/components/feuilleDeRoute/ListeRelais.vue';
 import {
   TAILLE_MAX_PDF_OCTETS,
@@ -104,6 +135,7 @@ import {
 } from '@/adaptateurs/lireGlyphesPdf.js';
 import { extraireSeances } from '@/domain/feuilleDeRoute/extraireSeances.js';
 import { detecterRelais } from '@/domain/feuilleDeRoute/detecterRelais.js';
+import { calculerBilan } from '@/domain/feuilleDeRoute/bilanReversements.js';
 import {
   indexerParInitialesVega,
   codesNonRelies,
@@ -136,9 +168,15 @@ const MESSAGES_ERREUR = Object.freeze({
     "La lecture des PDF n'a pas pu démarrer. Vérifiez votre connexion internet, rechargez la page, puis réessayez.",
 });
 
+/** Onglets de l'écran de résultat (0035). */
+const ONGLETS = Object.freeze([
+  { code: 'bilan', libelle: 'Bilan de la période' },
+  { code: 'detail', libelle: 'Détail par patient' },
+]);
+
 /**
  * @returns {{etape: string, nomFichier: string, nbSeances: number,
- *   periode: ({debut: string, fin: string}|null), cas: Array, codeErreur: string}}
+ *   periode: ({debut: string, fin: string}|null), cas: Array, codeErreur: string, ongletActif: string}}
  */
 function etatInitial() {
   return {
@@ -148,6 +186,7 @@ function etatInitial() {
     periode: null,
     cas: [],
     codeErreur: '',
+    ongletActif: 'bilan',
   };
 }
 
@@ -158,7 +197,8 @@ function etatInitial() {
  * Aucune logique de lecture ni de détection ici (adaptateur + domaine). Rien
  * n'est conservé : ni le fichier, ni les glyphes, ni les séances — seuls le
  * résumé et les cas affichés vivent dans `data()`, jusqu'au démontage ; rien
- * dans Vuex ni `storageRepository`.
+ * dans Vuex ni `storageRepository`. Le bilan de la période (0035) est calculé à
+ * la volée, jamais conservé.
  */
 export default {
   name: 'FeuilleDeRouteView',
@@ -168,15 +208,21 @@ export default {
     PhWarning,
     PhInfo,
     ZoneDepotFichier,
+    BilanPeriode,
+    ListeOnglets,
     ListeRelais,
   },
   data() {
-    return { ETAPES, ...etatInitial() };
+    return { ETAPES, ONGLETS, ...etatInitial() };
   },
   computed: {
     ...mapState('personnes', { toutesLesPersonnes: 'items' }),
     indexInfirmieres() {
       return indexerParInitialesVega(this.toutesLesPersonnes);
+    },
+    /** Bilan cumulé de la période (domaine pur). */
+    bilan() {
+      return calculerBilan(this.cas);
     },
     codesNonReliesListe() {
       return codesNonRelies(this.cas, this.indexInfirmieres);
@@ -331,6 +377,27 @@ export default {
 
 .feuille-de-route-rappel {
   margin-bottom: t.$espace-4;
+}
+
+.feuille-de-route-panneau {
+  padding-top: t.$espace-4;
+}
+
+.feuille-de-route-renvoi {
+  margin-bottom: t.$espace-3;
+  color: t.$couleur-texte-attenue;
+}
+
+// Impression : seul le bilan part sur papier, quel que soit l'onglet actif
+// (neutralise le `display: none` inline posé par `v-show`).
+@media print {
+  .feuille-de-route-panneau--bilan {
+    display: block !important;
+  }
+
+  .feuille-de-route-panneau--detail {
+    display: none !important;
+  }
 }
 
 .btn {

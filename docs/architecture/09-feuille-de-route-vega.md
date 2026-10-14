@@ -2,7 +2,7 @@
 
 L'écran **Feuille de route** (`/feuille-de-route`) lit la « Liste des séances sur une période » exportée de **Vega** (PDF), repère les patients soignés le même jour par **plusieurs infirmières**, et calcule **qui reverse combien à qui**. Tout se passe dans le navigateur : rien n'est envoyé, rien n'est conservé.
 
-Historique des décisions : [feature 0033](../../features/0033-feuille-de-route.md), [feature 0034](../../features/0034-initiales-vega-et-reversements.md). Choix de la bibliothèque : [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md).
+Historique des décisions : [feature 0033](../../features/0033-feuille-de-route.md), [feature 0034](../../features/0034-initiales-vega-et-reversements.md), [feature 0035](../../features/0035-bilan-qui-doit-quoi.md). Choix de la bibliothèque : [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md).
 
 ## Chaîne de traitement
 
@@ -11,7 +11,9 @@ flowchart LR
   F[Fichier PDF déposé] --> A["adaptateurs/lireGlyphesPdf.js<br/>(pdf.js, texte seul)"]
   A -->|"GlyphePdf[]"| E["domain/feuilleDeRoute/extraireSeances.js"]
   E -->|"Seance[]"| D["domain/feuilleDeRoute/detecterRelais.js"]
+  D -->|"CasRelais[]"| B["domain/feuilleDeRoute/bilanReversements.js"]
   D -->|"CasRelais[]"| V[FeuilleDeRouteView + ListeRelais]
+  B -->|"BilanPeriode"| V
   P[(Équipe — store, lecture seule)] --> R["domain/feuilleDeRoute/relierInfirmieres.js"]
   R -->|"code PS → personne"| V
 ```
@@ -21,6 +23,7 @@ flowchart LR
 | Lecture | `src/adaptateurs/lireGlyphesPdf.js` | I/O navigateur (hors domaine) | `File` → fragments de texte positionnés `{page, x, y, largeur, str}`. pdf.js chargé **à la demande** (chunk + worker séparés). |
 | Extraction | `src/domain/feuilleDeRoute/extraireSeances.js` | pur | fragments → séances `{date, ps, heure, patient, cotation, montantCentimes, fin}` + période. |
 | Détection | `src/domain/feuilleDeRoute/detecterRelais.js` | pur | séances → cas, parts, reversements. |
+| Bilan | `src/domain/feuilleDeRoute/bilanReversements.js` | pur | cas → cumul par code PS (touché, part, solde) et virements à faire sur la période. |
 | Liaison | `src/domain/feuilleDeRoute/relierInfirmieres.js` | pur | code PS → personne via `Personne.initialesVega`. |
 | Affichage | `src/views/FeuilleDeRouteView.vue`, `src/components/feuilleDeRoute/` | UI | états attente / analyse / erreur / résultat. Aucune logique métier. |
 
@@ -71,6 +74,16 @@ Exemples de référence (vérifiés sur les PDF de test) :
 | FC 20,95 · LR 2,75 | 23,70 | FC 11,85 · LR 11,85 | FC 20,95 · LR 2,75 | FC → LR **9,10 €** |
 | FC 20,95 · FC 2,75 · LR 2,75 | 26,45 | FC 17,63 · LR 8,82 | FC 23,70 · LR 2,75 | FC → LR **6,07 €** |
 
+## Bilan de la période
+
+`calculerBilan(cas)` donne, pour tout le fichier, un seul « qui doit quoi » (comme un Tricount), calculé à la volée et jamais conservé.
+
+- **Cumul** : par code PS (`Map`), on additionne `nbPassages`, `toucheCentimes` et `partCentimes` des `PartRelais` de chaque cas retenu ; `soldeCentimes = touché − part` (> 0 : doit reverser). Aucun nouvel arrondi : on additionne des centimes déjà arrondis cas par cas, donc le bilan est exact au centime et cohérent avec le détail. Invariants : Σ parts = Σ touchés = total ; Σ soldes = 0.
+- **Exclusion** : les cas `montantIncomplet` ne sont pas comptés ; le bilan ne donne que leurs **jours** (`datesCasExclus`), jamais un nom de patient.
+- **Virements** : `calculerReversements` réutilisé tel quel sur les soldes (lignes triées par code, résultat déterministe). Des reversements opposés s'annulent ; au plus (n − 1) virements pour n soldes non nuls.
+- **Codes non reliés** : comptés sous leur code.
+- **Un bilan par fichier** : `couvrePlusieursMois(periode)` signale un fichier à cheval sur plusieurs mois civils.
+
 ## Liaison avec l'équipe
 
 Le code PS est relié à une personne par `Personne.initialesVega` (casse ignorée ; en cas de doublon, la personne active l'emporte). Affichage « Prénom Nom (FC) », ou le code seul avec la mention « code Vega non relié à l'équipe » ; un encart liste les codes non reliés avec un lien vers Équipe. Les mêmes initiales servent de repère dans les pastilles de personne et sur le planning imprimé (à défaut : première lettre du prénom).
@@ -91,7 +104,7 @@ Codes d'erreur affichés (messages dans `FeuilleDeRouteView.vue`) : `PLUSIEURS_F
 ## Limites connues
 
 - **Dépendance au format Vega** : un changement de mise en page (intitulés de colonnes, format des lignes de jour) peut rendre la lecture impossible → erreur `AUCUNE_SEANCE`, jamais un résultat faux silencieux pour une colonne absente.
-- Un fichier à la fois ; pas de cumul sur plusieurs exports (bilan mensuel « qui doit quoi » prévu en feature 0035).
+- Un fichier à la fois ; pas de cumul sur plusieurs exports. Un bilan par fichier : exporter un mois à la fois pour un bilan mensuel.
 - Pas de CSP posée sur le site : la garantie « rien n'est envoyé » repose sur le code, pas sur le navigateur.
 
 ## Vérifier après une modification

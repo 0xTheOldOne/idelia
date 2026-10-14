@@ -101,7 +101,9 @@ function repartir(passages, total) {
  * Calcule les reversements (glouton, centimes entiers) : le plus gros débiteur verse au plus
  * gros créancier le minimum des deux montants, jusqu'à épuisement. À montant égal, l'ordre de
  * première apparition dans `parts` départage (résultat déterministe).
- * @param {PartRelais[]} parts
+ * Utilisé par cas (0034) et pour le bilan de la période (0035) : seuls `ps` et `ecartCentimes`
+ * sont lus.
+ * @param {Array<{ps: string, ecartCentimes: number}>} parts
  * @returns {Reversement[]}
  */
 export function calculerReversements(parts) {
