@@ -47,8 +47,8 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | actif | boolean | oui | défaut `true` (soft-delete = `false`) |
 | couleur | string hex `#RRGGBB` | oui | affichage calendrier |
 | quotite | number 0..100 | oui | défaut `100` (% temps de travail) |
-| dateEntree | `"YYYY-MM-DD"` | non | |
-| dateSortie | `"YYYY-MM-DD"` \| null | non | |
+| dateEntree | `"YYYY-MM-DD"` \| null | non | premier jour de présence (inclus) ; **active** : le moteur ne planifie pas la personne avant [0031] |
+| dateSortie | `"YYYY-MM-DD"` \| null | non | dernier jour de présence (inclus), ≥ `dateEntree` ; **active** : pas de planification après. Borne vide = ouverte. Règle unique dans `src/domain/presence.js` (`etatPresenceLe`, `estPresentLe`, `aDesDatesDePresence`, `libellePresenceLe`, `precisionPresenceLe`, `fractionPresence`) [0031] |
 | contact | `{ email?, telephone? }` | non | |
 | ordreAffichage | integer | non | |
 | notes | string | non | |

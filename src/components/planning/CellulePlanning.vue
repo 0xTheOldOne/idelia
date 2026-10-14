@@ -4,6 +4,7 @@
     :class="{
       'cellule-planning--fermee': ferme,
       'cellule-planning--hors-periode': !ferme && horsPeriode,
+      'cellule-planning--hors-presence': !ferme && Boolean(libellePresence),
       'cellule-planning--concernee-erreur': !ferme && concernee === 'erreur',
       'cellule-planning--concernee-avertissement': !ferme && concernee === 'avertissement',
     }"
@@ -11,6 +12,13 @@
     <span v-if="ferme" class="cellule-planning-fermee">Fermé</span>
 
     <template v-else>
+      <p v-if="libellePresence" class="cellule-planning-hors-presence-texte">
+        <span>{{ libellePresence }}</span>
+        <span v-if="precisionPresence" class="cellule-planning-hors-presence-precision">
+          {{ precisionPresence }}
+        </span>
+      </p>
+
       <p
         v-if="concernee"
         class="cellule-planning-alerte"
@@ -289,6 +297,14 @@ export default {
     /** `true` si la colonne (jour) est hors `[planning.dateDebut, planning.dateFin]`. */
     horsPeriode: { type: Boolean, default: false },
     /**
+     * Présence (0031, orientation Personnes) : libellé « Avant son arrivée » /
+     * « Après son départ » quand la personne n'est pas au cabinet ce jour-là,
+     * `''` sinon. Case grisée + texte ; ne bloque ni dépôt ni ajout.
+     */
+    libellePresence: { type: String, default: '' },
+    /** Précision datée associée (« arrive le 09/11/2026 »), `''` sinon (0031). */
+    precisionPresence: { type: String, default: '' },
+    /**
      * `true` en mode édition (feature 0011). Affiche un bouton « Retirer »
      * par élément. Par défaut `false` : rendu `0010` inchangé.
      */
@@ -490,6 +506,19 @@ export default {
     opacity: 0.7;
   }
 
+  // Personne hors présence (0031) : fond hachuré + libellé écrit (jamais la
+  // seule couleur), distinct de « Fermé » (centré, italique, sans hachures).
+  &--hors-presence {
+    background-color: t.$couleur-fond-clair;
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 6px,
+      rgba(t.$couleur-texte-attenue, 0.1) 6px,
+      rgba(t.$couleur-texte-attenue, 0.1) 8px
+    );
+  }
+
   // Surlignage multi-canal (bordure + fond + icône, jamais la seule couleur) :
   // erreurs (dures) et avertissements (souples) distingués par teinte ET icône.
   &--concernee-erreur {
@@ -507,6 +536,25 @@ export default {
   color: t.$couleur-texte-attenue;
   font-size: t.$taille-texte-petite;
   font-style: italic;
+}
+
+// Libellé de présence : fond uni sous le texte pour garder un contraste AA
+// malgré les hachures.
+.cellule-planning-hors-presence-texte {
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  margin: 0;
+  padding: 0 t.$espace-1;
+  border-radius: t.$rayon-sm;
+  background-color: t.$couleur-fond-clair;
+  color: t.$couleur-texte-attenue;
+  font-size: t.$taille-texte-petite;
+  font-weight: t.$graisse-gras;
+}
+
+.cellule-planning-hors-presence-precision {
+  font-weight: normal;
 }
 
 .cellule-planning-alerte {

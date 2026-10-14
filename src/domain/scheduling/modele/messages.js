@@ -59,6 +59,18 @@ function horairesTexte(heureDebut, heureFin) {
 }
 
 /**
+ * Suite du message de présence (0031) selon l'origine de l'affectation.
+ *
+ * @param {boolean} manuel - `true` si l'affectation a été posée à la main.
+ * @returns {string}
+ */
+function suitePresence(manuel) {
+  return manuel
+    ? "S'il s'agit d'une journée de doublure, vous pouvez laisser ainsi."
+    : 'La date d\'arrivée ou de départ a sans doute changé : retirez cette tournée ou regénérez le planning.';
+}
+
+/**
  * Gabarit commun aux préférences « ne travaille pas / est en repos… mais est
  * affectée » (`JOUR_OFF_RECURRENT`, `CRENEAU_OFF`, `INDISPO_HEBDO`,
  * `JOURS_REPOS_SOUHAITES`) : réutilise `decrirePreference` (fourni en
@@ -97,6 +109,17 @@ const GABARITS = {
   ABSENCE_DEMANDEE: ({ nomPersonne = 'Cette personne', date, heureDebut, heureFin, typeAbsence } = {}) =>
     `${nomPersonne} a demandé une absence${typeAbsence ? ` (${libelleTypeAbsence(typeAbsence)})` : ''} ` +
     `le ${dateUtil.formatDateFr(date)} (${horairesTexte(heureDebut, heureFin)}), mais est affectée sur cet horaire.`,
+
+  // 0031 : textes épicènes ; la suite dépend de l'origine (manuel / automatique).
+  AVANT_ARRIVEE: ({ nomPersonne = 'Cette personne', date, heureDebut, heureFin, dateEntree, manuel = false } = {}) =>
+    `${nomPersonne} a une tournée le ${jourFr(date)} ${dateUtil.formatDateFr(date)} ` +
+    `(${horairesTexte(heureDebut, heureFin)}), avant son arrivée au cabinet prévue le ${dateUtil.formatDateFr(dateEntree)}. ` +
+    suitePresence(manuel),
+
+  APRES_DEPART: ({ nomPersonne = 'Cette personne', date, heureDebut, heureFin, dateSortie, manuel = false } = {}) =>
+    `${nomPersonne} a une tournée le ${jourFr(date)} ${dateUtil.formatDateFr(date)} ` +
+    `(${horairesTexte(heureDebut, heureFin)}), après son départ du cabinet (dernier jour : ${dateUtil.formatDateFr(dateSortie)}). ` +
+    suitePresence(manuel),
 
   CHEVAUCHEMENT: ({
     nomPersonne = 'Cette personne',

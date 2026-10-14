@@ -7,6 +7,7 @@
  */
 
 import { dateUtil } from './utils/dates.js';
+import { estPresentLe } from './presence.js';
 
 /** Rythme minimal (jours par mois). */
 export const RYTHME_MIN = 1;
@@ -70,12 +71,8 @@ export function joursAttendusSurPeriode(personne, periode, { joursOuverture, abs
   const retenues = (Array.isArray(absences) ? absences : []).filter(
     (a) => a.personneId === personne.id && a.statut === 'VALIDE' && a.creneau === 'JOURNEE'
   );
-  const dateEntree = personne.dateEntree ?? null;
-  const dateSortie = personne.dateSortie ?? null;
 
   const estOuvert = (date) => ouverts.has(dateUtil.weekdayISO(date));
-  const estPresente = (date) =>
-    (dateEntree === null || date >= dateEntree) && (dateSortie === null || date <= dateSortie);
   const estAbsente = (date) => retenues.some((a) => date >= a.dateDebut && date <= a.dateFin);
 
   let attendu = 0;
@@ -92,7 +89,7 @@ export function joursAttendusSurPeriode(personne, periode, { joursOuverture, abs
 
     const jours = dateUtil
       .rangeInclusive(debut, fin)
-      .filter((date) => estOuvert(date) && estPresente(date) && !estAbsente(date)).length;
+      .filter((date) => estOuvert(date) && estPresentLe(personne, date) && !estAbsente(date)).length;
 
     attendu += (rythme * jours) / joursOuvertsMois;
     joursDisponibles += jours;

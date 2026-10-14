@@ -106,6 +106,8 @@
                   :concernee="cellule.concernee"
                   :ferme="cellule.ferme"
                   :hors-periode="cellule.horsPeriode"
+                  :libelle-presence="cellule.libellePresence"
+                  :precision-presence="cellule.precisionPresence"
                   :editable="cellule.editable"
                   :ajoutable="cellule.ajoutable"
                   @ajouter-ici="onAjouterIci(cellule, $event)"
@@ -132,6 +134,7 @@ import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import CellulePlanning from '@/components/planning/CellulePlanning.vue';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleJour } from '@/domain/libelles.js';
+import { libellePresenceLe, precisionPresenceLe } from '@/domain/presence.js';
 import { estCoupee, libelleSegment } from '@/domain/tournees.js';
 import { construireIndicateurSouhait } from '@/domain/souhaitsNonRespectes.js';
 
@@ -579,6 +582,24 @@ export default {
     },
 
     /**
+     * Présence (0031) : libellé + précision de la case si la personne de la
+     * ligne n'est pas au cabinet ce jour-là. Orientation Personnes uniquement,
+     * jamais sur un jour fermé (« Fermé » prioritaire) ; vide sinon.
+     * @param {LigneGrille} ligne
+     * @param {{date: string, ferme: boolean}} colonne
+     * @returns {{libellePresence: string, precisionPresence: string}}
+     */
+    presenceCellule(ligne, colonne) {
+      const vide = { libellePresence: '', precisionPresence: '' };
+      if (this.orientation !== 'PERSONNES' || colonne.ferme) return vide;
+      const personne = this.personneParId(ligne.id);
+      return {
+        libellePresence: libellePresenceLe(personne, colonne.date),
+        precisionPresence: precisionPresenceLe(personne, colonne.date),
+      };
+    },
+
+    /**
      * Construit le descripteur complet d'une cellule, exposé tel quel par le
      * slot scopé `cellule` (§6.3 de `0010`). Les jours fermés n'ont « aucune
      * cellule active » : éléments et sous-couverture y sont vidés.
@@ -607,6 +628,7 @@ export default {
         concernee: colonne.ferme ? false : this.concerneeCellule(ligne, colonne.date),
         ferme: colonne.ferme,
         horsPeriode: colonne.horsPeriode,
+        ...this.presenceCellule(ligne, colonne),
         editable: this.editableEffectif,
         ajoutable: this.editableEffectif && !colonne.ferme && !colonne.horsPeriode,
       };

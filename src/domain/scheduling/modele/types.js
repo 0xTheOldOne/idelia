@@ -48,6 +48,9 @@
  * @typedef {Object} Violation
  * @property {string}   contrainteId
  * @property {Severite} severite - Dure -> `erreur` ; souple -> `avertissement`.
+ *   Exception documentée (0031) : la dure `presence` produit un `avertissement`
+ *   sur une affectation `origine === 'MANUEL'` (placement voulu, toléré mais
+ *   signalé), et une `erreur` sur une affectation automatique.
  * @property {Object}   cible - `{ personneId?, tourneeId?, date?, segmentIndex? }`.
  * @property {string}   code - Stable, ex. `'ABSENCE_VALIDEE'` (voir `modele/messages.js`).
  * @property {string}   message - FR, prêt à afficher tel quel.

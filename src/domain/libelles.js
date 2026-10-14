@@ -504,6 +504,8 @@ export const STATUTS_PLANNING_OPTIONS = STATUTS_PLANNING.map((code) => ({
 export const LIBELLES_CAUSE_VIOLATION = {
   ABSENCE_VALIDEE: 'Personne planifiée pendant une absence',
   ABSENCE_DEMANDEE: 'Personne planifiée pendant une absence demandée',
+  AVANT_ARRIVEE: 'Personne planifiée avant son arrivée',
+  APRES_DEPART: 'Personne planifiée après son départ',
   CHEVAUCHEMENT: 'Personne planifiée deux fois en même temps',
   SOUS_COUVERTURE: 'Tournée sans assez de personnes',
   TROP_JOURS_CONSECUTIFS: "Trop de jours de travail d'affilée",

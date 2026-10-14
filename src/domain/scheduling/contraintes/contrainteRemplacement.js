@@ -15,11 +15,15 @@
  *   travaille pas (absente ou non planifiée), la remplaçante rattachée passe
  *   avant les autres remplaçantes.
  *
+ * Une remplaçante hors présence (pas encore arrivée / déjà partie, 0031) n'est
+ * pas « disponible » : elle n'empêche pas une autre remplaçante de passer.
+ *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */
 
 import { periodesSeChevauchent } from '@/domain/absences.js';
 import { estRemplacante } from '@/domain/remplacement.js';
+import { estPresentLe } from '@/domain/presence.js';
 
 /** Poids par défaut de « titulaires d'abord » (par case confiée à une remplaçante). */
 const POIDS_TITULAIRES_D_ABORD_DEFAUT = 2;
@@ -48,8 +52,9 @@ function preparerRemplacement(entree) {
   /** Titulaires (ordre de l'entrée) ayant au moins une remplaçante habituelle. */
   const titulairesAvecHabituelles = [...titulairesParId.values()].filter((t) => habituellesDe(t.id).length > 0);
 
-  /** Disponible = aucune absence validée qui couvre ce jour-là. */
+  /** Disponible = présente au cabinet (dates d'arrivée / départ, 0031) et aucune absence validée qui couvre ce jour-là. */
   const estDisponible = (personne, date) =>
+    estPresentLe(personne, date) &&
     !absences.some(
       (a) =>
         a.statut === 'VALIDE' &&

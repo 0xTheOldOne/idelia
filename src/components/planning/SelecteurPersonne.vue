@@ -29,6 +29,9 @@
             aria-hidden="true"
           />
           <span class="selecteur-personne-nom">{{ personne.nom }}</span>
+          <span v-if="personne.precisionPresence" class="selecteur-personne-note selecteur-personne-presence">
+            ({{ personne.precisionPresence }})
+          </span>
           <span v-if="personne.nbAffectationsCeJour > 0" class="selecteur-personne-note">
             déjà {{ personne.nbAffectationsCeJour }} affectation{{ personne.nbAffectationsCeJour > 1 ? 's' : '' }}
             ce jour-là
@@ -55,6 +58,7 @@ import { mapGetters } from 'vuex';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
 import { libelleJour } from '@/domain/libelles.js';
+import { estPresentLe, precisionPresenceLe } from '@/domain/presence.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 
 /**
@@ -163,8 +167,14 @@ export default {
           couleur: p.couleur,
           nbAffectationsCeJour: this.affectations.filter((a) => a.personneId === p.id && a.date === this.date)
             .length,
+          // Présence (0031) : jamais bloquant, juste une mention et un rang en fin de liste.
+          horsPresence: !estPresentLe(p, this.date),
+          precisionPresence: precisionPresenceLe(p, this.date),
         }))
-        .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+        .sort(
+          (a, b) =>
+            Number(a.horsPresence) - Number(b.horsPresence) || a.nom.localeCompare(b.nom, 'fr')
+        );
     },
 
     /** `personnesDisponibles` réduites par le filtre texte (insensible à la casse). */

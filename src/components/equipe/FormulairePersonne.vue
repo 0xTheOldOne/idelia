@@ -270,7 +270,16 @@
       <div class="row g-3 mb-4">
         <div class="col-sm-6">
           <label for="personne-date-entree" class="form-label">Date d'arrivée (si connue)</label>
-          <input id="personne-date-entree" v-model="formulaire.dateEntree" type="date" class="form-control">
+          <input
+            id="personne-date-entree"
+            v-model="formulaire.dateEntree"
+            type="date"
+            class="form-control"
+            aria-describedby="personne-date-entree-aide"
+          >
+          <div id="personne-date-entree-aide" class="form-text">
+            Avant cette date, le planning ne propose pas la personne.
+          </div>
         </div>
 
         <div class="col-sm-6">
@@ -281,9 +290,12 @@
             type="date"
             class="form-control"
             :class="{ 'is-invalid': v$.formulaire.dateSortie.$error }"
-            :aria-describedby="v$.formulaire.dateSortie.$error ? 'personne-date-sortie-erreur' : null"
+            :aria-describedby="v$.formulaire.dateSortie.$error ? 'personne-date-sortie-erreur personne-date-sortie-aide' : 'personne-date-sortie-aide'"
             @blur="v$.formulaire.dateSortie.$touch()"
           >
+          <div id="personne-date-sortie-aide" class="form-text">
+            Après cette date, le planning ne propose plus la personne.
+          </div>
           <p v-if="v$.formulaire.dateSortie.$error" id="personne-date-sortie-erreur" class="formulaire-erreur">
             <PhWarning :size="14" weight="bold" aria-hidden="true" />
             <span>{{ v$.formulaire.dateSortie.$errors[0].$message }}</span>

@@ -17,12 +17,18 @@
  * Impacte le choix pendant la génération (`coutMarginal`) et signale les
  * déséquilibres résiduels en validation (`evaluer`).
  *
+ * Groupe « sans rythme » : la charge est aussi ramenée à la part de jours
+ * ouverts de la période où la personne est présente (dates d'arrivée / départ,
+ * 0031) ; une personne jamais présente sort du groupe. Sans date, aucun effet.
+ *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */
 
 import { messagePour } from '../modele/messages.js';
 import { joursAttendusSurPeriode } from '@/domain/rythmeMensuel.js';
 import { estRemplacante } from '@/domain/remplacement.js';
+import { fractionPresence } from '@/domain/presence.js';
+import { dateUtil } from '@/domain/utils/dates.js';
 
 /** Poids souple par défaut (surchargeable via `entree.poids.equite`, `contraintes/index.js`). */
 const POIDS_EQUITE_DEFAUT = 4;
@@ -53,11 +59,13 @@ function aUnRythme(personne) {
  *
  * @param {import('@/domain/personnes.js').Personne} personne
  * @param {number} nbAffectations
+ * @param {number} [fraction=1] - Part de présence sur la période (0031) ; `1` = sans effet.
  * @returns {number}
  */
-function chargeNormalisee(personne, nbAffectations) {
+function chargeNormalisee(personne, nbAffectations, fraction = 1) {
   const quotite = Number.isFinite(personne.quotite) && personne.quotite > 0 ? personne.quotite : 100;
-  return nbAffectations / (quotite / 100);
+  const charge = nbAffectations / (quotite / 100);
+  return fraction === 1 ? charge : charge / fraction;
 }
 
 /**
@@ -66,14 +74,18 @@ function chargeNormalisee(personne, nbAffectations) {
  *
  * @param {import('../modele/types.js').Entree} entree
  * @param {import('../modele/types.js').PlanningIndexe} index
+ * @param {Map<string, number>} fractions - Fractions de présence < 1 (absentes = 1).
  * @returns {{personne: import('@/domain/personnes.js').Personne, nbAffectations: number, charge: number}[]}
  */
-function chargesDeLequipe(entree, index) {
+function chargesDeLequipe(entree, index, fractions) {
   return entree.personnes
-    .filter((personne) => personne.actif !== false && !aUnRythme(personne) && !estRemplacante(personne))
+    .filter(
+      (personne) =>
+        personne.actif !== false && !aUnRythme(personne) && !estRemplacante(personne) && fractions.get(personne.id) !== 0
+    )
     .map((personne) => {
       const nbAffectations = (index.parPersonne.get(personne.id) ?? []).length;
-      return { personne, nbAffectations, charge: chargeNormalisee(personne, nbAffectations) };
+      return { personne, nbAffectations, charge: chargeNormalisee(personne, nbAffectations, fractions.get(personne.id)) };
     });
 }
 
@@ -110,6 +122,20 @@ export function creerContrainteEquite(poids = POIDS_EQUITE_DEFAUT, entree = null
     if (attendu) attendus.set(personne.id, attendu);
   }
 
+  /** Fractions de présence < 1 des personnes sans rythme (vide si personne n'a de date : aucun effet). */
+  const fractions = new Map();
+  const joursOuverture = new Set(entree?.reglesCabinet?.joursOuverture ?? []);
+  if (entree?.periode?.debut && entree?.periode?.fin) {
+    const joursOuverts = dateUtil
+      .rangeInclusive(entree.periode.debut, entree.periode.fin)
+      .filter((date) => joursOuverture.has(dateUtil.weekdayISO(date)));
+    for (const personne of entree.personnes ?? []) {
+      if (personne.actif === false || aUnRythme(personne)) continue;
+      const fraction = fractionPresence(personne, joursOuverts);
+      if (fraction < 1) fractions.set(personne.id, fraction);
+    }
+  }
+
   return {
     id: 'equite',
     type: 'EQUITE',
@@ -135,10 +161,11 @@ export function creerContrainteEquite(poids = POIDS_EQUITE_DEFAUT, entree = null
       if (estRemplacante(personne)) return 0;
 
       // Groupe « sans rythme » : règle historique.
-      const charges = chargesDeLequipe(ctx.entree, ctx.index);
+      if (fractions.get(personneId) === 0) return 0; // jamais présente sur la période
+      const charges = chargesDeLequipe(ctx.entree, ctx.index, fractions);
       const moy = moyenne(charges);
       const nbActuel = (ctx.index.parPersonne.get(personneId) ?? []).length;
-      const depassement = Math.max(0, chargeNormalisee(personne, nbActuel) - moy);
+      const depassement = Math.max(0, chargeNormalisee(personne, nbActuel, fractions.get(personneId)) - moy);
 
       return poids * depassement;
     },
@@ -147,7 +174,7 @@ export function creerContrainteEquite(poids = POIDS_EQUITE_DEFAUT, entree = null
       const violations = [];
 
       // Groupe « sans rythme » : règle historique.
-      const charges = chargesDeLequipe(ctx.entree, ctx.index);
+      const charges = chargesDeLequipe(ctx.entree, ctx.index, fractions);
       if (charges.length > 0) {
         const moy = moyenne(charges);
         const seuil = Math.max(SEUIL_ECART_MIN, moy * SEUIL_ECART_RATIO);

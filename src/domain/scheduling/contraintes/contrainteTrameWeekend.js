@@ -19,11 +19,15 @@
  *    trame restant à tenir) coûte `poids`. Sans cela, le glouton remplit la
  *    semaine avant le weekend et le repos légal interdit ensuite le weekend.
  *
+ * La réservation ignore les jours de trame où la personne n'est pas présente
+ * au cabinet (avant son arrivée / après son départ, 0031), comme une absence.
+ *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  */
 
 import { periodesSeChevauchent } from '@/domain/absences.js';
 import { estTrameValide, estWeekendTravaille } from '@/domain/trameWeekend.js';
+import { estPresentLe } from '@/domain/presence.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { semaineIsoDe } from '../utils/dates.js';
 
@@ -52,6 +56,7 @@ export function creerContrainteTrameWeekend(poids = POIDS_TRAME_WEEKEND_DEFAUT, 
     if (trames.length > 0) tramesParPersonne.set(personne.id, trames);
   }
 
+  const personnesParId = new Map((entree?.personnes ?? []).map((p) => [p.id, p]));
   const absences = (entree?.absences ?? []).filter((a) => a.statut === 'VALIDE');
   const reposHebdoMin = entree?.reglesCabinet?.reposHebdoMin;
   const periode = entree?.periode;
@@ -89,7 +94,7 @@ export function creerContrainteTrameWeekend(poids = POIDS_TRAME_WEEKEND_DEFAUT, 
       const trame = estJourDeTrame(personneId, date);
       if (joursTravailles.has(date)) {
         if (!trame) horsTrame += 1;
-      } else if (trame && !estAbsente(personneId, date)) {
+      } else if (trame && !estAbsente(personneId, date) && estPresentLe(personnesParId.get(personneId), date)) {
         reste += 1;
       }
     }

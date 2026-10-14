@@ -3,8 +3,9 @@
  * source de vérité des règles métier, partagée par `genererPlanning` et
  * `validerPlanning` (§5.1). `creerContraintes(entree)` instancie, dans cet
  * ordre :
- * 1. les **11 contraintes fixes** du cabinet (dont « titulaires d'abord » et
- *    « remplaçante habituelle », 0021, et « trame des weekends », 0022)
+ * 1. les **12 contraintes fixes** du cabinet (dont « titulaires d'abord » et
+ *    « remplaçante habituelle », 0021, « trame des weekends », 0022, et
+ *    « présence », 0031)
  *    (une instance chacune) ;
  * 2. **une contrainte par préférence active** (`preference.actif === true`)
  *    de **chaque personne active** de `entree.personnes`.
@@ -17,6 +18,7 @@
  */
 
 import { creerContrainteAbsenceValidee, creerContrainteAbsenceDemandee } from './contrainteAbsence.js';
+import { creerContraintePresence } from './contraintePresence.js';
 import { creerContrainteTitulairesDAbord, creerContrainteRemplacementPrioritaire } from './contrainteRemplacement.js';
 import { creerContrainteTrameWeekend } from './contrainteTrameWeekend.js';
 import { creerContrainteChevauchement } from './contrainteChevauchement.js';
@@ -56,6 +58,7 @@ export const POIDS_SOUPLES_PAR_DEFAUT = Object.freeze({
  */
 export const TYPES_CONTRAINTE = Object.freeze([
   'ABSENCE',
+  'PRESENCE',
   'REMPLACEMENT',
   'CHEVAUCHEMENT',
   'COUVERTURE',
@@ -90,6 +93,7 @@ export function creerContraintes(entree) {
   const contraintes = [
     creerContrainteAbsenceValidee(),
     creerContrainteAbsenceDemandee(),
+    creerContraintePresence(entree),
     creerContrainteChevauchement(),
     creerContrainteCouverture(),
     creerContrainteReposLegal(),
