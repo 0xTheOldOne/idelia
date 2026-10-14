@@ -43,11 +43,7 @@
 
         <ul v-if="activesTries.length" class="tournees-liste">
           <li v-for="tournee in activesTries" :key="tournee.id" class="tournees-ligne">
-            <span
-              class="tournees-pastille"
-              :style="{ backgroundColor: tournee.couleur }"
-              aria-hidden="true"
-            />
+            <PastilleTournee :couleur="tournee.couleur" :icone="tournee.icone" taille="grande" />
             <div class="tournees-identite">
               <span class="tournees-nom">{{ tournee.libelle }}</span>
               <span class="tournees-details">
@@ -112,11 +108,7 @@
 
           <ul class="tournees-liste tournees-liste--archivee">
             <li v-for="tournee in archiveesTries" :key="tournee.id" class="tournees-ligne">
-              <span
-                class="tournees-pastille"
-                :style="{ backgroundColor: tournee.couleur }"
-                aria-hidden="true"
-              />
+              <PastilleTournee :couleur="tournee.couleur" :icone="tournee.icone" taille="grande" />
               <div class="tournees-identite">
                 <span class="tournees-nom">{{ tournee.libelle }}</span>
                 <span class="tournees-details">
@@ -177,6 +169,7 @@ import {
 } from '@phosphor-icons/vue';
 
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
+import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import FormulaireTournee from '@/components/tournees/FormulaireTournee.vue';
 import { libelleJours } from '@/domain/libelles.js';
 import { estCoupee, libelleHoraires } from '@/domain/tournees.js';
@@ -203,6 +196,7 @@ export default {
     PhCaretRight,
     PhArrowsSplit,
     DialogueConfirmation,
+    PastilleTournee,
     FormulaireTournee,
   },
   data() {
@@ -439,14 +433,6 @@ export default {
 .tournees-liste--archivee .tournees-ligne {
   background-color: t.$couleur-fond-clair;
   color: t.$couleur-texte-attenue;
-}
-
-.tournees-pastille {
-  flex-shrink: 0;
-  width: t.$espace-5;
-  height: t.$espace-5;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
 }
 
 .tournees-identite {

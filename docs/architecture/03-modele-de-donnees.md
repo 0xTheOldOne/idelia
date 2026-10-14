@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 6,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId)
+  "schemaVersion": 6,              // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -25,7 +25,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -61,7 +61,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
         { "heureDebut": "17:00", "heureFin": "20:00", "nbPersonnesRequises": 1 }
       ],
       "joursApplication": [1, 2, 3, 4, 5, 6],
-      "couleur": "#5B8C5A", "archivee": false,
+      "couleur": "#5B8C5A", "icone": null, "archivee": false,
       "dateDebutValidite": null, "dateFinValidite": null, "ordreAffichage": 1, "notes": "",
       "createdAt": "2026-07-01T08:00:00.000Z", "updatedAt": "2026-07-01T08:00:00.000Z"
     }
@@ -112,7 +112,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` (= **6**) et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **7**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
@@ -121,6 +121,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[3]` (v3 → v4)** — identifiants en GUID : tout `id` d'entité (personne, souhait, tournée, absence, planning, affectation) qui n'est pas un GUID est remplacé par un GUID (`genId()`), et **toutes ses références** sont réécrites avec la même correspondance (`absence.personneId`, `preference.params.tourneeIds`, `planning.referentId`, `affectation.personneId` / `tourneeId`). Les GUID existants sont conservés (idempotent). Corrige les données issues de saisies à la main / d'anciens jeux de test (`p-claire`, `t-t1`…).
 - **`MIGRATIONS[4]` (v4 → v5)** — [feature 0034](../../features/0034-initiales-vega-et-reversements.md) : chaque `Personne` reçoit `initialesVega: personne.initialesVega ?? null` (idempotent). `null` = non renseigné. Les autres entités sont inchangées.
 - **`MIGRATIONS[5]` (v5 → v6)** — [feature 0020](../../features/0020-equipe-rythme-mensuel-remplacante.md) : chaque `Personne` reçoit `joursTravaillesParMois: personne.joursTravaillesParMois ?? null` et `titulaireId: personne.titulaireId ?? null` (idempotent). `null` = pas de rythme / pas de titulaire rattachée. Les autres entités sont inchangées.
+- **`MIGRATIONS[6]` (v6 → v7)** — [feature 0029](../../features/0029-tournees-icone-de-repere.md) : chaque `Tournee` reçoit `icone: normaliserIconeTournee(tournee.icone)` (idempotent : absent → `null` ; code connu conservé ; valeur inconnue → `null`). `null` = pas d'icône de repère. Les autres entités sont inchangées. Une valeur hors liste dans un fichier déjà en v7 est ramenée à `null` par `fromSaveDocument`, sans erreur.
 
 ## Intégrité référentielle
 

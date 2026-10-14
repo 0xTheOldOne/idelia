@@ -41,6 +41,7 @@ export const MOIS_PAR_PAGE_MAX = 4;
  * @property {string} tourneeId
  * @property {string} libelle - Libellé réel de la tournée (+ « (archivée) » le cas échéant). Pas de code T1…Tn calculé : l'en-tête affiche ce libellé (coupé par ellipsis côté CSS si trop long), la légende le donne en entier.
  * @property {string} couleur
+ * @property {(string|null)} icone - Code d'icône de repère de la tournée (`ICONES_TOURNEE`), ou `null`.
  * @property {boolean} coupee
  * @property {string} horaires - `libelleHoraires(tournee)`.
  * @property {SegmentColonne[]} segments - 1 ou 2.
@@ -220,6 +221,7 @@ function creerColonne(tournee, archivee) {
     tourneeId: tournee.id,
     libelle: archivee ? `${tournee.libelle} (archivée)` : tournee.libelle,
     couleur: tournee.couleur,
+    icone: tournee.icone ?? null,
     coupee,
     horaires: libelleHoraires(tournee),
     segments: tournee.segments.map((segment, index) => ({

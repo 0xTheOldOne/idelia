@@ -8,9 +8,10 @@
  */
 
 import { genId } from '@/domain/utils/id.js';
+import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -229,6 +230,25 @@ MIGRATIONS[5] = (doc) => {
       }))
     : doc.personnes;
   return { ...doc, personnes };
+};
+
+/**
+ * Migration v6 → v7 (feature 0029) : ajout de `Tournee.icone`, code de
+ * l'icône de repère (liste `ICONES_TOURNEE`).
+ *
+ * - Chaque `Tournee` de `doc.tournees` reçoit
+ *   `icone: normaliserIconeTournee(tournee.icone)` (idempotent : absent →
+ *   `null` ; code connu conservé ; valeur inconnue → `null`).
+ * - `personnes`, `absences`, `plannings`, `cabinet` : inchangés.
+ *
+ * @param {object} doc - Document de version 6.
+ * @returns {object} Document équivalent en version 7 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[6] = (doc) => {
+  const tournees = Array.isArray(doc.tournees)
+    ? doc.tournees.map((tournee) => ({ ...tournee, icone: normaliserIconeTournee(tournee.icone) }))
+    : doc.tournees;
+  return { ...doc, tournees };
 };
 
 /**

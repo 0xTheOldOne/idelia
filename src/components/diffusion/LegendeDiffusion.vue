@@ -14,12 +14,7 @@
       <h3 class="legende-diffusion-titre">Tournées</h3>
       <ul class="legende-diffusion-liste">
         <li v-for="colonne in colonnes" :key="colonne.tourneeId" class="legende-diffusion-item">
-          <!-- Pastille de tournée isolée : point d'insertion de l'icône (feature 0029). -->
-          <span
-            class="legende-diffusion-pastille-tournee"
-            :style="colonne.couleur ? { backgroundColor: colonne.couleur } : null"
-            aria-hidden="true"
-          ></span>
+          <PastilleTournee :couleur="colonne.couleur" :icone="colonne.icone" taille="impression" />
           <span>
             <strong>{{ colonne.libelle }}</strong>
             <template v-if="colonne.coupee">
@@ -63,6 +58,7 @@
 </template>
 
 <script>
+import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import RepereDiffusion from '@/components/diffusion/RepereDiffusion.vue';
 
 /**
@@ -72,7 +68,7 @@ import RepereDiffusion from '@/components/diffusion/RepereDiffusion.vue';
  */
 export default {
   name: 'LegendeDiffusion',
-  components: { RepereDiffusion },
+  components: { PastilleTournee, RepereDiffusion },
   props: {
     /** @type {import('vue').PropType<import('@/domain/diffusion.js').PersonneDiffusion[]>} */
     personnes: { type: Array, required: true },
@@ -120,17 +116,6 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: t.$espace-1;
-}
-
-.legende-diffusion-pastille-tournee {
-  flex-shrink: 0;
-  width: 0.9em;
-  height: 0.9em;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-texte;
-  background-color: t.$couleur-fond-clair;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
 }
 
 .legende-diffusion-echantillon {

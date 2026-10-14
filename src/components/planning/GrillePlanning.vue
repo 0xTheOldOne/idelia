@@ -31,7 +31,14 @@
               }"
             >
               <div class="grille-planning-entete-entite-contenu">
+                <PastilleTournee
+                  v-if="orientation === 'TOURNEES'"
+                  :couleur="entite.donnees.couleur"
+                  :icone="entite.donnees.icone"
+                  taille="petite"
+                />
                 <span
+                  v-else
                   class="grille-planning-pastille"
                   :style="{ backgroundColor: entite.donnees.couleur }"
                   aria-hidden="true"
@@ -121,6 +128,7 @@
 import { mapGetters } from 'vuex';
 import { PhLock, PhWarning, PhWarningOctagon } from '@phosphor-icons/vue';
 
+import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import CellulePlanning from '@/components/planning/CellulePlanning.vue';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleJour } from '@/domain/libelles.js';
@@ -133,12 +141,15 @@ import { construireIndicateurSouhait } from '@/domain/souhaitsNonRespectes.js';
  * @property {string} nom
  * @property {string} couleur
  * @property {boolean} archivee
+ * @property {(string|null)} [icone] - Code d'icône de repère (tournées uniquement, feature 0029).
  */
 
 /**
  * @typedef {Object} ElementCellule
  * @property {string} id
  * @property {string} couleur
+ * @property {boolean} [estTournee] - `true` si l'élément est une tournée (orientation PERSONNES) : pastille avec icône (0029).
+ * @property {(string|null)} [icone] - Code d'icône de la tournée (0029), `null` si aucune.
  * @property {string} libellePrincipal
  * @property {string} [libelleSecondaire]
  * @property {number} [segmentIndex] - Indice du segment couvert (orientation TOURNEES uniquement), pour le regroupement par vacation (feature 0016).
@@ -210,7 +221,7 @@ import { construireIndicateurSouhait } from '@/domain/souhaitsNonRespectes.js';
  */
 export default {
   name: 'GrillePlanning',
-  components: { PhLock, PhWarning, PhWarningOctagon, CellulePlanning },
+  components: { PhLock, PhWarning, PhWarningOctagon, CellulePlanning, PastilleTournee },
   props: {
     /** Le `Planning` affiché (`dateDebut`, `dateFin`, `affectations`). */
     planning: { type: Object, required: true },
@@ -323,6 +334,7 @@ export default {
         id: t.id,
         nom: t.libelle,
         couleur: t.couleur,
+        icone: t.icone ?? null,
         archivee: false,
       }));
       const idsActifs = new Set(this.tourneesActives.map((t) => t.id));
@@ -331,7 +343,7 @@ export default {
         .filter((id) => !idsActifs.has(id))
         .map((id) => this.tourneeParId(id))
         .filter(Boolean)
-        .map((t) => ({ id: t.id, nom: t.libelle, couleur: t.couleur, archivee: true }));
+        .map((t) => ({ id: t.id, nom: t.libelle, couleur: t.couleur, icone: t.icone ?? null, archivee: true }));
       return [...actives, ...archivees].sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
     },
 
@@ -470,6 +482,8 @@ export default {
           id: affectation.id,
           couleur: 'transparent',
           libellePrincipal: 'Tournée inconnue',
+          estTournee: true,
+          icone: null,
           segmentIndex: affectation.segmentIndex,
           verrouillee: affectation.verrouillee,
           souhait,
@@ -479,6 +493,8 @@ export default {
       return {
         id: affectation.id,
         couleur: tournee.couleur,
+        estTournee: true,
+        icone: tournee.icone ?? null,
         libellePrincipal: `${tournee.libelle}${tournee.archivee ? ' (archivée)' : ''}`,
         libelleSecondaire: segment ? libelleSegment(segment) : '',
         segmentIndex: affectation.segmentIndex,

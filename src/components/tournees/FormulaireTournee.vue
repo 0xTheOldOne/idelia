@@ -228,15 +228,46 @@
           <span>{{ v$.formulaire.couleur.$errors[0].$message }}</span>
         </p>
 
-        <div class="formulaire-apercu mt-3">
-          <span
-            class="formulaire-pastille formulaire-pastille--apercu"
-            :style="{ backgroundColor: formulaire.couleur }"
-            aria-hidden="true"
-          />
-          <span>{{ formulaire.libelle || 'Nom de la tournée' }}</span>
-          <span v-if="apercuHoraires"> · {{ apercuHoraires }}</span>
+      </div>
+
+      <!-- Icône de repère -->
+      <fieldset class="mb-4" aria-describedby="tournee-icone-aide">
+        <legend class="formulaire-legende"><span class="form-label d-block">Icône de repère (facultatif)</span></legend>
+        <div id="tournee-icone-aide" class="form-text mb-2">
+          Une petite image dans la pastille de couleur, pour reconnaître la tournée d'un coup d'œil. Le nom de la
+          tournée reste toujours affiché.
         </div>
+
+        <div class="d-flex flex-wrap gap-2">
+          <div v-for="option in optionsIcone" :key="option.code ?? 'aucune'">
+            <input
+              :id="'tournee-icone-' + (option.code ?? 'aucune')"
+              v-model="formulaire.icone"
+              type="radio"
+              class="btn-check"
+              name="tournee-icone"
+              :value="option.code"
+            >
+            <label class="btn formulaire-icone-option" :for="'tournee-icone-' + (option.code ?? 'aucune')">
+              <PhCheck
+                v-if="formulaire.icone === option.code"
+                :size="16"
+                weight="bold"
+                class="formulaire-icone-coche"
+                aria-hidden="true"
+              />
+              <PastilleTournee :couleur="formulaire.couleur" :icone="option.code" taille="grande" />
+              <span>{{ option.libelle }}</span>
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="formulaire-apercu mb-4">
+        <span>Aperçu :</span>
+        <PastilleTournee :couleur="formulaire.couleur" :icone="formulaire.icone" taille="grande" />
+        <span>{{ formulaire.libelle || 'Nom de la tournée' }}</span>
+        <span v-if="apercuHoraires"> · {{ apercuHoraires }}</span>
       </div>
 
       <!-- Période de validité -->
@@ -265,7 +296,8 @@
 
         <div class="col-12">
           <div class="form-text">
-            Pour une tournée saisonnière ou temporaire. Laissez vide si elle s'applique toute l'année.
+            Pour une tournée saisonnière ou temporaire, par exemple une campagne de vaccination d'octobre à décembre.
+            Laissez vide si elle s'applique toute l'année.
           </div>
         </div>
       </div>
@@ -313,7 +345,9 @@ import { required, integer, between, maxLength, helpers } from '@vuelidate/valid
 import { PhCheck, PhWarning, PhPlus, PhMinusCircle, PhArrowsSplit } from '@phosphor-icons/vue';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
+import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import { JOURS_SEMAINE } from '@/domain/libelles.js';
+import { ICONES_TOURNEE, normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { estCoupee, libelleHoraires } from '@/domain/tournees.js';
 import { genId } from '@/domain/utils/id.js';
 
@@ -338,7 +372,7 @@ import { genId } from '@/domain/utils/id.js';
  */
 export default {
   name: 'FormulaireTournee',
-  components: { ModaleBase, PhCheck, PhWarning, PhPlus, PhMinusCircle, PhArrowsSplit },
+  components: { ModaleBase, PastilleTournee, PhCheck, PhWarning, PhPlus, PhMinusCircle, PhArrowsSplit },
   props: {
     /** Affiche (`true`) ou masque (`false`) la modale ; piloté par le parent. */
     visible: { type: Boolean, required: true },
@@ -366,6 +400,10 @@ export default {
     };
   },
   computed: {
+    /** Vignettes du sélecteur d'icône : « Aucune » (code `null`) puis les icônes du domaine. */
+    optionsIcone() {
+      return [{ code: null, libelle: 'Aucune' }, ...ICONES_TOURNEE];
+    },
     titreModale() {
       return this.tournee ? 'Modifier la tournée' : 'Ajouter une tournée';
     },
@@ -473,6 +511,7 @@ export default {
           segments: this.tournee.segments.map((segment) => ({ ...segment })),
           joursApplication: [...(this.tournee.joursApplication ?? [])],
           couleur: this.tournee.couleur,
+          icone: normaliserIconeTournee(this.tournee.icone),
           dateDebutValidite: this.tournee.dateDebutValidite ?? '',
           dateFinValidite: this.tournee.dateFinValidite ?? '',
           notes: this.tournee.notes ?? '',
@@ -484,6 +523,7 @@ export default {
         segments: [{ heureDebut: '08:00', heureFin: '12:00', nbPersonnesRequises: 1 }],
         joursApplication: [],
         couleur: this.couleursSuggerees[0] ?? '#0E8A8F',
+        icone: null,
         dateDebutValidite: '',
         dateFinValidite: '',
         notes: '',
@@ -684,6 +724,7 @@ export default {
         })),
         joursApplication: [...this.formulaire.joursApplication],
         couleur: this.formulaire.couleur,
+        icone: normaliserIconeTournee(this.formulaire.icone),
         dateDebutValidite: this.formulaire.dateDebutValidite || null,
         dateFinValidite: this.formulaire.dateFinValidite || null,
         notes: this.formulaire.notes,
@@ -821,11 +862,40 @@ export default {
   filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7));
 }
 
-.formulaire-pastille--apercu {
-  width: t.$espace-5;
-  height: t.$espace-5;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
+// Vignette du sélecteur d'icône (bouton radio natif `.btn-check` + libellé).
+.formulaire-icone-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: t.$espace-1;
+  width: 6.5rem;
+  min-height: t.$cible-cliquable-min;
+  padding: t.$espace-2;
+  font-size: t.$taille-texte-petite;
+  color: t.$couleur-texte;
+  text-align: center;
+  background-color: t.$couleur-fond;
+  border: 2px solid t.$couleur-bordure;
+  border-radius: t.$rayon-md;
+}
+
+.btn-check:checked + .formulaire-icone-option {
+  color: t.$couleur-texte;
+  background-color: rgba(t.$couleur-primaire, 0.12);
+  border-color: t.$couleur-primaire;
+}
+
+.btn-check:focus-visible + .formulaire-icone-option {
+  @include m.focus-visible;
+}
+
+.formulaire-icone-coche {
+  position: absolute;
+  top: t.$espace-1;
+  right: t.$espace-1;
+  color: t.$couleur-primaire;
 }
 
 .formulaire-apercu {

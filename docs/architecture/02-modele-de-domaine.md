@@ -100,6 +100,7 @@ Modèle **segments** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segme
 | segments | Segment[] (**1 ou 2**) | oui | 1 = tournée complète ; 2 = tournée coupée (matin + reprise du soir) |
 | joursApplication | number[1..7] | oui | jours ISO où la tournée existe |
 | couleur | string hex | non | |
+| icone | string (code de `ICONES_TOURNEE`) \| null | non | défaut `null` ; code stable MAJUSCULES_SNAKE (jamais un nom de composant) ; valeur inconnue traitée comme `null` [0029] |
 | archivee | boolean | oui | défaut `false` (soft-delete conservé) |
 | dateDebutValidite | `"YYYY-MM-DD"` | non | tournée saisonnière |
 | dateFinValidite | `"YYYY-MM-DD"` \| null | non | |

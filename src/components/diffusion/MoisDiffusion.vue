@@ -14,11 +14,7 @@
           :title="colonne.libelle"
         >
           <span class="mois-diffusion-entete-tournee">
-            <span
-              class="mois-diffusion-pastille-tournee"
-              :style="colonne.couleur ? { backgroundColor: colonne.couleur } : null"
-              aria-hidden="true"
-            ></span>
+            <PastilleTournee :couleur="colonne.couleur" :icone="colonne.icone" taille="impression" />
             <span class="mois-diffusion-libelle-tournee">{{ colonne.libelle }}</span>
           </span>
         </th>
@@ -86,6 +82,7 @@
 </template>
 
 <script>
+import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import RepereDiffusion from '@/components/diffusion/RepereDiffusion.vue';
 
 /**
@@ -96,7 +93,7 @@ import RepereDiffusion from '@/components/diffusion/RepereDiffusion.vue';
  */
 export default {
   name: 'MoisDiffusion',
-  components: { RepereDiffusion },
+  components: { PastilleTournee, RepereDiffusion },
   props: {
     /** @type {import('vue').PropType<import('@/domain/diffusion.js').MoisDiffusion>} */
     mois: { type: Object, required: true },
@@ -168,17 +165,6 @@ thead th {
   justify-content: center;
   gap: 2px;
   min-width: 0;
-}
-
-.mois-diffusion-pastille-tournee {
-  flex-shrink: 0;
-  width: 0.7em;
-  height: 0.7em;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-texte;
-  background-color: t.$couleur-fond-clair;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
 }
 
 // Libellé réel de la tournée, coupé proprement s'il dépasse la colonne.

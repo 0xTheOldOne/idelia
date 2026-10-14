@@ -79,10 +79,11 @@
             :key="detail.id"
             class="panneau-conflits-item panneau-conflits-item-couverture"
           >
-            <span
+            <PastilleTournee
               class="panneau-conflits-pastille"
-              :style="{ backgroundColor: detail.couleur }"
-              aria-hidden="true"
+              :couleur="detail.couleur"
+              :icone="detail.icone"
+              taille="petite"
             />
             <span class="panneau-conflits-couverture-texte">
               <span>
@@ -106,6 +107,7 @@
 import { mapGetters } from 'vuex';
 import { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight, PhThumbsDown } from '@phosphor-icons/vue';
 
+import PastilleTournee from '@/components/communs/PastilleTournee.vue';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { libelleCauseViolation } from '@/domain/libelles.js';
 import { estCodeSouhait } from '@/domain/souhaitsNonRespectes.js';
@@ -144,7 +146,7 @@ function grouperParCause(violations) {
  */
 export default {
   name: 'PanneauConflits',
-  components: { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight, PhThumbsDown },
+  components: { PhWarning, PhWarningOctagon, PhWarningCircle, PhCheckCircle, PhCaretRight, PhThumbsDown, PastilleTournee },
   props: {
     /** `Violation[]` du moteur, triées erreurs d'abord (voir `Resultat`/`diagnostiquer`). */
     violations: { type: Array, default: () => [] },
@@ -191,7 +193,7 @@ export default {
      * sous-couvert — feature 0016, ADR 0017 : remplace le créneau
      * symbolique). Ne dérive aucune donnée métier : ne fait que résoudre
      * des libellés.
-     * @returns {Array<{id: string, nomTournee: string, couleur: string, archivee: boolean, dateTexte: string, horairesTexte: string, manque: number}>}
+     * @returns {Array<{id: string, nomTournee: string, couleur: string, icone: (string|null), archivee: boolean, dateTexte: string, horairesTexte: string, manque: number}>}
      */
     detailsNonCouvertes() {
       return this.tourneesNonCouvertes.map((nonCouverture, index) => {
@@ -200,6 +202,7 @@ export default {
           id: `${nonCouverture.tourneeId}-${nonCouverture.date}-${nonCouverture.segmentIndex}-${index}`,
           nomTournee: tournee ? tournee.libelle : 'Tournée inconnue',
           couleur: tournee ? tournee.couleur : 'transparent',
+          icone: tournee ? (tournee.icone ?? null) : null,
           archivee: tournee ? tournee.archivee : false,
           dateTexte: dateUtil.formatDateFr(nonCouverture.date),
           horairesTexte: `${nonCouverture.heureDebut} – ${nonCouverture.heureFin}`,
@@ -382,13 +385,9 @@ export default {
   gap: t.$espace-2;
 }
 
+// Pastille de tournée (`PastilleTournee`) : seul l'alignement vertical est local.
 .panneau-conflits-pastille {
-  flex-shrink: 0;
-  width: t.$espace-3;
-  height: t.$espace-3;
-  margin-top: 0.2em;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
+  margin-top: 0.1em;
 }
 
 .panneau-conflits-couverture-texte {

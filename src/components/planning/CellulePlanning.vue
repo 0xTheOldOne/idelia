@@ -50,7 +50,15 @@
             @dragstart="onDebutGlisser(element, $event)"
             @dragend="$emit('fin-glisser')"
           >
+            <PastilleTournee
+              v-if="element.estTournee"
+              class="cellule-planning-pastille-tournee"
+              :couleur="element.couleur"
+              :icone="element.icone"
+              taille="petite"
+            />
             <span
+              v-else
               class="cellule-planning-pastille"
               :style="{ backgroundColor: element.couleur }"
               aria-hidden="true"
@@ -163,6 +171,8 @@ import {
   PhThumbsDown,
 } from '@phosphor-icons/vue';
 
+import PastilleTournee from '@/components/communs/PastilleTournee.vue';
+
 /**
  * Rendu **présentational** d'une cellule de `GrillePlanning` (feature 0010) :
  * liste d'éléments déjà résolus (pastille couleur + nom, avec libellé
@@ -246,11 +256,13 @@ export default {
     PhLockSimple,
     PhLockSimpleOpen,
     PhThumbsDown,
+    PastilleTournee,
   },
   props: {
     /**
      * Éléments déjà résolus à afficher (une affectation par élément).
-     * `{ id: string, couleur: string, libellePrincipal: string, libelleSecondaire?: string, segmentIndex?: number, verrouillee?: boolean }`.
+     * `{ id: string, couleur: string, libellePrincipal: string, libelleSecondaire?: string, segmentIndex?: number, verrouillee?: boolean, estTournee?: boolean, icone?: (string|null) }`.
+     * `estTournee`/`icone` (0029) : pastille de tournée avec icône de repère (orientation Personnes).
      * `segmentIndex` (feature 0016) sert au regroupement par vacation (voir
      * prop `segments`). `verrouillee` pilote le repère cadenas + libellé
      * « Verrouillée » (feature 0011, tâche 4), affiché que la case soit
@@ -575,6 +587,10 @@ export default {
   margin-top: 0.2em;
   border-radius: 50%;
   border: 1px solid t.$couleur-bordure;
+}
+
+.cellule-planning-pastille-tournee {
+  margin-top: 0.1em;
 }
 
 .cellule-planning-libelles {

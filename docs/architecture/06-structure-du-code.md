@@ -30,6 +30,7 @@ Idelia/
     │   ├── scheduling/         # moteur de planification (voir 05)
     │   ├── remplacement.js     # identification des remplaçantes (estRemplacante) [0021]
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
+    │   ├── iconesTournee.js    # codes et libellés des icônes de repère des tournées [0029]
     │   ├── rythmeMensuel.js    # jours attendus d'une personne sur une période selon son rythme mensuel [0020, réutilisé par 0024]
     │   ├── recapMensuel.js     # récap par mois et par personne : grandes/petites tournées, jours travaillés, dépassement du rythme [0024]
     │   ├── souhaitsNonRespectes.js # localise les souhaits non respectés (violations PREFERENCE_*) sur les affectations, textes de l'indicateur [0025]
@@ -64,7 +65,7 @@ Idelia/
     │   └── ParametresView.vue
     │
     ├── components/             # composants réutilisables
-    │   ├── communs/            # boutons, champs, modale, confirmation, icône…
+    │   ├── communs/            # boutons, champs, modale, confirmation, icône, pastille de tournée [0029]…
     │   ├── equipe/
     │   ├── tournees/
     │   ├── absences/

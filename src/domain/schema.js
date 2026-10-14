@@ -12,6 +12,8 @@
  * pour les horodatages techniques ISO UTC utilisés ici).
  */
 
+import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
+
 // ---------------------------------------------------------------------------
 // Enums / constantes du domaine (codes stables, MAJUSCULES_SNAKE)
 // ---------------------------------------------------------------------------
@@ -210,7 +212,8 @@ export function fromSaveDocument(doc) {
     // version d'Idelia. Les autres réglages du cabinet sont préservés tels quels.
     cabinet: { parametres: { ...doc.cabinet, couleursParDefaut: COULEURS_PAR_DEFAUT } },
     personnes: { items: doc.personnes ?? [] },
-    tournees: { items: doc.tournees ?? [] },
+    // `icone` : valeur hors liste (fichier modifié à la main) → `null`, jamais bloquant (0029).
+    tournees: { items: (doc.tournees ?? []).map((t) => ({ ...t, icone: normaliserIconeTournee(t?.icone) })) },
     absences: { items: doc.absences ?? [] },
     plannings: { items: doc.plannings ?? [], selectionId: null },
   };

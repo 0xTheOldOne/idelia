@@ -12,6 +12,7 @@
 import { COULEURS_PAR_DEFAUT } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
 import { dateUtil } from '@/domain/utils/dates.js';
+import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 
 /**
  * @typedef {Object} Segment
@@ -27,6 +28,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * @property {Segment[]} segments - 1 ou 2 segments horaires. **1 segment = tournée complète ; 2 segments = tournée coupée** (type dérivé, voir {@link estCoupee}).
  * @property {number[]} joursApplication - Jours ISO 1..7 où la tournée s'applique, triés et dédupliqués.
  * @property {string} couleur - Couleur de repère au format hex `#RRGGBB`.
+ * @property {(string|null)} icone - Code d'icône de repère (ICONES_TOURNEE, iconesTournee.js), ou null.
  * @property {boolean} archivee - Soft-delete : `true` = archivée (conservé, ADR 0005/0006).
  * @property {(string|null)} dateDebutValidite - Date `"YYYY-MM-DD"`, ou `null`.
  * @property {(string|null)} dateFinValidite - Date `"YYYY-MM-DD"`, ou `null`.
@@ -112,6 +114,7 @@ export function creerTournee(champs = {}) {
     segments: normaliserSegments(champs.segments),
     joursApplication: normaliserJours(champs.joursApplication),
     couleur: champs.couleur ?? COULEURS_PAR_DEFAUT[0],
+    icone: normaliserIconeTournee(champs.icone),
     archivee: champs.archivee ?? false,
     dateDebutValidite: champs.dateDebutValidite ?? null,
     dateFinValidite: champs.dateFinValidite ?? null,
