@@ -173,6 +173,25 @@ $menu-largeur-repliee: 76px;
     transform: translateY(-50%) !important;
   }
 
+  // Indicateur de sauvegarde : seule la pastille (ou l'icône d'alerte) reste,
+  // centrée, comme au repli manuel ; le libellé reste dans l'infobulle.
+  :deep(.menu-pied) {
+    justify-content: center !important;
+    padding-inline: 0 !important;
+  }
+
+  :deep(.indicateur-sauvegarde__texte) {
+    display: none !important;
+  }
+
+  :deep(.indicateur-sauvegarde--compact-erreur .indicateur-sauvegarde__pastille) {
+    display: none !important;
+  }
+
+  :deep(.indicateur-sauvegarde--compact-erreur .indicateur-sauvegarde__icone-erreur) {
+    display: inline-block !important;
+  }
+
   // Le bouton de repli n'a aucun effet à cette taille : le masquer plutôt
   // que de laisser une commande sans conséquence visible.
   :deep(.menu-bascule) {
