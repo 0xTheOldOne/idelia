@@ -10,11 +10,11 @@
 
     <p
       class="carte-sauvegarde-rappel"
-      :class="{ 'carte-sauvegarde-rappel--succes': dernierExportLe }"
+      :class="{ 'carte-sauvegarde-rappel--succes': rappelAJour }"
       role="status"
       aria-live="polite"
     >
-      <PhCheckCircle v-if="dernierExportLe" :size="18" weight="fill" aria-hidden="true" />
+      <PhCheckCircle v-if="rappelAJour" :size="18" weight="fill" aria-hidden="true" />
       <span>{{ texteRappel }}</span>
     </p>
 
@@ -24,7 +24,7 @@
       @click="$emit('exporter')"
     >
       <PhFloppyDisk :size="20" aria-hidden="true" />
-      <span>Exporter une sauvegarde</span>
+      <span>Enregistrer une sauvegarde</span>
     </button>
   </section>
 </template>
@@ -51,6 +51,10 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * alimente une ligne de confirmation datée, en `aria-live="polite"` : même
  * pattern que `BlocSauvegarde` (Paramètres), pour un retour immédiat après
  * « Exporter une sauvegarde ».
+ *
+ * Feature 0032 : quand un fichier de sauvegarde est actif, le rappel et le libellé
+ * du bouton reflètent ce fichier (même logique que `BlocSauvegarde`) ; l'événement
+ * émis reste `exporter`, l'écran appelant choisit entre écriture et téléchargement.
  */
 export default {
   name: 'CarteSauvegarde',
@@ -62,10 +66,28 @@ export default {
     derniereSauvegarde: { type: String, default: null },
     /** Horodatage ISO UTC du dernier export lancé durant la session (`ui/dernierExportLe`), ou `null`. */
     dernierExportLe: { type: String, default: null },
+    /** `true` si un fichier de sauvegarde actif existe (`ui/fichierSauvegardeActif`). */
+    fichierSauvegardeActif: { type: Boolean, default: false },
+    /** Nom du fichier actif, ou `null`. */
+    nomFichierSauvegarde: { type: String, default: null },
+    /** Horodatage ISO UTC de la dernière écriture dans le fichier actif, ou `null`. */
+    dernierFichierEnregistreLe: { type: String, default: null },
   },
   emits: ['exporter'],
   computed: {
+    /** `true` si le rappel est à jour (même critère que `BlocSauvegarde.rappelAJour`). */
+    rappelAJour() {
+      if (this.fichierSauvegardeActif) return !!this.dernierFichierEnregistreLe;
+      return !!this.dernierExportLe;
+    },
+
     texteRappel() {
+      if (this.fichierSauvegardeActif) {
+        if (!this.dernierFichierEnregistreLe) {
+          return 'Fichier de sauvegarde actif, pas encore écrit.';
+        }
+        return `Fichier de sauvegarde à jour le ${dateUtil.formatHorodatageFr(this.dernierFichierEnregistreLe)}.`;
+      }
       if (!this.dernierExportLe) {
         return "Aucun fichier téléchargé depuis l'ouverture de l'application. Pensez à en télécharger un régulièrement.";
       }

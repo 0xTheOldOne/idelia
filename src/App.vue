@@ -5,17 +5,21 @@
     <MenuLateral />
 
     <main id="contenu-principal" class="app-contenu" tabindex="-1">
+      <BandeauRepriseSauvegarde />
       <router-view />
     </main>
   </div>
 
   <PileNotifications />
+  <ModaleFichierSauvegardeIntrouvable />
 </template>
 
 <script>
 import { mapGetters } from 'vuex';
 import MenuLateral from '@/components/communs/MenuLateral.vue';
 import PileNotifications from '@/components/communs/PileNotifications.vue';
+import BandeauRepriseSauvegarde from '@/components/communs/BandeauRepriseSauvegarde.vue';
+import ModaleFichierSauvegardeIntrouvable from '@/components/communs/ModaleFichierSauvegardeIntrouvable.vue';
 
 /**
  * Shell racine de l'application (feature 0015) : une grille CSS
@@ -30,7 +34,12 @@ import PileNotifications from '@/components/communs/PileNotifications.vue';
  */
 export default {
   name: 'App',
-  components: { MenuLateral, PileNotifications },
+  components: {
+    MenuLateral,
+    PileNotifications,
+    BandeauRepriseSauvegarde,
+    ModaleFichierSauvegardeIntrouvable,
+  },
   computed: {
     ...mapGetters('ui', ['menuReplie']),
   },

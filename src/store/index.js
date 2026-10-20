@@ -43,12 +43,37 @@ let timer = null;
  * Handle du « fichier de sauvegarde actif » (File System Access API,
  * feature 0019, ADR 0018), variable **de module** comme `timer` : un
  * `FileSystemFileHandle` n'est pas sérialisable, il ne doit donc jamais
- * vivre dans `state`. Vaut `null` tant qu'aucun fichier n'a été choisi, ou
- * après un rechargement de page (jamais persisté, ni `localStorage` ni
- * IndexedDB — le choix ne vaut que pour la session en cours).
+ * vivre dans `state`. Vaut `null` tant qu'aucun fichier n'a été choisi ou repris.
+ * Mémorisé dans IndexedDB via `storageRepository` (feature 0032, ADR 0021) ;
+ * sa reprise après rechargement passe par `reprendreSauvegardeFichier`.
  * @type {FileSystemFileHandle|null}
  */
 let handleFichierSauvegarde = null;
+
+/**
+ * Handle mémorisé dont la permission n'est pas (encore) accordée : attend le
+ * clic « Reprendre la sauvegarde… » (feature 0032).
+ * @type {FileSystemFileHandle|null}
+ */
+let handleEnAttenteAccord = null;
+
+/**
+ * `true` si des données ont changé dans CET onglet depuis la dernière écriture
+ * réussie du fichier actif. Le minuteur automatique n'écrit que dans ce cas
+ * (protection multi-onglets, feature 0032 §4.3). Le bouton manuel écrit toujours.
+ */
+let modifieDepuisEcritureFichier = false;
+
+/**
+ * Résultat du chargement initial des données (`bootstrap`) :
+ * `'DONNEES'` (document chargé et valide), `'VIDE'` (aucune donnée stockée),
+ * `'ERREUR'` (donnée illisible ou invalide).
+ * @typedef {'DONNEES'|'VIDE'|'ERREUR'} ResultatChargement
+ */
+
+/** Message du toast persistant quand les données du navigateur sont absentes. */
+const MESSAGE_DONNEES_ABSENTES = (nom) =>
+  `Vos données n'ont pas été retrouvées dans ce navigateur. Par prudence, Idelia n'écrira plus dans votre fichier de sauvegarde « ${nom} », qui reste intact : pour récupérer vos données, utilisez « Restaurer une sauvegarde » dans Paramètres.`;
 
 /**
  * Persiste immédiatement l'état courant via `storageRepository.save`, et met
@@ -130,6 +155,7 @@ function persistancePlugin(store) {
   store.subscribe((mutation) => {
     if (mutation.type.startsWith('ui/') || mutation.type.startsWith('notifications/')) return;
     if (SANS_PERSISTANCE.has(mutation.type)) return;
+    modifieDepuisEcritureFichier = true;
     planifier(store);
   });
 }
@@ -138,6 +164,147 @@ function persistancePlugin(store) {
 // Fichier de sauvegarde actif (feature 0019, ADR 0018 — File System Access
 // API en amélioration progressive, Chrome/Edge uniquement)
 // ---------------------------------------------------------------------------
+
+/**
+ * Oublie le fichier en mémoire (handle, attente d'accord) et remet à zéro ses
+ * reflets `ui`. N'agit pas sur IndexedDB.
+ *
+ * @param {Function} commit - `commit` du contexte d'action racine.
+ */
+function libererFichierEnMemoire(commit) {
+  handleFichierSauvegarde = null;
+  handleEnAttenteAccord = null;
+  commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: false, nom: null }, { root: true });
+  commit('ui/SET_FICHIER_SAUVEGARDE_MEMORISE', false, { root: true });
+  commit('ui/SET_FICHIER_EN_ATTENTE_ACCORD', null, { root: true });
+}
+
+/**
+ * Le fichier mémorisé est introuvable : libère la mémoire, oublie le handle
+ * mort dans IndexedDB, puis ouvre la fenêtre d'avertissement.
+ *
+ * @param {Function} commit - `commit` du contexte d'action racine.
+ * @param {string} nom - Nom du fichier introuvable.
+ * @returns {Promise<void>}
+ */
+async function signalerFichierIntrouvable(commit, nom) {
+  libererFichierEnMemoire(commit);
+  await storageRepository.oublierHandleFichierSauvegarde();
+  commit('ui/SET_FICHIER_SAUVEGARDE_INTROUVABLE', nom, { root: true });
+}
+
+/**
+ * Branche un handle mémorisé dont l'écriture est autorisée : vérifie que le
+ * fichier existe encore, puis le rend actif. Le drapeau
+ * `modifieDepuisEcritureFichier` n'est PAS forcé : le fichier, peut-être plus
+ * récent (synchronisé depuis un autre poste), n'est réécrit qu'après une vraie
+ * modification dans cet onglet.
+ *
+ * @param {Function} commit - `commit` du contexte d'action racine.
+ * @param {FileSystemFileHandle} handle
+ * @returns {Promise<{ ok: boolean, introuvable?: boolean }>}
+ */
+async function brancherFichierMemorise(commit, handle) {
+  try {
+    const fichier = await handle.getFile();
+    handleFichierSauvegarde = handle;
+    handleEnAttenteAccord = null;
+    commit('ui/SET_FICHIER_EN_ATTENTE_ACCORD', null, { root: true });
+    commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: true, nom: handle.name }, { root: true });
+    commit('ui/SET_FICHIER_SAUVEGARDE_MEMORISE', true, { root: true });
+    commit('ui/SET_DERNIER_FICHIER_ENREGISTRE', new Date(fichier.lastModified).toISOString(), { root: true });
+    return { ok: true };
+  } catch (e) {
+    // NotFoundError (déplacé, renommé, supprimé), NotAllowedError… : même issue.
+    console.error('[Idelia] Fichier de sauvegarde mémorisé inutilisable :', e);
+    await signalerFichierIntrouvable(commit, handle.name);
+    return { ok: false, introuvable: true };
+  }
+}
+
+/**
+ * Reprend au démarrage le fichier de sauvegarde mémorisé (feature 0032, ADR
+ * 0021), sans geste utilisateur. Ne rejette jamais. Ne fait rien sans l'API
+ * File System Access (aucune base IndexedDB ouverte sur Firefox/Safari).
+ *
+ * @param {import('vuex').ActionContext} context
+ * @param {{ chargement: ResultatChargement }} payload
+ * @returns {Promise<void>}
+ */
+async function reprendreSauvegardeFichier({ commit, dispatch }, { chargement } = {}) {
+  try {
+    if (!('showSaveFilePicker' in window)) return;
+    const handle = await storageRepository.lireHandleFichierSauvegarde();
+    if (!handle) return;
+    if (chargement !== 'DONNEES') {
+      // Garde-fou (ADR 0021) : ne jamais écraser une bonne sauvegarde par un état vide.
+      await storageRepository.oublierHandleFichierSauvegarde();
+      dispatch(
+        'notifications/notifier',
+        { type: 'avertissement', duree: 0, message: MESSAGE_DONNEES_ABSENTES(handle.name) },
+        { root: true }
+      );
+      return;
+    }
+    let permission;
+    try {
+      permission = await handle.queryPermission({ mode: 'readwrite' });
+    } catch {
+      permission = 'prompt';
+    }
+    if (permission === 'granted') {
+      await brancherFichierMemorise(commit, handle);
+      return;
+    }
+    // 'prompt' ou 'denied' : un clic sera nécessaire.
+    handleEnAttenteAccord = handle;
+    commit('ui/SET_FICHIER_EN_ATTENTE_ACCORD', handle.name, { root: true });
+  } catch (e) {
+    console.error('[Idelia] Reprise du fichier de sauvegarde impossible :', e);
+  }
+}
+
+/**
+ * Reprend le fichier en attente d'accord. À appeler **uniquement depuis un
+ * clic** (bandeau ou Paramètres) : `requestPermission` exige un geste
+ * utilisateur. Émet elle-même ses toasts (pas de doublon dans les composants).
+ *
+ * @param {import('vuex').ActionContext} context
+ * @returns {Promise<{ ok: boolean, refuse?: boolean, introuvable?: boolean }>}
+ */
+async function confirmerRepriseSauvegardeFichier({ commit, dispatch }) {
+  const handle = handleEnAttenteAccord;
+  if (!handle) return { ok: false };
+  let permission;
+  try {
+    permission = await handle.requestPermission({ mode: 'readwrite' });
+  } catch (e) {
+    console.error(e);
+    permission = 'denied';
+  }
+  if (permission !== 'granted') {
+    commit('ui/SET_BANDEAU_REPRISE_MASQUE', true, { root: true });
+    dispatch(
+      'notifications/notifier',
+      {
+        type: 'info',
+        message: `La sauvegarde dans « ${handle.name} » n'a pas été reprise. Vous pourrez la reprendre plus tard depuis Paramètres, rubrique « Sauvegarde automatique ».`,
+      },
+      { root: true }
+    );
+    return { ok: false, refuse: true };
+  }
+  const resultat = await brancherFichierMemorise(commit, handle);
+  if (resultat.ok) {
+    dispatch(
+      'notifications/notifier',
+      { type: 'succes', message: `La sauvegarde reprend dans « ${handle.name} ».` },
+      { root: true }
+    );
+  }
+  // Introuvable : la fenêtre d'avertissement s'ouvre d'elle-même, pas de toast.
+  return resultat;
+}
 
 /**
  * Active un « fichier de sauvegarde » actif (File System Access API,
@@ -162,12 +329,20 @@ async function activerSauvegardeFichier({ commit, state }) {
       suggestedName: 'idelia-sauvegarde.json',
       types: [{ description: 'Sauvegarde Idelia', accept: { 'application/json': ['.json'] } }],
     });
+    // Choisir un autre fichier remplace un éventuel fichier en attente d'accord.
+    handleEnAttenteAccord = null;
+    commit('ui/SET_FICHIER_EN_ATTENTE_ACCORD', null, { root: true });
     handleFichierSauvegarde = handle;
     commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: true, nom: handle.name }, { root: true });
     // Première écriture immédiate : confirme que tout fonctionne de bout en
     // bout, cohérent avec l'intention explicite de l'utilisateur qui vient
     // de choisir un emplacement.
-    return await ecrireSauvegardeFichier({ commit, state });
+    const resultat = await ecrireSauvegardeFichier({ commit, state });
+    if (resultat.ok) {
+      const memorise = await storageRepository.enregistrerHandleFichierSauvegarde(handle);
+      commit('ui/SET_FICHIER_SAUVEGARDE_MEMORISE', memorise, { root: true });
+    }
+    return resultat;
   } catch (e) {
     if (e.name === 'AbortError') return { ok: false, annule: true };
     console.error("[Idelia] Activation du fichier de sauvegarde impossible :", e);
@@ -194,6 +369,7 @@ async function ecrireSauvegardeFichier({ commit, state }) {
     const writable = await handleFichierSauvegarde.createWritable();
     await writable.write(JSON.stringify(doc, null, 2));
     await writable.close();
+    modifieDepuisEcritureFichier = false;
     commit('ui/SET_DERNIER_FICHIER_ENREGISTRE', new Date().toISOString(), { root: true });
     return { ok: true };
   } catch (e) {
@@ -201,22 +377,27 @@ async function ecrireSauvegardeFichier({ commit, state }) {
     console.error('[Idelia] Écriture du fichier de sauvegarde impossible :', e);
     // Handle révoqué/fichier introuvable : on désactive proprement plutôt
     // que de laisser un état « actif » qui ne fonctionne plus silencieusement.
-    handleFichierSauvegarde = null;
-    commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: false, nom: null }, { root: true });
+    // Autres erreurs (disque plein, fichier verrouillé…) : passagères, on garde
+    // le fichier et on réessaiera au prochain enregistrement.
+    if (e.name === 'NotFoundError' || e.name === 'NotAllowedError') {
+      libererFichierEnMemoire(commit);
+      await storageRepository.oublierHandleFichierSauvegarde();
+    }
     return { ok: false, message: "L'écriture dans le fichier de sauvegarde a échoué." };
   }
 }
 
 /**
- * Désactive le fichier de sauvegarde actif (oublie le handle en mémoire).
- * N'efface aucune donnée (juste un lien pratique vers un fichier) : geste
- * réversible, sans confirmation nécessaire.
+ * Désactive le fichier de sauvegarde actif : oublie le handle en mémoire et
+ * dans IndexedDB. N'efface aucune donnée (juste un lien pratique vers un
+ * fichier, jamais le fichier lui-même) : geste réversible, sans confirmation.
  *
  * @param {import('vuex').ActionContext} context
+ * @returns {Promise<void>}
  */
-function desactiverSauvegardeFichier({ commit }) {
-  handleFichierSauvegarde = null;
-  commit('ui/SET_FICHIER_SAUVEGARDE_ACTIF', { actif: false, nom: null }, { root: true });
+async function desactiverSauvegardeFichier({ commit }) {
+  libererFichierEnMemoire(commit);
+  await storageRepository.oublierHandleFichierSauvegarde();
 }
 
 /**
@@ -229,6 +410,8 @@ function desactiverSauvegardeFichier({ commit }) {
  */
 async function declencherSauvegardeAutomatique({ state, commit, dispatch }) {
   if (handleFichierSauvegarde) {
+    // Rien de nouveau dans cet onglet : pas d'écriture, pas de toast (§4.3).
+    if (!modifieDepuisEcritureFichier) return;
     const resultat = await ecrireSauvegardeFichier({ commit, state });
     if (!resultat.ok) {
       dispatch(
@@ -311,14 +494,14 @@ export default createStore({
      * jamais : l'application doit toujours pouvoir démarrer.
      *
      * @param {import('vuex').ActionContext} context
-     * @returns {Promise<void>}
+     * @returns {Promise<ResultatChargement>} `'DONNEES'`, `'VIDE'` ou `'ERREUR'`.
      */
     async bootstrap({ commit }) {
       try {
         const doc = await storageRepository.load();
         if (doc === null) {
           commit('REPLACE_ALL', etatParDefaut());
-          return;
+          return 'VIDE';
         }
 
         const preparation = preparerDocument(doc);
@@ -327,6 +510,7 @@ export default createStore({
           throw new Error(preparation.message);
         }
         commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
+        return 'DONNEES';
       } catch (e) {
         console.error(e);
         // Conserve une copie du contenu refusé avant qu'une écriture ne
@@ -336,6 +520,7 @@ export default createStore({
         // jusqu'à la première vraie modification.
         commit('REPLACE_ALL', etatParDefaut());
         commit('SET_STATUT_SAUVEGARDE', 'ERREUR_CHARGEMENT');
+        return 'ERREUR';
       }
     },
 
@@ -385,6 +570,9 @@ export default createStore({
         }
 
         commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
+        // REPLACE_ALL est filtrée par le plugin, mais les données ont changé :
+        // le fichier actif (conservé) sera mis à jour au prochain enregistrement.
+        modifieDepuisEcritureFichier = true;
         // `flushImmediat` n'a besoin que de `state`/`commit` : on lui passe le
         // contexte d'action local (module racine non namespacé, il est donc
         // équivalent à ceux exposés par le store complet) plutôt que de
@@ -433,7 +621,9 @@ export default createStore({
       // juste après l'effacement : on l'annule.
       annulerEcritureEnAttente();
       commit('REPLACE_ALL', etatParDefaut());
-      desactiverSauvegardeFichier({ commit });
+      libererFichierEnMemoire(commit);
+      modifieDepuisEcritureFichier = false;
+      // La base IndexedDB (handle) est supprimée par `clear()`.
       await storageRepository.clear();
       await dispatch('ui/reinitialiserPreferences');
       commit('SET_STATUT_SAUVEGARDE', 'INACTIF');
@@ -446,6 +636,9 @@ export default createStore({
     ecrireSauvegardeFichier,
     desactiverSauvegardeFichier,
     declencherSauvegardeAutomatique,
+    // Mémorisation du fichier entre les sessions (feature 0032, ADR 0021).
+    reprendreSauvegardeFichier,
+    confirmerRepriseSauvegardeFichier,
   },
 
   modules: {

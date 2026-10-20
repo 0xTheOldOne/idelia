@@ -24,6 +24,8 @@ Chaque module persisté expose une mutation `REPLACE(payload)` pour l'hydratatio
 - L'écriture est **débouncée (~400 ms)** pour ne pas écrire à chaque frappe (synergie avec `vue-debounce` côté formulaires).
 - **Règle non négociable** : le plugin écrit **toujours via `storageRepository`**, jamais `localStorage` en direct. C'est pourquoi on **n'utilise pas `vuex-persistedstate`** (qui taperait `localStorage` directement) — voir [ADR 0005](../adr/0005-persistance-localstorage-derriere-repository.md).
 
+- Le **handle du fichier de sauvegarde actif** (feature 0032) n'est pas dans le `SaveDocument` : il est stocké dans IndexedDB, uniquement via `storageRepository` ([ADR 0021](../adr/0021-indexeddb-handle-fichier-sauvegarde.md)) ; le store n'en garde que des reflets volatils dans `ui`.
+
 ## Cycle de vie
 
 **Démarrage** — action `app/bootstrap` :

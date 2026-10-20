@@ -39,7 +39,45 @@
     <div v-if="compatible" class="bloc-sauvegarde-automatique__fichier">
       <h3 class="bloc-sauvegarde-automatique__soustitre">Fichier de sauvegarde actif</h3>
 
-      <template v-if="!fichierSauvegardeActif">
+      <template v-if="fichierEnAttenteAccord">
+        <p class="bloc-sauvegarde-automatique__statut" role="status" aria-live="polite">
+          <PhWarning :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
+          <span>
+            Fichier mémorisé : « {{ fichierEnAttenteAccord }} ». Votre accord est nécessaire pour
+            reprendre la sauvegarde.
+          </span>
+        </p>
+        <div class="bloc-sauvegarde-automatique__actions-fichier">
+          <button
+            type="button"
+            class="btn btn-primary bloc-sauvegarde-automatique__bouton"
+            :disabled="activationEnCours"
+            @click="onReprendre"
+          >
+            <PhFloppyDisk :size="20" aria-hidden="true" />
+            <span>Reprendre la sauvegarde</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary bloc-sauvegarde-automatique__bouton"
+            :disabled="activationEnCours"
+            @click="onChoisirFichier"
+          >
+            <PhArrowsClockwise :size="20" aria-hidden="true" />
+            <span>Changer de fichier</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary bloc-sauvegarde-automatique__bouton"
+            @click="onDesactiverFichier"
+          >
+            <PhProhibit :size="20" aria-hidden="true" />
+            <span>Ne plus utiliser ce fichier</span>
+          </button>
+        </div>
+      </template>
+
+      <template v-else-if="!fichierSauvegardeActif">
         <button
           type="button"
           class="btn btn-outline-secondary bloc-sauvegarde-automatique__bouton"
@@ -51,7 +89,8 @@
         </button>
         <p class="bloc-sauvegarde-automatique__aide">
           Idelia écrira directement dans le fichier choisi, à chaque enregistrement et lors des
-          sauvegardes automatiques, sans redemander à chaque fois.
+          sauvegardes automatiques, sans redemander à chaque fois. Idelia s'en souviendra aux
+          prochaines ouvertures.
         </p>
       </template>
 
@@ -59,8 +98,8 @@
         <p class="bloc-sauvegarde-automatique__statut" role="status" aria-live="polite">
           <PhCheckCircle :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
           <span>
-            Fichier actif : « {{ nomFichierSauvegarde }} » — Dernière écriture le
-            {{ texteDerniereEcriture }}
+            Fichier actif : « {{ nomFichierSauvegarde }} ». Dernière écriture le
+            {{ texteDerniereEcriture }}.
           </span>
         </p>
         <div class="bloc-sauvegarde-automatique__actions-fichier">
@@ -79,11 +118,21 @@
             @click="onDesactiverFichier"
           >
             <PhProhibit :size="20" aria-hidden="true" />
-            <span>Désactiver</span>
+            <span>Ne plus utiliser ce fichier</span>
           </button>
         </div>
 
-        <p class="bloc-sauvegarde-automatique__aide bloc-sauvegarde-automatique__rappel-session">
+        <p
+          v-if="fichierSauvegardeMemorise"
+          class="bloc-sauvegarde-automatique__aide bloc-sauvegarde-automatique__rappel-session"
+        >
+          Idelia se souviendra de ce fichier la prochaine fois. Si votre navigateur le demande, il
+          suffira d'un clic pour reprendre la sauvegarde.
+        </p>
+        <p
+          v-else
+          class="bloc-sauvegarde-automatique__aide bloc-sauvegarde-automatique__rappel-session"
+        >
           Ce choix est valable pour cette session&nbsp;: après avoir rechargé la page, choisissez à
           nouveau votre fichier pour continuer à l'utiliser.
         </p>
@@ -100,6 +149,8 @@ import {
   PhArrowsClockwise,
   PhProhibit,
   PhCheckCircle,
+  PhFloppyDisk,
+  PhWarning,
 } from '@phosphor-icons/vue';
 
 import { dateUtil } from '@/domain/utils/dates.js';
@@ -114,6 +165,11 @@ import { INTERVALLES_SAUVEGARDE_AUTO } from '@/storage/storageRepository.js';
  * Composant **conteneur**, sur le modèle de `BlocSauvegarde.vue` : dispatche
  * les actions, affiche leur résultat, aucune logique métier.
  *
+ * Feature 0032 (ADR 0021) : le fichier est mémorisé entre les sessions. Le Bloc 2
+ * a donc trois états : en attente d'accord (`fichierEnAttenteAccord`, prioritaire :
+ * un clic est nécessaire pour reprendre), inactif, actif. Le texte d'aide de l'état
+ * actif dépend de `fichierSauvegardeMemorise` (la mémorisation peut avoir échoué).
+ *
  * La détection `compatible` (capacité du navigateur à écrire un fichier via
  * la File System Access API) masque entièrement le Bloc 2 sur Firefox/Safari
  * — jamais grisé, pour éviter la frustration d'un bouton qui ne peut jamais
@@ -121,7 +177,15 @@ import { INTERVALLES_SAUVEGARDE_AUTO } from '@/storage/storageRepository.js';
  */
 export default {
   name: 'BlocSauvegardeAutomatique',
-  components: { PhClockCountdown, PhFile, PhArrowsClockwise, PhProhibit, PhCheckCircle },
+  components: {
+    PhClockCountdown,
+    PhFile,
+    PhArrowsClockwise,
+    PhProhibit,
+    PhCheckCircle,
+    PhFloppyDisk,
+    PhWarning,
+  },
   data() {
     return {
       /** Liste fermée de fréquences proposées, en minutes. */
@@ -139,17 +203,22 @@ export default {
       'fichierSauvegardeActif',
       'nomFichierSauvegarde',
       'dernierFichierEnregistreLe',
+      'fichierSauvegardeMemorise',
+      'fichierEnAttenteAccord',
     ]),
 
     texteExplicatif() {
       if (!this.compatible) {
         return "Ce navigateur ne permet pas d'écrire un fichier automatiquement : un rappel s'affichera pour vous inviter à enregistrer vous-même une sauvegarde.";
       }
+      if (this.fichierEnAttenteAccord) {
+        return `Reprenez la sauvegarde dans votre fichier « ${this.fichierEnAttenteAccord} » ci-dessous ; en attendant, un rappel s'affichera.`;
+      }
       if (this.fichierSauvegardeActif) {
         return (
-          `Toutes les ${this.sauvegardeAutoIntervalleMinutes} minutes, Idelia réécrit `
-          + `automatiquement votre fichier « ${this.nomFichierSauvegarde} », sans rien vous `
-          + 'demander.'
+          `Toutes les ${this.sauvegardeAutoIntervalleMinutes} minutes, Idelia enregistre vos `
+          + `dernières modifications dans votre fichier « ${this.nomFichierSauvegarde} », sans `
+          + 'rien vous demander.'
         );
       }
       return "Activez un fichier de sauvegarde ci-dessous pour une sauvegarde silencieuse ; en attendant, un rappel s'affichera.";
@@ -162,7 +231,11 @@ export default {
   },
   methods: {
     ...mapActions('ui', ['configurerSauvegardeAuto']),
-    ...mapActions(['activerSauvegardeFichier', 'desactiverSauvegardeFichier']),
+    ...mapActions([
+      'activerSauvegardeFichier',
+      'desactiverSauvegardeFichier',
+      'confirmerRepriseSauvegardeFichier',
+    ]),
     ...mapActions('notifications', ['notifier']),
 
     onActiveChange(event) {
@@ -177,6 +250,13 @@ export default {
         active: this.sauvegardeAutoActive,
         intervalleMinutes: Number(event.target.value),
       });
+    },
+
+    /** Reprend le fichier mémorisé ; l'action émet elle-même ses toasts. */
+    async onReprendre() {
+      this.activationEnCours = true;
+      await this.confirmerRepriseSauvegardeFichier();
+      this.activationEnCours = false;
     },
 
     /** Ouvre le sélecteur de fichier natif (choix initial ou changement). */
@@ -195,10 +275,17 @@ export default {
       }
     },
 
-    /** Désactive le fichier actif et confirme le geste par un toast neutre. */
-    onDesactiverFichier() {
-      this.desactiverSauvegardeFichier();
-      this.notifier({ type: 'info', message: 'Fichier de sauvegarde désactivé.' });
+    /**
+     * Oublie le fichier (actif ou en attente d'accord) et confirme le geste par
+     * un toast neutre. Le nom est capturé avant la désactivation (qui le vide).
+     */
+    async onDesactiverFichier() {
+      const nom = this.fichierEnAttenteAccord || this.nomFichierSauvegarde;
+      await this.desactiverSauvegardeFichier();
+      this.notifier({
+        type: 'info',
+        message: `Idelia n'utilisera plus le fichier « ${nom} ». Le fichier lui-même n'a pas été supprimé.`,
+      });
     },
   },
 };

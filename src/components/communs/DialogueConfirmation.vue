@@ -4,7 +4,7 @@
 
     <template #pied>
       <button type="button" class="btn btn-outline-secondary" @click="$emit('annuler')">
-        Annuler
+        {{ libelleAnnuler }}
       </button>
       <button type="button" :class="['btn', 'btn-' + varianteConfirmer]" @click="$emit('confirmer')">
         {{ libelleConfirmer }}
@@ -38,6 +38,8 @@ export default {
     message: { type: String, required: true },
     /** Libellé du bouton de confirmation. */
     libelleConfirmer: { type: String, default: 'Confirmer' },
+    /** Libellé du bouton d'annulation. */
+    libelleAnnuler: { type: String, default: 'Annuler' },
     /** Variante Bootstrap du bouton de confirmation (`primary`, `danger`…). */
     varianteConfirmer: { type: String, default: 'primary' },
   },

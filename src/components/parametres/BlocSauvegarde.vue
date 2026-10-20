@@ -129,7 +129,7 @@
     <DialogueConfirmation
       :visible="confirmationResetVisible"
       titre="Tout effacer ?"
-      message="Cette action supprime définitivement toutes vos données (réglages, équipe, tournées, absences, plannings) de ce navigateur. Elle ne peut pas être annulée. Pour en garder une copie, enregistrez d'abord une sauvegarde. Voulez-vous vraiment tout effacer ?"
+      :message="messageConfirmationReset"
       libelle-confirmer="Tout effacer"
       variante-confirmer="danger"
       @confirmer="onConfirmerReset"
@@ -233,10 +233,24 @@ export default {
 
     messageConfirmationImport() {
       const nom = this.fichierEnAttente ? this.fichierEnAttente.name : 'ce fichier';
+      const miseAJourFichier = this.fichierSauvegardeActif
+        ? ` Votre fichier de sauvegarde « ${this.nomFichierSauvegarde} » sera ensuite mis à jour avec ces données.`
+        : '';
       return (
         'Cette action remplacera toutes les données actuelles (réglages, équipe, tournées, '
         + `absences, plannings) par celles du fichier « ${nom} ». Les données actuelles seront `
-        + 'perdues si vous ne les avez pas déjà enregistrées. Voulez-vous continuer ?'
+        + `perdues si vous ne les avez pas déjà enregistrées.${miseAJourFichier} Voulez-vous continuer ?`
+      );
+    },
+
+    messageConfirmationReset() {
+      const fichierConserve = this.fichierSauvegardeActif
+        ? ` Votre fichier de sauvegarde « ${this.nomFichierSauvegarde} » n'est pas supprimé : supprimez-le vous-même si nécessaire.`
+        : '';
+      return (
+        'Cette action supprime définitivement toutes vos données (réglages, équipe, tournées, '
+        + 'absences, plannings) de ce navigateur. Elle ne peut pas être annulée. Pour en garder '
+        + `une copie, enregistrez d'abord une sauvegarde.${fichierConserve} Voulez-vous vraiment tout effacer ?`
       );
     },
   },

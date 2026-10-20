@@ -31,14 +31,19 @@ store.dispatch('ui/initialiserMenu');
 store.dispatch('ui/initialiserSauvegardeAuto');
 
 async function demarrer() {
+  /** @type {import('./store').ResultatChargement} */
+  let chargement = 'ERREUR';
   try {
-    await store.dispatch('bootstrap');
+    chargement = await store.dispatch('bootstrap');
   } catch (e) {
     // bootstrap ne devrait jamais rejeter, mais on monte l'app dans tous les cas
     console.error('Idelia — échec du démarrage :', e);
   } finally {
     app.mount('#app');
   }
+  // Après le montage, sans bloquer l'affichage (feature 0032) : bandeau ou
+  // fenêtre d'avertissement apparaissent de façon réactive.
+  store.dispatch('reprendreSauvegardeFichier', { chargement });
 }
 
 demarrer();

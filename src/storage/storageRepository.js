@@ -8,7 +8,17 @@
  * `"idelia:data"`. L'interface reste **asynchrone** (Promises) même si
  * l'implémentation sous-jacente est synchrone, pour permettre une bascule
  * ultérieure vers IndexedDB sans changer les appelants.
+ *
+ * Seconde brique (feature 0032, ADR 0021) : IndexedDB, **limitée au seul
+ * `FileSystemFileHandle`** du fichier de sauvegarde actif (non sérialisable en
+ * JSON, donc impossible dans localStorage). Les données métier restent dans
+ * LocalStorage. Tout accès IndexedDB passe par `indexedDb.js`, importé
+ * uniquement ici.
  */
+import { indexedDb } from './indexedDb.js';
+
+/** Clé (magasin IndexedDB `cles-valeurs`) du handle du fichier de sauvegarde actif. */
+const CLE_HANDLE_FICHIER = 'fichier-sauvegarde-actif';
 
 /** Clé unique de stockage du document de sauvegarde. */
 const CLE_DONNEES = 'idelia:data';
@@ -115,6 +125,13 @@ async function clear() {
     if (cle !== null && cle.startsWith(PREFIXE_CLES)) aSupprimer.push(cle);
   }
   aSupprimer.forEach((cle) => localStorage.removeItem(cle));
+  // La base IndexedDB (handle du fichier de sauvegarde) est supprimée aussi,
+  // en best-effort : son indisponibilité ne doit pas faire échouer l'effacement.
+  try {
+    await indexedDb.supprimerBase();
+  } catch {
+    // Best-effort : IndexedDB indisponible.
+  }
 }
 
 /**
@@ -231,10 +248,69 @@ function enregistrerPreferenceSauvegardeAuto({ active, intervalleMinutes }) {
   }
 }
 
+/**
+ * Lit le handle du fichier de sauvegarde actif (feature 0032) dans IndexedDB.
+ * **Ne rejette jamais** : si IndexedDB est indisponible, si rien n'est stocké
+ * ou si la valeur n'a pas la forme d'un `FileSystemFileHandle`, renvoie `null`
+ * (la valeur invalide est alors supprimée, best-effort).
+ *
+ * @returns {Promise<FileSystemFileHandle|null>}
+ */
+async function lireHandleFichierSauvegarde() {
+  try {
+    const valeur = await indexedDb.lire(CLE_HANDLE_FICHIER);
+    if (valeur === undefined || valeur === null) return null;
+    if (
+      valeur.kind === 'file' &&
+      typeof valeur.getFile === 'function' &&
+      typeof valeur.queryPermission === 'function'
+    ) {
+      return valeur;
+    }
+    await oublierHandleFichierSauvegarde();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Enregistre le handle du fichier de sauvegarde actif (feature 0032) dans
+ * IndexedDB. **Ne rejette jamais** (best-effort).
+ *
+ * @param {FileSystemFileHandle} handle
+ * @returns {Promise<boolean>} `true` si l'écriture a réussi.
+ */
+async function enregistrerHandleFichierSauvegarde(handle) {
+  try {
+    await indexedDb.ecrire(CLE_HANDLE_FICHIER, handle);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Oublie le handle du fichier de sauvegarde actif (feature 0032).
+ * **Ne rejette jamais** (best-effort).
+ *
+ * @returns {Promise<void>}
+ */
+async function oublierHandleFichierSauvegarde() {
+  try {
+    await indexedDb.supprimer(CLE_HANDLE_FICHIER);
+  } catch {
+    // Best-effort : IndexedDB indisponible ou clé déjà absente.
+  }
+}
+
 export const storageRepository = {
   load,
   save,
   clear,
+  lireHandleFichierSauvegarde,
+  enregistrerHandleFichierSauvegarde,
+  oublierHandleFichierSauvegarde,
   conserverCopieCorrompue,
   isAvailable,
   lirePreferenceMenuReplie,

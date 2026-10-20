@@ -1,6 +1,6 @@
 # ADR 0018 — Stratégie de sauvegarde dans un fichier (File System Access API en amélioration progressive)
 
-- **Statut** : Accepté
+- **Statut** : Accepté — **amendé par l'[ADR 0021](0021-indexeddb-handle-fichier-sauvegarde.md)** (le fichier actif est mémorisé entre les sessions via IndexedDB)
 - **Date** : 2026-07-10
 - **Décideurs** : Porteur du produit (revue), mise en œuvre feature [0019](../../features/0019-sauvegarde-fiable-et-periodique.md)
 
@@ -28,7 +28,7 @@ Le réglage d'activation/fréquence est une **préférence d'UI** persistée via
 
 - **Positives** : correction **réelle** du bug d'annulation et sauvegarde automatique **réelle** dans un fichier sur Chrome/Edge (poste type d'un cabinet) ; clarté honnête sur l'état de sauvegarde (fichier vs navigateur) ; aucune nouvelle brique de stockage (pas d'IndexedDB) donc **aucun écart** à [ADR 0005](0005-persistance-localstorage-derriere-repository.md) ; repli gracieux et non trompeur sur les autres navigateurs.
 - **Négatives / compromis** : sur Chrome/Edge, le fichier actif **ne survit pas** à un rechargement de page (à re-choisir par session) — compromis KISS assumé, annoncé clairement à l'utilisateur ; l'écriture **automatique** dans un fichier reste **indisponible** sur Firefox/Safari (rappel seulement) ; dépendance à une API récente, gérée par *feature-detection* (`'showSaveFilePicker' in window`) et masquage propre du bloc concerné là où elle manque.
-- **Suivi** : si la re-sélection par session s'avère pénible à l'usage, envisager la **persistance du handle via IndexedDB** (nouvel ADR, écart à [ADR 0005](0005-persistance-localstorage-derriere-repository.md) à acter). Ajouter un renvoi de suivi depuis [ADR 0006](0006-sauvegarde-partage-par-export-import-json.md) vers le présent ADR.
+- **Suivi** : si la re-sélection par session s'avère pénible à l'usage, envisager la **persistance du handle via IndexedDB** (nouvel ADR, écart à [ADR 0005](0005-persistance-localstorage-derriere-repository.md) à acter). → **Fait** : [ADR 0021](0021-indexeddb-handle-fichier-sauvegarde.md), feature [0032](../../features/0032-fichier-sauvegarde-actif-persistant.md). Ajouter un renvoi de suivi depuis [ADR 0006](0006-sauvegarde-partage-par-export-import-json.md) vers le présent ADR.
 
 ## Alternatives considérées
 

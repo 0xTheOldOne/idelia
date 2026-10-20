@@ -1,6 +1,6 @@
 # ADR 0005 — Persistance en LocalStorage, isolée derrière un repository
 
-- **Statut** : Accepté
+- **Statut** : Accepté — **amendé par l'[ADR 0021](0021-indexeddb-handle-fichier-sauvegarde.md)** (IndexedDB, limitée au handle du fichier de sauvegarde actif, derrière `storageRepository`)
 - **Date** : 2026-07-07
 
 ## Contexte

@@ -39,9 +39,16 @@ import { storageRepository } from '@/storage/storageRepository.js';
  * (feature 0019, ADR 0018) : reflètent l'état du « fichier de sauvegarde
  * actif » (File System Access API, Chrome/Edge uniquement), dont le handle
  * réel (non sérialisable) vit en variable de module dans
- * `src/store/index.js`. **Volatils, jamais persistés** : après un
- * rechargement de page, `fichierSauvegardeActif` redevient `false` (le
- * handle ne survit pas à la session, choix assumé de l'ADR 0018).
+ * `src/store/index.js`. **Volatils, jamais persistés** : le handle est
+ * mémorisé dans IndexedDB par `storageRepository` (feature 0032, ADR 0021) ;
+ * ces reflets restent volatils et sont recalculés à chaque démarrage par
+ * l'action racine `reprendreSauvegardeFichier`.
+ *
+ * `fichierSauvegardeMemorise`/`fichierEnAttenteAccord`/`bandeauRepriseMasque`/
+ * `fichierSauvegardeIntrouvable` (feature 0032) : reflets volatils de la
+ * mémorisation du fichier (texte « Idelia s'en souviendra »), du fichier en
+ * attente d'accord du navigateur (bandeau de reprise), du masquage du
+ * bandeau pour la session et du fichier introuvable (fenêtre d'avertissement).
  *
  * Le minuteur de sauvegarde automatique dispatche désormais l'action racine
  * `declencherSauvegardeAutomatique` (`src/store/index.js`) à chaque tick :
@@ -92,6 +99,10 @@ function etatInitial() {
     fichierSauvegardeActif: false,
     nomFichierSauvegarde: null,
     dernierFichierEnregistreLe: null,
+    fichierSauvegardeMemorise: false,
+    fichierEnAttenteAccord: null,
+    bandeauRepriseMasque: false,
+    fichierSauvegardeIntrouvable: null,
   };
 }
 
@@ -119,6 +130,18 @@ export default {
     SET_DERNIER_FICHIER_ENREGISTRE(state, iso) {
       state.dernierFichierEnregistreLe = iso;
     },
+    SET_FICHIER_SAUVEGARDE_MEMORISE(state, valeur) {
+      state.fichierSauvegardeMemorise = valeur;
+    },
+    SET_FICHIER_EN_ATTENTE_ACCORD(state, nom) {
+      state.fichierEnAttenteAccord = nom;
+    },
+    SET_BANDEAU_REPRISE_MASQUE(state, valeur) {
+      state.bandeauRepriseMasque = valeur;
+    },
+    SET_FICHIER_SAUVEGARDE_INTROUVABLE(state, nom) {
+      state.fichierSauvegardeIntrouvable = nom;
+    },
     /** Remet tout l'état du module à ses valeurs initiales. */
     REINITIALISER(state) {
       Object.assign(state, etatInitial());
@@ -132,6 +155,23 @@ export default {
      */
     enregistrerExport({ commit }) {
       commit('SET_DERNIER_EXPORT', new Date().toISOString());
+    },
+
+    /**
+     * Masque le bandeau de reprise de la sauvegarde pour la session
+     * (« Plus tard »).
+     * @param {import('vuex').ActionContext} context
+     */
+    masquerBandeauReprise({ commit }) {
+      commit('SET_BANDEAU_REPRISE_MASQUE', true);
+    },
+
+    /**
+     * Ferme la fenêtre « fichier de sauvegarde introuvable ».
+     * @param {import('vuex').ActionContext} context
+     */
+    acquitterFichierIntrouvable({ commit }) {
+      commit('SET_FICHIER_SAUVEGARDE_INTROUVABLE', null);
     },
 
     /**

@@ -34,7 +34,7 @@ export default {
 - **Mutation `REPLACE`** obligatoire dans chaque module persisté : elle sert à l'hydratation atomique (`REPLACE_ALL`) au démarrage et à l'import ([architecture 03](../architecture/03-modele-de-donnees.md)).
 - **La logique métier ne vit pas dans le store.** Les actions orchestrent ; les calculs métier (génération, validation, sérialisation) appartiennent à `src/domain/`. Exemple : `plannings/generer` appelle `genererPlanning(input)` puis commit le résultat.
 - **Soft-delete** : désactiver (`actif=false` / `archivee=true`), ne pas supprimer physiquement une entité référencée ([architecture 02](../architecture/02-modele-de-domaine.md)).
-- **Interdiction absolue** d'accéder à `localStorage` depuis un module : la persistance est gérée par le **plugin dédié** via `storageRepository` ([ADR 0005](../adr/0005-persistance-localstorage-derriere-repository.md)).
+- **Interdiction absolue** d'accéder à `localStorage` **ou à IndexedDB** depuis un module : la persistance est gérée par le **plugin dédié** via `storageRepository` ([ADR 0005](../adr/0005-persistance-localstorage-derriere-repository.md)).
 - **IDs** générés via `src/domain/utils/id.js` (`genId()`).
 - **Immutabilité raisonnable** : privilégier des mises à jour claires ; ne pas muter des objets partagés hors mutation.
 

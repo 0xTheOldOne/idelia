@@ -22,7 +22,8 @@ Idelia est une **Single Page Application (SPA) Vue.js**, entièrement exécutée
 └───────────────┬───────────────┘   └─────────────────────────────┘
                 │ load() / save() (async)
 ┌───────────────▼───────────────────────────────────────────────┐
-│  storageRepository  →  LocalStorage (v1)  [ADR 0005]           │
+│  storageRepository  →  LocalStorage (données) [ADR 0005]       │
+│    + IndexedDB (handle du fichier de sauvegarde seul) [ADR 0021]│
 │  + export/import JSON (fichier)           [ADR 0006]           │
 └───────────────────────────────────────────────────────────────┘
 ```
@@ -31,7 +32,7 @@ Idelia est une **Single Page Application (SPA) Vue.js**, entièrement exécutée
 
 - Les **composants** ne contiennent **pas** de logique métier : ils lisent l'état via des getters, déclenchent des actions, et appellent au besoin des fonctions pures du **domaine**.
 - Le **domaine** (`src/domain/`) ne connaît **ni** Vue **ni** Vuex. Il est constitué de fonctions pures et de données ([ADR 0008](../adr/0008-moteur-planification-module-pur.md)).
-- Seul le **repository** touche au stockage. Ni le store ni les composants n'accèdent à `localStorage` directement ([ADR 0005](../adr/0005-persistance-localstorage-derriere-repository.md)).
+- Seul le **repository** touche au stockage. Ni le store ni les composants n'accèdent à `localStorage` ni à IndexedDB directement ([ADR 0005](../adr/0005-persistance-localstorage-derriere-repository.md), [ADR 0021](../adr/0021-indexeddb-handle-fichier-sauvegarde.md)) : `storageRepository` → LocalStorage (données) + IndexedDB (handle du fichier de sauvegarde seul).
 
 ## Flux de données typiques
 

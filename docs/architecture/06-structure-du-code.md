@@ -55,6 +55,7 @@ Idelia/
     │
     ├── storage/
     │   ├── storageRepository.js  # abstraction load/save/clear/isAvailable (async) [ADR 0005]
+    │   ├── indexedDb.js          # accès IndexedDB minimal, importé par storageRepository seul [ADR 0021]
     │   └── migrations.js         # CURRENT_SCHEMA_VERSION + pipeline de migration
     │
     ├── adaptateurs/            # I/O navigateur + bibliothèques tierces (jamais de persistance : c'est le rôle de storage/)

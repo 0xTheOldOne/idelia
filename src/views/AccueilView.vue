@@ -104,6 +104,9 @@
           :statut="statutSauvegarde"
           :derniere-sauvegarde="derniereSauvegarde"
           :dernier-export-le="dernierExportLe"
+          :fichier-sauvegarde-actif="fichierSauvegardeActif"
+          :nom-fichier-sauvegarde="nomFichierSauvegarde"
+          :dernier-fichier-enregistre-le="dernierFichierEnregistreLe"
           @exporter="onExporter"
         />
       </div>
@@ -176,7 +179,12 @@ export default {
   },
   computed: {
     ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
-    ...mapState('ui', ['dernierExportLe']),
+    ...mapState('ui', [
+      'dernierExportLe',
+      'fichierSauvegardeActif',
+      'nomFichierSauvegarde',
+      'dernierFichierEnregistreLe',
+    ]),
     ...mapState('absences', { absences: 'items' }),
     ...mapState('plannings', { plannings: 'items' }),
     ...mapGetters('personnes', { personnesActives: 'actifs' }),
@@ -245,8 +253,9 @@ export default {
   },
   methods: {
     ...mapActions('plannings', { resumeConflitsAction: 'resumeConflits' }),
-    ...mapActions(['exporter']),
+    ...mapActions(['exporter', 'ecrireSauvegardeFichier']),
     ...mapActions('ui', ['enregistrerExport']),
+    ...mapActions('notifications', ['notifier']),
     ...mapMutations('plannings', ['SELECT']),
 
     /** Sélectionne le planning `id` puis ouvre l'éditeur (§6.3). */
@@ -266,8 +275,21 @@ export default {
      * « Exporter une sauvegarde » (`CarteSauvegarde`) : réutilise l'action racine 0008, puis
      * enregistre l'horodatage d'export (`ui/enregistrerExport`, feature 0008) pour que
      * `CarteSauvegarde` affiche une confirmation datée (comme `BlocSauvegarde`).
+     * Si un fichier de sauvegarde est actif (0032), l'écrit à la place du téléchargement.
      */
-    onExporter() {
+    async onExporter() {
+      if (this.fichierSauvegardeActif) {
+        const resultat = await this.ecrireSauvegardeFichier();
+        if (resultat.ok) {
+          this.notifier({
+            type: 'succes',
+            message: `Sauvegarde enregistrée dans « ${this.nomFichierSauvegarde} ».`,
+          });
+        } else {
+          this.notifier({ type: 'avertissement', message: resultat.message });
+        }
+        return;
+      }
       this.exporter();
       this.enregistrerExport();
     },
