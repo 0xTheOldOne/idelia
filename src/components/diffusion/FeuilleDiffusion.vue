@@ -54,7 +54,7 @@ export default {
   },
   computed: {
     urlLogo() {
-      return `${import.meta.env.BASE_URL}logo.png`;
+      return `${import.meta.env.BASE_URL}favicon.png`;
     },
     /** Au moins une ligne « Fermé » sur cette feuille (pour la légende). */
     aJourFerme() {
