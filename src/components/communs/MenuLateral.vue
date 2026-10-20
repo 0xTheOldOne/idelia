@@ -44,6 +44,8 @@
         compact
         :statut="statutSauvegarde"
         :derniere-sauvegarde="derniereSauvegarde"
+        :nom-fichier="fichierSauvegardeActif ? nomFichierSauvegarde : null"
+        :dernier-fichier-le="dernierFichierEnregistreLe"
       />
     </div>
 
@@ -149,6 +151,7 @@ export default {
   computed: {
     ...mapGetters('ui', ['menuReplie']),
     ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
+    ...mapState('ui', ['fichierSauvegardeActif', 'nomFichierSauvegarde', 'dernierFichierEnregistreLe']),
     /** Chemin du logo de marque, résolu via la base Vite (compatible sous-répertoire GitHub Pages). */
     cheminLogo() {
       return `${import.meta.env.BASE_URL}favicon.png`;

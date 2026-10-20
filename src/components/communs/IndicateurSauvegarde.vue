@@ -95,6 +95,10 @@ export default {
     apresEdition: { type: Boolean, default: false },
     /** `true` pour la variante compacte (pastille + libellé court). */
     compact: { type: Boolean, default: false },
+    /** Variante compacte : nom du fichier de sauvegarde actif (0019/0032), ou `null`. */
+    nomFichier: { type: String, default: null },
+    /** Variante compacte : horodatage ISO UTC de la dernière écriture du fichier actif, ou `null`. */
+    dernierFichierLe: { type: String, default: null },
   },
   computed: {
     classeStatut() {
@@ -123,17 +127,27 @@ export default {
     classeCompact() {
       return `indicateur-sauvegarde--compact indicateur-sauvegarde--compact-${this.categorieCompact}`;
     },
-    /** Heure courte `"HH:mm"` de la dernière sauvegarde, ou chaîne vide. */
+    /**
+     * Heure courte `"HH:mm"` de la sauvegarde la plus récente (navigateur ou
+     * fichier actif), ou chaîne vide. Les horodatages ISO UTC se comparent
+     * comme des chaînes.
+     */
     heureCompacte() {
-      return dateUtil.formatHeureFr(this.derniereSauvegarde);
+      const fichier = this.nomFichier ? this.dernierFichierLe : null;
+      const plusRecente = [this.derniereSauvegarde, fichier].filter(Boolean).sort().pop();
+      return dateUtil.formatHeureFr(plusRecente ?? null);
     },
-    /** Libellé court affiché en variante compacte déplié. */
+    /**
+     * Libellé court affiché en variante compacte déplié. Sans écriture depuis
+     * l'ouverture, les données relues sont déjà enregistrées : « À jour »
+     * (jamais « Non enregistré », qui inquiéterait à tort).
+     */
     libelleCompact() {
       if (this.statut === 'EN_COURS') return 'Enregistrement…';
       if (this.statut === 'ERREUR' || this.statut === 'ERREUR_CHARGEMENT') {
         return 'Échec de sauvegarde';
       }
-      return this.heureCompacte ? `Sauvegardé · ${this.heureCompacte}` : 'Non enregistré';
+      return this.heureCompacte ? `Sauvegardé · ${this.heureCompacte}` : 'À jour';
     },
     /**
      * Libellé complet (aria-label/title) de la variante compacte — porte à
@@ -144,9 +158,14 @@ export default {
       if (this.statut === 'ERREUR' || this.statut === 'ERREUR_CHARGEMENT') {
         return 'Échec de sauvegarde';
       }
-      return this.heureCompacte
-        ? `Sauvegardé dans ce navigateur à ${this.heureCompacte}`
-        : 'Non enregistré';
+      const navigateur = this.derniereSauvegarde
+        ? `Enregistré dans ce navigateur à ${dateUtil.formatHeureFr(this.derniereSauvegarde)}`
+        : 'Vos données sont enregistrées dans ce navigateur';
+      if (!this.nomFichier) return navigateur;
+      const fichier = this.dernierFichierLe
+        ? `fichier « ${this.nomFichier} » à jour à ${dateUtil.formatHeureFr(this.dernierFichierLe)}`
+        : `fichier « ${this.nomFichier} » actif`;
+      return `${navigateur} ; ${fichier}`;
     },
   },
 };
