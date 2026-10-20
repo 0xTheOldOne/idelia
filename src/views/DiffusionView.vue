@@ -359,7 +359,6 @@ export default {
 }
 
 .diffusion-explication {
-  max-width: 60ch;
   color: t.$couleur-texte-attenue;
 }
 
@@ -367,7 +366,6 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: t.$espace-3;
-  max-width: 60ch;
 }
 
 .diffusion-lien-bandeau {

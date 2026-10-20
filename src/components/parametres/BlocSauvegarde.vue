@@ -29,7 +29,11 @@
           <PhFloppyDisk :size="20" aria-hidden="true" />
           <span>Enregistrer une sauvegarde</span>
         </button>
-        <p class="bloc-sauvegarde__aide">
+        <p v-if="fichierSauvegardeActif" class="bloc-sauvegarde__aide">
+          Enregistre tout de suite vos données dans votre fichier « {{ nomFichierSauvegarde }} ».
+          Aucun risque : vos données actuelles ne sont pas modifiées.
+        </p>
+        <p v-else class="bloc-sauvegarde__aide">
           Télécharge un fichier de sauvegarde que vous rangez où vous voulez. Aucun risque : vos
           données actuelles ne sont pas modifiées.
         </p>
