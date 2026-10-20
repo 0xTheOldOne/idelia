@@ -123,6 +123,9 @@ export default {
   align-items: center;
   justify-content: center;
   min-width: 1.6em;
+  // Hauteur minimale : un échantillon sans texte (Dimanche) reste un carré
+  // montrant la couleur de fond, au lieu de s'écraser en simple trait.
+  min-height: 1.6em;
   padding: 0 0.3em;
   border: 1px solid t.$couleur-bordure;
   border-radius: t.$rayon-sm;
