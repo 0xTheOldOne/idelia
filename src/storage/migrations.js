@@ -14,7 +14,7 @@ import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calend
 import { verifierVersion, verifierDocument } from '@/domain/validationImport.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -298,6 +298,29 @@ MIGRATIONS[8] = (doc) => {
       ? { ...doc.cabinet, zoneScolaire: normaliserZoneScolaire(doc.cabinet.zoneScolaire) }
       : doc.cabinet;
   return { ...doc, cabinet, vacancesScolaires: normaliserCacheVacances(doc.vacancesScolaires) };
+};
+
+/**
+ * Migration v9 → v10 : ajout de `Personne.tauxRetrocession` (rétrocession, en
+ * %, de la remplaçante à la titulaire remplacée).
+ *
+ * - Chaque `Personne` de `doc.personnes` reçoit
+ *   `tauxRetrocession: personne.tauxRetrocession ?? null` (idempotent).
+ * - `tournees`, `absences`, `plannings`, `cabinet` : inchangés.
+ *
+ * @param {object} doc - Document de version 9.
+ * @returns {object} Document équivalent en version 10 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[9] = (doc) => {
+  const personnes = Array.isArray(doc.personnes)
+    ? doc.personnes.map((personne) =>
+      // Élément non objet laissé tel quel : `verifierStructure` le rejettera.
+      personne && typeof personne === 'object' && !Array.isArray(personne)
+        ? { ...personne, tauxRetrocession: personne.tauxRetrocession ?? null }
+        : personne
+    )
+    : doc.personnes;
+  return { ...doc, personnes };
 };
 
 /**

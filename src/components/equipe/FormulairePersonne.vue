@@ -79,26 +79,83 @@
         </div>
       </div>
 
-      <!-- Titulaire remplacée en priorité (remplaçant uniquement) -->
-      <div v-if="estRemplacant" class="mb-4">
-        <label for="personne-titulaire" class="form-label">Remplace en priorité (facultatif)</label>
-        <select
-          id="personne-titulaire"
-          v-model="formulaire.titulaireId"
-          class="form-select formulaire-select"
-          aria-describedby="personne-titulaire-aide"
-        >
-          <option value="">— Non précisé —</option>
-          <option v-for="option in optionsTitulaireListe" :key="option.id" :value="option.id">
-            {{ option.libelle }}
-          </option>
-        </select>
-        <div id="personne-titulaire-aide" class="form-text">
-          La titulaire que cette personne remplace d'habitude. Les jours où cette titulaire ne travaille
-          pas, cette personne sera proposée avant les autres remplaçantes.
-          <template v-if="aucuneTitulaireActive">
-            Ajoutez d'abord une personne titulaire pour pouvoir la choisir ici.
-          </template>
+      <!-- Titulaire remplacée en priorité + rétrocession (remplaçant uniquement) -->
+      <div v-if="estRemplacant" class="row g-3 mb-4">
+        <div class="col-sm-8">
+          <label for="personne-titulaire" class="form-label">Remplace en priorité</label>
+          <select
+            id="personne-titulaire"
+            v-model="formulaire.titulaireId"
+            class="form-select formulaire-select"
+            :class="{ 'is-invalid': v$.formulaire.titulaireId.$error }"
+            required
+            :aria-describedby="
+              describedBy(
+                'personne-titulaire-aide',
+                v$.formulaire.titulaireId.$error ? 'personne-titulaire-erreur' : null
+              )
+            "
+            @change="v$.formulaire.titulaireId.$touch()"
+            @blur="v$.formulaire.titulaireId.$touch()"
+          >
+            <option value="">— Choisir —</option>
+            <option v-for="option in optionsTitulaireListe" :key="option.id" :value="option.id">
+              {{ option.libelle }}
+            </option>
+          </select>
+          <div id="personne-titulaire-aide" class="form-text">
+            Les jours où cette titulaire ne travaille pas, cette personne est proposée avant les autres
+            remplaçantes dans le planning. Les paiements des soins de cette personne sont versés à cette
+            titulaire.
+          </div>
+          <p v-if="aucuneTitulaireActive" class="form-text text-danger mb-0">
+            Aucune titulaire n'est enregistrée : ajoutez d'abord une personne titulaire pour pouvoir la choisir ici.
+          </p>
+          <p
+            v-if="v$.formulaire.titulaireId.$error"
+            id="personne-titulaire-erreur"
+            class="formulaire-erreur"
+          >
+            <PhWarning :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ v$.formulaire.titulaireId.$errors[0].$message }}</span>
+          </p>
+        </div>
+
+        <div class="col-sm-4">
+          <label for="personne-retrocession" class="form-label">Rétrocession</label>
+          <div class="input-group formulaire-retrocession">
+            <input
+              id="personne-retrocession"
+              v-model="formulaire.tauxRetrocession"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="100"
+              step="1"
+              class="form-control"
+              :class="{ 'is-invalid': v$.formulaire.tauxRetrocession.$error }"
+              :aria-describedby="
+                describedBy(
+                  'personne-retrocession-aide',
+                  v$.formulaire.tauxRetrocession.$error ? 'personne-retrocession-erreur' : null
+                )
+              "
+              @blur="v$.formulaire.tauxRetrocession.$touch()"
+            >
+            <span class="input-group-text">%</span>
+          </div>
+          <div id="personne-retrocession-aide" class="form-text">
+            Pourcentage gardé par la titulaire sur les soins de cette remplaçante. Exemple : 11 → la
+            titulaire garde 11 %, la remplaçante reçoit 89 %.
+          </div>
+          <p
+            v-if="v$.formulaire.tauxRetrocession.$error"
+            id="personne-retrocession-erreur"
+            class="formulaire-erreur"
+          >
+            <PhWarning :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ v$.formulaire.tauxRetrocession.$errors[0].$message }}</span>
+          </p>
         </div>
       </div>
 
@@ -421,7 +478,7 @@
 
 <script>
 import { useVuelidate } from '@vuelidate/core';
-import { required, integer, between, email, maxLength, helpers } from '@vuelidate/validators';
+import { required, requiredIf, integer, between, email, maxLength, helpers } from '@vuelidate/validators';
 import { PhCheck, PhInfo, PhWarning } from '@phosphor-icons/vue';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
@@ -439,6 +496,8 @@ import {
   couleurTexteRepere,
   optionsTitulaire,
   normaliserTitulaireId,
+  normaliserTauxRetrocession,
+  estTauxRetrocessionValide,
 } from '@/domain/personnes.js';
 import { estRythmeMensuelValide, normaliserRythmeMensuel } from '@/domain/rythmeMensuel.js';
 import {
@@ -472,7 +531,9 @@ export default {
     /**
      * Champ qui reçoit le focus à l'ouverture : `'prenom'` (défaut) ou
      * `'email'` (lien profond depuis l'envoi du planning, feature 0027) ou
-     * `'identifiants'` (ouvre l'onglet « Informations professionnelles », feature 0030).
+     * `'identifiants'` (ouvre l'onglet « Informations professionnelles », feature 0030) ou
+     * `'remplacement'` (lien profond depuis le bilan, feature 0036 : focus sur « Remplace en
+     * priorité » ou « Rétrocession », et affichage immédiat de ce qui manque).
      */
     champInitial: { type: String, default: 'prenom' },
   },
@@ -599,6 +660,22 @@ export default {
             (valeur) => estRythmeMensuelValide(valeur)
           ),
         },
+        titulaireId: {
+          required: helpers.withMessage(
+            'Choisissez la titulaire que cette personne remplace.',
+            requiredIf(() => this.formulaire.statut === 'REMPLACANT')
+          ),
+        },
+        tauxRetrocession: {
+          required: helpers.withMessage(
+            'Indiquez la rétrocession, en pourcentage entier entre 0 et 100.',
+            requiredIf(() => this.formulaire.statut === 'REMPLACANT')
+          ),
+          taux: helpers.withMessage(
+            'Indiquez un pourcentage entier entre 0 et 100.',
+            (valeur, parent) => parent.statut !== 'REMPLACANT' || estTauxRetrocessionValide(valeur)
+          ),
+        },
         dateSortie: {
           coherence: helpers.withMessage(
             "La date de départ doit être identique ou postérieure à la date d'arrivée.",
@@ -640,6 +717,7 @@ export default {
           quotite: this.personne.quotite,
           joursTravaillesParMois: this.personne.joursTravaillesParMois ?? '',
           titulaireId: this.personne.titulaireId ?? '',
+          tauxRetrocession: this.personne.tauxRetrocession ?? '',
           dateEntree: this.personne.dateEntree ?? '',
           dateSortie: this.personne.dateSortie ?? '',
           contact: {
@@ -660,6 +738,7 @@ export default {
         quotite: 100,
         joursTravaillesParMois: '',
         titulaireId: '',
+        tauxRetrocession: '',
         dateEntree: '',
         dateSortie: '',
         contact: { email: '', telephone: '' },
@@ -691,6 +770,13 @@ export default {
     onAffichee() {
       if (this.champInitial === 'identifiants') {
         this.$el.querySelector(`#personne-identifiant-${CHAMPS_IDENTIFIANTS[0].cle}`)?.focus();
+        return;
+      }
+      if (this.champInitial === 'remplacement') {
+        const id = this.formulaire.titulaireId ? '#personne-retrocession' : '#personne-titulaire';
+        this.$el.querySelector(id)?.focus();
+        this.v$.formulaire.titulaireId.$touch();
+        this.v$.formulaire.tauxRetrocession.$touch();
         return;
       }
       if (this.champInitial === 'email') {
@@ -774,6 +860,8 @@ export default {
         { validation: this.v$.formulaire.prenom, id: 'personne-prenom' },
         { validation: this.v$.formulaire.nom, id: 'personne-nom' },
         { validation: this.v$.formulaire.initialesVega, id: 'personne-initiales-vega' },
+        { validation: this.v$.formulaire.titulaireId, id: 'personne-titulaire' },
+        { validation: this.v$.formulaire.tauxRetrocession, id: 'personne-retrocession' },
         { validation: this.v$.formulaire.couleur, id: 'personne-couleur-libre' },
         { validation: this.v$.formulaire.quotite, id: 'personne-quotite' },
         { validation: this.v$.formulaire.joursTravaillesParMois, id: 'personne-rythme' },
@@ -818,6 +906,7 @@ export default {
         quotite: this.formulaire.quotite,
         joursTravaillesParMois: normaliserRythmeMensuel(this.formulaire.joursTravaillesParMois),
         titulaireId: normaliserTitulaireId(this.formulaire.statut, this.formulaire.titulaireId),
+        tauxRetrocession: normaliserTauxRetrocession(this.formulaire.statut, this.formulaire.tauxRetrocession),
         dateEntree: this.formulaire.dateEntree || null,
         dateSortie: this.formulaire.dateSortie || null,
         contact: {
@@ -857,6 +946,10 @@ export default {
 
 .formulaire-rythme {
   max-width: 14rem;
+}
+
+.formulaire-retrocession {
+  max-width: 10rem;
 }
 
 .formulaire-pastille {

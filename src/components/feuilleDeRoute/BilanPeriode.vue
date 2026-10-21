@@ -90,13 +90,13 @@
         </tfoot>
       </table>
 
-      <h3 class="bilan-periode__sous-titre">Virements à faire</h3>
-      <template v-if="bilan.virements.length > 0">
+      <h3 class="bilan-periode__sous-titre">Virements entre titulaires</h3>
+      <template v-if="flux.virements.length > 0">
         <div class="bilan-periode__virements">
           <PhArrowsLeftRight :size="24" weight="bold" class="flex-shrink-0" aria-hidden="true" />
           <div>
-            <p v-for="(v, i) in bilan.virements" :key="i" class="bilan-periode__virement">
-              <strong>{{ nomCourt(v.de) }} reverse {{ euros(v.montantCentimes) }} à {{ nomCourt(v.vers) }}</strong>
+            <p v-for="(v, i) in flux.virements" :key="i" class="bilan-periode__virement">
+              <strong>{{ phraseVirement(v) }}</strong>
             </p>
           </div>
         </div>
@@ -105,9 +105,46 @@
           ne faites pas les deux.
         </p>
       </template>
-      <p v-else class="bilan-periode__aucun">
-        Rien à reverser sur la période : chaque infirmière a déjà touché sa part.
-      </p>
+      <p v-else class="bilan-periode__aucun">Personne n'a de virement à faire : chaque titulaire a déjà reçu sa part.</p>
+
+      <template v-if="definitionSchema !== null">
+        <h3 class="bilan-periode__sous-titre">Le chemin de l'argent</h3>
+        <SchemaFlux
+          :definition="definitionSchema"
+          legende="Schéma qui résume les virements. Flèche pleine : somme à virer ou à ajouter. Flèche en pointillé : somme à déduire. Toutes les sommes sont aussi écrites en dessous." />
+      </template>
+
+      <template v-if="flux.retrocessions.length > 0">
+        <h3 class="bilan-periode__sous-titre">À ajouter ou retirer sur le reversement habituel aux remplaçantes</h3>
+        <p class="bilan-periode__explication">
+          Ces sommes ne sont pas des virements en plus. Elles se calculent sur le montant que la
+          titulaire verse déjà à sa remplaçante pour cette période.
+        </p>
+        <ul class="bilan-periode__liste">
+          <li v-for="r in flux.retrocessions" :key="r.ps">
+            {{ phraseRetrocession(r).debut }}<strong>{{ phraseRetrocession(r).nom }}</strong>{{ phraseRetrocession(r).fin }}
+          </li>
+        </ul>
+      </template>
+
+      <div v-if="flux.alertes.length > 0" class="alert alert-warning bilan-periode__alertes">
+        <h3 class="bilan-periode__alertes-titre">
+          <PhWarning :size="20" weight="fill" class="flex-shrink-0" aria-hidden="true" />
+          À corriger dans l'onglet Équipe
+        </h3>
+        <p class="d-print-none">
+          Ce résultat sera perdu en quittant cette page : il faudra redéposer le fichier.
+        </p>
+        <ul class="bilan-periode__liste mb-0">
+          <li v-for="a in flux.alertes" :key="a.ps + a.motif">
+            {{ phraseAlerte(a) }}
+            <router-link
+              :to="lienFiche(a)"
+              class="d-print-none"
+              :aria-label="libelleLienAccessible(a)">{{ libelleLien(a) }}</router-link>
+          </li>
+        </ul>
+      </div>
     </template>
   </section>
 </template>
@@ -116,11 +153,10 @@
 import { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight } from '@phosphor-icons/vue';
 
 import { couvrePlusieursMois } from '@/domain/feuilleDeRoute/bilanReversements.js';
-import {
-  infirmiereDuCode,
-  libelleInfirmiere,
-  libelleCourtInfirmiere,
-} from '@/domain/feuilleDeRoute/relierInfirmieres.js';
+import { infirmiereDuCode, libelleInfirmiere } from '@/domain/feuilleDeRoute/relierInfirmieres.js';
+import { libellesFlux } from '@/domain/feuilleDeRoute/fluxComptes.js';
+import { definitionSchemaFlux } from '@/domain/feuilleDeRoute/schemaFlux.js';
+import SchemaFlux from '@/components/feuilleDeRoute/SchemaFlux.vue';
 import { libelleJour } from '@/domain/libelles.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { formaterEuros } from '@/domain/utils/montants.js';
@@ -130,13 +166,17 @@ import { formaterEuros } from '@/domain/utils/montants.js';
  * `BilanPeriode` calculé par `calculerBilan` (domaine pur). Aucun nom de
  * patient reçu ni affiché (seuls les jours des cas exclus). Texte rendu par
  * interpolation uniquement (codes issus d'un fichier externe, jamais `v-html`).
+ * Feature 0036 : virements entre titulaires, rétrocessions et alertes viennent de
+ * `calculerFlux` ; ce composant ne calcule rien, il met en phrases.
  */
 export default {
   name: 'BilanPeriode',
-  components: { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight },
+  components: { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight, SchemaFlux },
   props: {
     /** @type {import('vue').PropType<import('@/domain/feuilleDeRoute/bilanReversements.js').BilanPeriode>} */
     bilan: { type: Object, required: true },
+    /** @type {import('vue').PropType<import('@/domain/feuilleDeRoute/fluxComptes.js').FluxComptes>} */
+    flux: { type: Object, required: true },
     /** Période du fichier `{ debut, fin }` ("YYYY-MM-DD") ou `null`. */
     periode: { type: Object, default: null },
     /** Index des infirmières par initiales Vega (voir `indexerParInitialesVega`). */
@@ -157,6 +197,14 @@ export default {
       const patients = n > 1 ? 'patients vus' : 'patient vu';
       return `Calculé sur ${n} ${patients} par plusieurs infirmières, pour un total de ${this.euros(this.bilan.totalCentimes)}.`;
     },
+    /** Noms affichés par compte / remplaçante (partagés avec le schéma). */
+    libelles() {
+      return libellesFlux(this.flux);
+    },
+    /** Texte Mermaid du schéma, ou `null` s'il n'y a rien à dessiner. */
+    definitionSchema() {
+      return definitionSchemaFlux(this.flux, this.libelles);
+    },
     texteCasExclus() {
       const n = this.bilan.nbCasExclus;
       const jours = this.bilan.datesCasExclus.map((d) => this.jourComplet(d)).join(', ');
@@ -175,9 +223,68 @@ export default {
     nomLong(code) {
       return libelleInfirmiere(infirmiereDuCode(code, this.infirmieres));
     },
-    /** @param {string} code ex. « FC (Claire) » */
-    nomCourt(code) {
-      return libelleCourtInfirmiere(infirmiereDuCode(code, this.infirmieres));
+    /** @param {string} cle clé de compte ou id de remplaçante */
+    nomCle(cle) {
+      return this.libelles.get(cle) ?? '';
+    },
+    /** @param {import('@/domain/feuilleDeRoute/fluxComptes.js').VirementCompte} v */
+    phraseVirement(v) {
+      return `${this.nomCle(v.de)} vire ${this.euros(v.montantCentimes)} à ${this.nomCle(v.vers)}`;
+    },
+    /**
+     * Phrase de reversement découpée pour mettre le nom de la remplaçante en gras.
+     * @param {import('@/domain/feuilleDeRoute/fluxComptes.js').Retrocession} r
+     * @returns {{debut: string, nom: string, fin: string}}
+     */
+    phraseRetrocession(r) {
+      const titulaire = this.nomCle(r.titulaire.id);
+      const nom = this.nomCle(r.remplacante.id);
+      const recoit = r.sens === 'RECOIT';
+      if (r.taux === null) {
+        const somme = this.euros(Math.abs(r.soldeCentimes));
+        const consigne = "Le taux n'est pas renseigné : complétez sa fiche pour obtenir la somme exacte.";
+        return recoit
+          ? { debut: `${titulaire} ajoute jusqu'à ${somme} à ce qu'elle reverse à `, nom, fin: `. ${consigne}` }
+          : { debut: '', nom, fin: ` a encaissé trop : ${titulaire} déduit jusqu'à ${somme} de ce qu'elle lui reverse. ${consigne}` };
+      }
+      const part = this.euros(r.partRemplacanteCentimes);
+      const reste = this.euros(r.partTitulaireCentimes);
+      return recoit
+        ? {
+            debut: `${titulaire} ajoute ${part} à ce qu'elle reverse à `,
+            nom,
+            fin: `. Elle garde ${reste} (taux ${r.taux} %).`,
+          }
+        : {
+            debut: '',
+            nom,
+            fin: ` a encaissé trop : ${titulaire} déduit ${part} de ce qu'elle lui reverse. ${titulaire} garde la différence à sa charge : ${reste} (taux ${r.taux} %).`,
+          };
+    },
+    /** @param {import('@/domain/feuilleDeRoute/fluxComptes.js').AlerteFlux} a */
+    phraseAlerte(a) {
+      const p = a.personne;
+      const nom = p ? `${p.prenom} ${p.nom} (${a.ps})` : a.ps;
+      if (a.motif === 'SANS_TITULAIRE') {
+        return `${nom} est remplaçante mais sa titulaire n'est pas renseignée : ses sommes sont comptées à part.`;
+      }
+      if (a.motif === 'SANS_TAUX') return `Le taux de rétrocession de ${nom} n'est pas renseigné.`;
+      return `Le code Vega ${a.ps} n'est relié à personne de l'équipe : ses sommes sont comptées à part.`;
+    },
+    /** Lien vers la fiche (personne active) ou simplement vers Équipe. */
+    lienFiche(a) {
+      if (a.personne && a.personne.actif) {
+        return { name: 'equipe', query: { modifier: a.personne.id, champ: 'remplacement' } };
+      }
+      return { name: 'equipe' };
+    },
+    libelleLien(a) {
+      return a.motif === 'CODE_INCONNU' ? 'Relier ce code dans Équipe' : 'Compléter la fiche';
+    },
+    /** Nom accessible du lien : précise de quelle fiche il s'agit. */
+    libelleLienAccessible(a) {
+      if (a.motif === 'CODE_INCONNU' || !a.personne) return this.libelleLien(a);
+      return `Compléter la fiche de ${a.personne.prenom} ${a.personne.nom}`;
     },
     /** @param {number} n */
     passages(n) {
@@ -297,6 +404,23 @@ export default {
   & + & {
     margin-top: t.$espace-1;
   }
+}
+
+.bilan-periode__liste {
+  margin-bottom: t.$espace-3;
+  padding-left: t.$espace-4;
+}
+
+.bilan-periode__alertes {
+  margin-top: t.$espace-3;
+  break-inside: avoid;
+}
+
+.bilan-periode__alertes-titre {
+  display: flex;
+  align-items: center;
+  gap: t.$espace-2;
+  font-size: t.$taille-texte-grande;
 }
 
 // Risque de double paiement : texte plein et gras (relecture ui-ux 0035).

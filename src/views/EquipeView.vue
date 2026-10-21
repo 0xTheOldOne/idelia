@@ -241,7 +241,8 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * via le store `personnes`. Ne contient **aucune logique métier** : la
  * construction/normalisation d'une personne est déléguée au domaine
  * (`creerPersonne`, appelé par l'action `personnes/ajouter`) ; le tri
- * alphabétique n'est qu'un choix de présentation local à l'écran.
+ * (titulaires puis remplaçantes, puis alphabétique) n'est qu'un choix de
+ * présentation local à l'écran.
  *
  * Consultation (feature 0030) : « Informations utiles » (personnes actives et
  * archivées) ouvre `ModaleInformationsUtiles` ; « Modifier ces informations »
@@ -254,6 +255,9 @@ import { dateUtil } from '@/domain/utils/dates.js';
  *   curseur dans le champ e-mail. Id inconnu ou personne archivée : ignoré
  *   sans message. Le paramètre est retiré de l'URL après lecture (pas de
  *   réouverture au rechargement).
+ * - `&champ=remplacement` (feature 0036, avec `modifier`) : curseur dans
+ *   « Remplace en priorité » au lieu de l'e-mail ; toute autre valeur est
+ *   ignorée (liste blanche). Retiré de l'URL avec `modifier`.
  * - `?retour=<planningId>` : si ce planning existe dans le store, affiche le
  *   lien « Retour à l'envoi du planning » vers `/planning/<id>/diffusion?envoi=1`
  *   (la modale d'envoi s'y rouvre). La valeur n'est JAMAIS utilisée comme URL :
@@ -357,10 +361,11 @@ export default {
       const personne = typeof id === 'string' ? this.actifs.find((p) => p.id === id) : undefined;
       if (personne) {
         this.personneEnCours = personne;
-        this.champInitial = 'email';
+        // Liste blanche : toute valeur de `champ` autre que 'remplacement' → e-mail.
+        this.champInitial = this.$route.query.champ === 'remplacement' ? 'remplacement' : 'email';
         this.formulaireVisible = true;
       }
-      this.$router.replace({ query: { ...this.$route.query, modifier: undefined } });
+      this.$router.replace({ query: { ...this.$route.query, modifier: undefined, champ: undefined } });
     },
     /** Initiales affichées dans la pastille d'une personne. */
     repere(personne) {
@@ -377,13 +382,18 @@ export default {
 
     /**
      * Ordre d'affichage (présentation uniquement, `ordreAffichage` n'est pas
-     * utilisé en 0004) : nom puis prénom, comparaison locale française.
+     * utilisé en 0004) : titulaires avant remplaçantes, puis nom puis prénom,
+     * comparaison locale française.
      * @param {object} a
      * @param {object} b
      * @returns {number}
      */
     comparerPersonnes(a, b) {
-      return a.nom.localeCompare(b.nom, 'fr') || a.prenom.localeCompare(b.prenom, 'fr');
+      return (
+        Number(a.statut !== 'TITULAIRE') - Number(b.statut !== 'TITULAIRE') ||
+        a.nom.localeCompare(b.nom, 'fr') ||
+        a.prenom.localeCompare(b.prenom, 'fr')
+      );
     },
 
     /**

@@ -93,8 +93,7 @@
             aria-hidden="true" />
           <p class="mb-0">
             {{ texteCodesNonRelies }}
-            Pour voir leur nom ici, renseignez leurs initiales Vega sur leur fiche dans
-            <router-link :to="{ name: 'equipe' }">Équipe</router-link>. Attention : ce résultat sera perdu en quittant cette page, il faudra redéposer le fichier.
+            <router-link :to="{ name: 'equipe' }">Les relier dans Équipe</router-link>
           </p>
         </div>
         <ListeOnglets
@@ -112,6 +111,7 @@
           tabindex="0">
           <BilanPeriode
             :bilan="bilan"
+            :flux="flux"
             :periode="periode"
             :infirmieres="indexInfirmieres" />
         </div>
@@ -122,7 +122,16 @@
           role="tabpanel"
           aria-labelledby="feuille-de-route-onglet-detail"
           tabindex="0">
-          <p class="feuille-de-route-renvoi">Pour savoir quoi virer au total sur la période, consultez l'onglet « Bilan de la période ».</p>
+          <div class="alert alert-info d-flex gap-2">
+            <PhInfo
+              :size="20"
+              weight="fill"
+              class="flex-shrink-0"
+              aria-hidden="true" />
+            <p class="mb-0">
+              Ce détail sert à comprendre chaque cas. Ne faites pas ces virements : les sommes à virer sont dans l'onglet « Bilan de la période ».
+            </p>
+          </div>
           <ListeRelais
             :cas="cas"
             :infirmieres="indexInfirmieres" />
@@ -144,7 +153,8 @@
   import { extraireSeances } from "@/domain/feuilleDeRoute/extraireSeances.js";
   import { detecterRelais } from "@/domain/feuilleDeRoute/detecterRelais.js";
   import { calculerBilan } from "@/domain/feuilleDeRoute/bilanReversements.js";
-  import { indexerParInitialesVega, codesNonRelies } from "@/domain/feuilleDeRoute/relierInfirmieres.js";
+  import { calculerFlux } from "@/domain/feuilleDeRoute/fluxComptes.js";
+  import { indexerParInitialesVega, codesNonRelies, compteDuCode } from "@/domain/feuilleDeRoute/relierInfirmieres.js";
   import { libelleJour } from "@/domain/libelles.js";
   import { dateUtil } from "@/domain/utils/dates.js";
 
@@ -196,8 +206,8 @@
    * Aucune logique de lecture ni de détection ici (adaptateur + domaine). Rien
    * n'est conservé : ni le fichier, ni les glyphes, ni les séances — seuls le
    * résumé et les cas affichés vivent dans `data()`, jusqu'au démontage ; rien
-   * dans Vuex ni `storageRepository`. Le bilan de la période (0035) est calculé à
-   * la volée, jamais conservé.
+   * dans Vuex ni `storageRepository`. Le bilan de la période (0035), ses flux et
+   * rétrocessions (0036) sont calculés à la volée, jamais conservés.
    */
   export default {
     name: "FeuilleDeRouteView",
@@ -222,6 +232,10 @@
       /** Bilan cumulé de la période (domaine pur). */
       bilan() {
         return calculerBilan(this.cas);
+      },
+      /** Flux d'argent entre comptes de titulaires et rétrocessions (domaine pur, 0036). */
+      flux() {
+        return calculerFlux(this.bilan.lignes, (ps) => compteDuCode(ps, this.indexInfirmieres, this.toutesLesPersonnes));
       },
       codesNonReliesListe() {
         return codesNonRelies(this.cas, this.indexInfirmieres);
@@ -373,11 +387,6 @@
 
   .feuille-de-route-panneau {
     padding-top: t.$espace-4;
-  }
-
-  .feuille-de-route-renvoi {
-    margin-bottom: t.$espace-3;
-    color: t.$couleur-texte-attenue;
   }
 
   // Impression : seul le bilan part sur papier, quel que soit l'onglet actif

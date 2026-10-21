@@ -40,6 +40,7 @@ import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
  * @property {number} quotite - Temps de travail, 0..100 (%).
  * @property {(number|null)} joursTravaillesParMois - Rythme : jours travaillés par mois complet (1..31), ou `null` (0020).
  * @property {(string|null)} titulaireId - Titulaire remplacée en priorité (id), seulement si statut `REMPLACANT`, sinon `null` (0020).
+ * @property {(number|null)} tauxRetrocession - Rétrocession à la titulaire remplacée, 0..100 (%), seulement si statut `REMPLACANT`, sinon `null`.
  * @property {(string|null)} dateEntree - Date d'arrivée `"YYYY-MM-DD"`, ou `null`.
  * @property {(string|null)} dateSortie - Date de départ `"YYYY-MM-DD"`, ou `null`.
  * @property {ContactPersonne} contact
@@ -78,6 +79,7 @@ export function creerPersonne(champs = {}) {
     quotite: champs.quotite ?? 100,
     joursTravaillesParMois: normaliserRythmeMensuel(champs.joursTravaillesParMois),
     titulaireId: normaliserTitulaireId(statut, champs.titulaireId),
+    tauxRetrocession: normaliserTauxRetrocession(statut, champs.tauxRetrocession),
     dateEntree: champs.dateEntree ?? null,
     dateSortie: champs.dateSortie ?? null,
     contact: {
@@ -130,6 +132,31 @@ export function couleurTexteRepere(couleur) {
 export function normaliserTitulaireId(statut, titulaireId) {
   if (statut !== 'REMPLACANT') return null;
   return typeof titulaireId === 'string' && titulaireId !== '' ? titulaireId : null;
+}
+
+/**
+ * Taux de rétrocession (%) : conservé seulement pour une remplaçante et si la
+ * saisie n'est pas vide, sinon `null` (sans arrondi : la validation refuse les décimales).
+ *
+ * @param {string} statut - Statut final de la personne.
+ * @param {*} valeur - Saisie brute (nombre, chaîne, `''`/`null`).
+ * @returns {(number|null)}
+ */
+export function normaliserTauxRetrocession(statut, valeur) {
+  if (statut !== 'REMPLACANT') return null;
+  if (valeur === '' || valeur === null || valeur === undefined) return null;
+  return Number(valeur);
+}
+
+/**
+ * Indique si un taux de rétrocession est acceptable : vide ou entier de 0 à 100.
+ *
+ * @param {*} valeur - Saisie brute.
+ * @returns {boolean}
+ */
+export function estTauxRetrocessionValide(valeur) {
+  const taux = normaliserTauxRetrocession('REMPLACANT', valeur);
+  return taux === null || (Number.isInteger(taux) && taux >= 0 && taux <= 100);
 }
 
 /** Comparateur nom puis prénom (français). */

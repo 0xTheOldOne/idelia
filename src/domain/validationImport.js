@@ -174,6 +174,7 @@ const REGLES_PERSONNE = {
   preferences: { type: 'tableau', max: MAX.preferences },
   joursTravaillesParMois: { type: 'nombre', min: 0, max: 31 },
   titulaireId: { type: 'id' },
+  tauxRetrocession: { type: 'entier', min: 0, max: 100 },
   createdAt: { type: 'horodatage' },
   updatedAt: { type: 'horodatage' },
 };

@@ -47,7 +47,9 @@ Idelia/
     │   │   ├── extraireSeances.js
     │   │   ├── detecterRelais.js
     │   │   ├── bilanReversements.js  # cumul de la période et virements à faire [0035]
-    │   │   └── relierInfirmieres.js  # code PS Vega → personne de l'équipe (initialesVega) [0034]
+    │   │   ├── relierInfirmieres.js  # code PS Vega → personne de l'équipe (initialesVega), → compte de la titulaire [0034, 0036]
+    │   │   ├── fluxComptes.js  # comptes des titulaires, virements et rétrocessions [0036]
+    │   │   └── schemaFlux.js   # texte Mermaid du chemin de l'argent [0036]
     │   └── utils/
     │       ├── dates.js        # dateUtil : parse/format/addDays/diffDays/weekdayISO/rangeInclusive
     │       ├── couleurs.js     # estCouleurFoncee (contraste du texte sur une pastille)
@@ -60,6 +62,7 @@ Idelia/
     │
     ├── adaptateurs/            # I/O navigateur + bibliothèques tierces (jamais de persistance : c'est le rôle de storage/)
     │   ├── lireGlyphesPdf.js   # lecture PDF via pdfjs-dist, chargé à la demande [ADR 0019, 0033]
+    │   ├── dessinerSchemaMermaid.js # texte Mermaid → SVG, mermaid chargé à la demande [ADR 0022, 0036]
     │   ├── calendrierScolaire.js # lecture GET de l'API du calendrier scolaire, seul accès réseau [ADR 0020, 0023]
     │   └── pressePapiers.js    # copie de texte (API Clipboard) [0027]
     │
@@ -81,7 +84,7 @@ Idelia/
     │   ├── absences/
     │   ├── planning/           # grille, cellule, panneau de conflits, récap mensuel [0024], drag & drop
     │   ├── diffusion/          # feuille A4, tableau de mois, légende, pastille de personne [0012], modale d'envoi par e-mail [0027]
-    │   └── feuilleDeRoute/     # zone de dépôt, résumé, cartes de relais [0033]
+    │   └── feuilleDeRoute/     # zone de dépôt, résumé, cartes de relais [0033], bilan [0035], schéma des flux SchemaFlux.vue [0036]
     │
     ├── composables-ou-mixins/  # si logique UI transverse (rester minimal en Options API)
     │

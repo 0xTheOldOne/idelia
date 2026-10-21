@@ -2,7 +2,7 @@
 
 L'écran **Feuille de route** (`/feuille-de-route`) lit la « Liste des séances sur une période » exportée de **Vega** (PDF), repère les patients soignés le même jour par **plusieurs infirmières**, et calcule **qui reverse combien à qui**. Tout se passe dans le navigateur : rien n'est envoyé, rien n'est conservé.
 
-Historique des décisions : [feature 0033](../../features/0033-feuille-de-route.md), [feature 0034](../../features/0034-initiales-vega-et-reversements.md), [feature 0035](../../features/0035-bilan-qui-doit-quoi.md). Choix de la bibliothèque : [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md).
+Historique des décisions : [feature 0033](../../features/0033-feuille-de-route.md), [feature 0034](../../features/0034-initiales-vega-et-reversements.md), [feature 0035](../../features/0035-bilan-qui-doit-quoi.md), [feature 0036](../../features/0036-retrocession-flux-bilan.md). Choix des bibliothèques : [ADR 0019](../adr/0019-lecture-pdf-pdfjs.md) (pdf.js), [ADR 0022](../adr/0022-mermaid-schema-flux.md) (Mermaid).
 
 ## Chaîne de traitement
 
@@ -16,6 +16,12 @@ flowchart LR
   B -->|"BilanPeriode"| V
   P[(Équipe — store, lecture seule)] --> R["domain/feuilleDeRoute/relierInfirmieres.js"]
   R -->|"code PS → personne"| V
+  B -->|"lignes du bilan"| X["domain/feuilleDeRoute/fluxComptes.js"]
+  R -->|"code PS → compte"| X
+  X -->|"FluxComptes"| V
+  X --> S["domain/feuilleDeRoute/schemaFlux.js"]
+  S -->|"texte Mermaid"| M["adaptateurs/dessinerSchemaMermaid.js<br/>(mermaid, à la demande)"]
+  M -->|"SVG"| V
 ```
 
 | Étape | Module | Nature | Rôle |
@@ -24,7 +30,10 @@ flowchart LR
 | Extraction | `src/domain/feuilleDeRoute/extraireSeances.js` | pur | fragments → séances `{date, ps, heure, patient, cotation, montantCentimes, fin}` + période. |
 | Détection | `src/domain/feuilleDeRoute/detecterRelais.js` | pur | séances → cas, parts, reversements. |
 | Bilan | `src/domain/feuilleDeRoute/bilanReversements.js` | pur | cas → cumul par code PS (touché, part, solde) et virements à faire sur la période. |
-| Liaison | `src/domain/feuilleDeRoute/relierInfirmieres.js` | pur | code PS → personne via `Personne.initialesVega`. |
+| Liaison | `src/domain/feuilleDeRoute/relierInfirmieres.js` | pur | code PS → personne via `Personne.initialesVega` ; code PS → compte (titulaire de référence) via `compteDuCode` [0036]. |
+| Flux | `src/domain/feuilleDeRoute/fluxComptes.js` | pur | lignes du bilan → comptes de titulaires, virements entre comptes, rétrocessions, alertes [0036]. |
+| Schéma | `src/domain/feuilleDeRoute/schemaFlux.js` | pur | flux → texte Mermaid `flowchart LR` (libellés échappés, couleurs en liste blanche) [0036]. |
+| Dessin | `src/adaptateurs/dessinerSchemaMermaid.js` | I/O navigateur (hors domaine) | texte Mermaid → SVG. mermaid chargé **à la demande** (chunks séparés, ADR 0022). |
 | Affichage | `src/views/FeuilleDeRouteView.vue`, `src/components/feuilleDeRoute/` | UI | états attente / analyse / erreur / résultat. Aucune logique métier. |
 
 Les modules de `src/domain/feuilleDeRoute/` n'utilisent que des **imports relatifs** (pas d'alias `@/`) pour rester exécutables tels quels par Node lors des vérifications.
@@ -83,10 +92,29 @@ Exemples de référence (vérifiés sur les PDF de test) :
 - **Virements** : `calculerReversements` réutilisé tel quel sur les soldes (lignes triées par code, résultat déterministe). Des reversements opposés s'annulent ; au plus (n − 1) virements pour n soldes non nuls.
 - **Codes non reliés** : comptés sous leur code.
 - **Un bilan par fichier** : `couvrePlusieursMois(periode)` signale un fichier à cheval sur plusieurs mois civils.
+- **Affichage (0036)** : `bilan.virements` (code à code) est toujours calculé mais n'est plus affiché ; l'écran montre les virements **entre titulaires** (voir ci-dessous).
+
+### Comptes et rétrocession [0036]
+
+Au cabinet, l'argent des soins d'une remplaçante arrive sur le compte de **sa titulaire** (`Personne.titulaireId`, « Remplace en priorité »). `calculerFlux(lignes, resoudreCompte)` regroupe donc les soldes du bilan par **compte** : celui de la titulaire (ses codes + ceux de ses remplaçantes rattachées), ou celui de la personne elle-même (titulaire, remplaçante sans titulaire), ou `ps:<CODE>` pour un code non relié. Les virements entre comptes réutilisent `calculerReversements` tel quel.
+
+Pour une remplaçante rattachée, de solde `s` (> 0 = doit reverser) et de taux de rétrocession `t` (entier 0..100) :
+
+```
+partRemplacante = Math.round(|s| × (100 − t) / 100)
+partTitulaire   = |s| − partRemplacante
+sens            = s < 0 ? RECOIT (la titulaire lui reverse la part) : PAIE (la titulaire retire la part de sa rétrocession habituelle)
+```
+
+On multiplie avant de diviser (produit entier) ; le demi-centime va à la remplaçante, la titulaire absorbe l'écart (somme exacte). Solde nul : aucune ligne.
+
+Exemple de référence : lignes `CB +10,05`, `EMM +40,00`, `FC −20,00`, `SO −30,05` (Céline CB à 15 % chez Sandrine SO, Farah FC à 11 % chez Emmanuelle EMM) → 1 virement Emmanuelle → Sandrine **20,00 €** (au lieu de 3 code à code) ; rétrocessions : Sandrine retire 8,54 € de ce qu'elle reverse à Céline (elle prend 1,51 € à sa charge), Emmanuelle reverse 17,80 € à Farah (elle garde 2,20 €).
+
+Alertes (`AlerteFlux`, une par code) : `SANS_TITULAIRE` (remplaçante sans titulaire : compte à part), `SANS_TAUX` (rétrocession listée sans montant), `CODE_INCONNU` (code non relié : compte à part). Chaque alerte de l'écran (titre « À corriger dans l'onglet Équipe », lien « Compléter la fiche » ou « Relier ce code dans Équipe ») mène à la fiche (`/equipe?modifier=<id>&champ=remplacement`, personne active) ou à Équipe. L'écran affiche, de haut en bas : tableau, virements entre titulaires, schéma, section « À ajouter ou retirer sur le reversement habituel aux remplaçantes » (ces sommes ne sont pas des virements en plus), alertes ; le texte fait foi, le schéma aide. Libellés du schéma : flèche pleine « + 17,80 € (taux 11 %) », pointillé « à déduire : 8,54 € ». Les libellés de nœuds sont échappés (dont `$` et les caractères invisibles `p{Cf}`) ; le détail par patient renvoie au bilan par un encart (« Ne faites pas ces virements »).
 
 ## Liaison avec l'équipe
 
-Le code PS est relié à une personne par `Personne.initialesVega` (casse ignorée ; en cas de doublon, la personne active l'emporte). Affichage « Prénom Nom (FC) », ou le code seul avec la mention « code Vega non relié à l'équipe » ; un encart liste les codes non reliés avec un lien vers Équipe. Les mêmes initiales servent de repère dans les pastilles de personne et sur le planning imprimé (à défaut : première lettre du prénom).
+Le code PS est relié à une personne par `Personne.initialesVega` (casse ignorée ; en cas de doublon, la personne active l'emporte). Depuis 0036, deux champs de la fiche comptent pour le bilan : `titulaireId` (compte qui reçoit l'argent d'une remplaçante) et `tauxRetrocession` (part gardée par la titulaire) ; obligatoires à la saisie pour une remplaçante, mais les données antérieures non migrées sont **signalées** par les alertes du bilan, jamais corrigées. Affichage « Prénom Nom (FC) », ou le code seul avec la mention « code Vega non relié à l'équipe » ; un encart liste les codes non reliés avec un lien vers Équipe. Les mêmes initiales servent de repère dans les pastilles de personne et sur le planning imprimé (à défaut : première lettre du prénom).
 
 ## Sécurité et confidentialité
 
@@ -97,6 +125,7 @@ Le PDF contient des **données de santé** (noms de patients) et est un **fichie
 - **Durcissement pdf.js** : `isEvalSupported: false`, `enableXfa: false`, `stopAtErrors: true`, `disableAutoFetch`, `disableStream`, extraction de texte uniquement (aucun rendu).
 - **Plafonds** : 20 Mo (`TAILLE_MAX_PDF_OCTETS`), 200 pages (`NB_PAGES_MAX`), 200 000 fragments (`NB_FRAGMENTS_MAX`).
 - **Robustesse** : toute la chaîne est sous un seul `try/catch` (l'écran ne reste jamais bloqué en « Lecture… ») ; le texte du PDF n'indexe jamais d'objet littéral (`Map` + liste blanche) ; rendu par interpolation uniquement (pas de `v-html`).
+- **Schéma Mermaid (ADR 0022)** : seule insertion de SVG brut de l'application (`innerHTML` d'un conteneur dédié de `SchemaFlux.vue`, uniquement la sortie de `mermaid.render`). Défense en profondeur : texte entièrement généré par `schemaFlux.js` (libellés échappés, couleurs `#RRGGBB` en liste blanche, aucun GUID ni donnée patient), `securityLevel: 'strict'`, `htmlLabels: false`. Hors de ce composant, toujours aucun `v-html`.
 - Les exports Vega et les sauvegardes réelles vivent dans `files/`, ignoré par git.
 
 Codes d'erreur affichés (messages dans `FeuilleDeRouteView.vue`) : `PLUSIEURS_FICHIERS`, `PAS_PDF`, `TROP_VOLUMINEUX`, `PDF_ILLISIBLE`, `PDF_TROP_COMPLEXE`, `AUCUNE_SEANCE`, `LECTEUR_INDISPONIBLE`.

@@ -50,7 +50,7 @@
               <PhArrowsLeftRight :size="24" weight="bold" class="flex-shrink-0" aria-hidden="true" />
               <div>
                 <p v-for="(r, i) in c.reversements" :key="i" class="liste-relais__reversement">
-                  <strong>{{ nomCourt(r.de) }} reverse {{ euros(r.montantCentimes) }} à {{ nomCourt(r.vers) }}</strong>
+                  Part de {{ nomCourt(r.de) }} à rendre à {{ nomCourt(r.vers) }} : {{ euros(r.montantCentimes) }}
                 </p>
               </div>
             </div>
