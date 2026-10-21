@@ -1,8 +1,9 @@
 /**
  * Détection des patients vus par plusieurs infirmières (feature 0033) : un même patient,
  * soigné plusieurs fois le même jour (soins BSA/BSB/BSC) par au moins deux codes PS différents.
- * Le montant total est réparti entre les infirmières au prorata de leurs passages, puis on
- * calcule qui doit reverser combien à qui (feature 0034).
+ * Seul le soin de base (BSA/BSB/BSC) est partagé, à parts égales entre les infirmières
+ * distinctes du jour ; les autres soins (IFI, AMI, majorations, IK…) restent à celle qui les a
+ * faits (feature 0037). On calcule ensuite qui doit reverser combien à qui (feature 0034).
  *
  * Module pur : aucun import Vue/Vuex, aucun accès `localStorage` (ADR 0008).
  * Tous les calculs d'argent se font en centimes (entiers).
@@ -23,7 +24,7 @@ import { genId } from '../utils/id.js';
  * @property {string} ps
  * @property {number} nbPassages
  * @property {number} toucheCentimes           // somme des montants de SES lignes
- * @property {number} partCentimes             // part équitable (dernière infirmière = reste)
+ * @property {number} partCentimes             // ses soins hors BS + sa part du BS
  * @property {number} ecartCentimes            // toucheCentimes − partCentimes ; > 0 = doit reverser
  *
  * @typedef {Object} Reversement
@@ -39,7 +40,8 @@ import { genId } from '../utils/id.js';
  * @property {PassageRelais[]} passages        // triés par heure
  * @property {number} nbPassages
  * @property {(number|null)} totalCentimes     // null si un montant est illisible
- * @property {(number|null)} partParPassageCentimes
+ * @property {(number|null)} bsCentimes        // montant du soin de base partagé (null si montantIncomplet)
+ * @property {(number|null)} partBsCentimes    // part du BS par infirmière, arrondie (affichage)
  * @property {PartRelais[]} parts              // vide si montantIncomplet
  * @property {Reversement[]} reversements      // vide si montantIncomplet ou écarts nuls
  * @property {boolean} montantIncomplet
@@ -68,31 +70,65 @@ export function libelleMoment(index, nbPassages) {
 }
 
 /**
- * Répartit un total (centimes) entre les infirmières au prorata de leurs passages.
- * La dernière infirmière (ordre de première apparition) reçoit le reste : somme = total.
+ * Tarifs NGAP du soin de base en centimes (métropole). Vérifiés sur les totaux de pied de page
+ * du PDF Vega (BSA = 195,00 pour 15 actes, BSB = 1 801,80 pour 99). La cotation Vega est
+ * tronquée et ne donne qu'un montant par ligne : seul le tarif permet d'isoler le BS.
+ */
+export const TARIFS_BS_CENTIMES = Object.freeze({ BSA: 1300, BSB: 1820, BSC: 2870 });
+
+const MOTIF_BS = /^(BS[ABC])(\d+(?:[.,]\d+)?)/;
+
+/**
+ * Montant du soin de base d'une cotation (« BSB1+IFI1 (… » → 1820), 0 s'il n'y en a pas.
+ * @param {string} cotation
+ * @returns {number}
+ */
+export function montantBsCentimes(cotation) {
+  const m = MOTIF_BS.exec(String(cotation ?? ''));
+  if (!m) return 0;
+  return Math.round(TARIFS_BS_CENTIMES[m[1]] * Number(m[2].replace(',', '.')));
+}
+
+/**
+ * Répartit un cas entre les infirmières : chacune garde ses soins hors BS, et le BS est partagé
+ * à parts égales entre les infirmières distinctes (quel que soit leur nombre de passages).
+ * Les centimes qui ne se divisent pas restent à celles qui ont facturé le BS : somme = total.
  * @param {PassageRelais[]} passages
- * @param {number} total
  * @returns {PartRelais[]}
  */
-function repartir(passages, total) {
+function repartir(passages) {
+  /** @type {Map<string, {nbPassages: number, toucheCentimes: number, bsCentimes: number}>} */
+  const parPs = new Map();
+  for (const p of passages) {
+    const e = parPs.get(p.ps) ?? { nbPassages: 0, toucheCentimes: 0, bsCentimes: 0 };
+    e.nbPassages += 1;
+    e.toucheCentimes += p.montantCentimes;
+    e.bsCentimes += montantBsCentimes(p.cotation);
+    parPs.set(p.ps, e);
+  }
+  const entrees = [...parPs];
+  const bsTotal = entrees.reduce((s, [, e]) => s + e.bsCentimes, 0);
+  const base = Math.floor(bsTotal / entrees.length);
+  let centimesRestants = bsTotal - base * entrees.length;
+  // Celles qui ont facturé le BS d'abord, puis l'ordre de première apparition.
+  const ordreCentimes = [
+    ...entrees.filter(([, e]) => e.bsCentimes > 0),
+    ...entrees.filter(([, e]) => e.bsCentimes === 0),
+  ].map(([ps]) => ps);
   /** @type {Map<string, number>} */
-  const nb = new Map();
-  for (const p of passages) nb.set(p.ps, (nb.get(p.ps) ?? 0) + 1);
-  const entrees = [...nb];
-  let reste = total;
-  return entrees.map(([ps, n], i) => {
-    const partCentimes =
-      i === entrees.length - 1 ? reste : Math.round((total * n) / passages.length);
-    reste -= partCentimes;
-    const toucheCentimes = passages
-      .filter((p) => p.ps === ps)
-      .reduce((somme, p) => somme + p.montantCentimes, 0);
+  const partBs = new Map();
+  for (const ps of ordreCentimes) {
+    partBs.set(ps, base + (centimesRestants > 0 ? 1 : 0));
+    if (centimesRestants > 0) centimesRestants -= 1;
+  }
+  return entrees.map(([ps, e]) => {
+    const partCentimes = e.toucheCentimes - e.bsCentimes + partBs.get(ps);
     return {
       ps,
-      nbPassages: n,
-      toucheCentimes,
+      nbPassages: e.nbPassages,
+      toucheCentimes: e.toucheCentimes,
       partCentimes,
-      ecartCentimes: toucheCentimes - partCentimes,
+      ecartCentimes: e.toucheCentimes - partCentimes,
     };
   });
 }
@@ -162,12 +198,18 @@ export function detecterRelais(seances) {
       montantCentimes: s.montantCentimes ?? null,
     }));
     const n = passages.length;
-    const montantIncomplet = passages.some((p) => p.montantCentimes === null);
+    // Montant illisible, ou ligne inférieure au tarif de son BS (lecture douteuse) : non calculé.
+    const montantIncomplet = passages.some(
+      (p) => p.montantCentimes === null || p.montantCentimes < montantBsCentimes(p.cotation),
+    );
     const totalCentimes = montantIncomplet
       ? null
       : passages.reduce((somme, p) => somme + p.montantCentimes, 0);
 
-    const parts = totalCentimes === null ? [] : repartir(passages, totalCentimes);
+    const parts = totalCentimes === null ? [] : repartir(passages);
+    const bsCentimes = montantIncomplet
+      ? null
+      : passages.reduce((somme, p) => somme + montantBsCentimes(p.cotation), 0);
 
     cas.push({
       id: genId(),
@@ -177,7 +219,8 @@ export function detecterRelais(seances) {
       passages,
       nbPassages: n,
       totalCentimes,
-      partParPassageCentimes: totalCentimes === null ? null : Math.round(totalCentimes / n),
+      bsCentimes,
+      partBsCentimes: bsCentimes === null ? null : Math.round(bsCentimes / parts.length),
       parts,
       reversements: montantIncomplet ? [] : calculerReversements(parts),
       montantIncomplet,

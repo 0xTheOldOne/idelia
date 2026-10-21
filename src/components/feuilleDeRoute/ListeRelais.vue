@@ -36,8 +36,9 @@
           </p>
           <div v-else class="liste-relais__recap">
             <p class="liste-relais__total">
-              Total {{ euros(c.totalCentimes) }} pour {{ c.nbPassages }} passages, soit
-              {{ euros(c.partParPassageCentimes) }} par passage.
+              Soin de base {{ euros(c.bsCentimes) }} partagé entre {{ c.parts.length }} infirmières,
+              soit {{ euros(c.partBsCentimes) }} chacune. Les autres soins restent à celle qui les a
+              faits.
             </p>
             <ul class="liste-relais__parts">
               <li v-for="part in c.parts" :key="part.ps">

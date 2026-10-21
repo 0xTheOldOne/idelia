@@ -61,12 +61,15 @@ La **Fin** distingue deux prises en charge simultanées d'un même patient ; le 
 
 ## Répartition et reversements
 
-Dans la réalité, la Sécurité sociale paie **chaque ligne à l'infirmière de la ligne** : celle du matin touche le soin (BSx) + le déplacement (IFI), les passages suivants seulement le déplacement. Le cabinet répartit équitablement **par passage**. Tous les calculs sont en **centimes entiers**.
+Dans la réalité, la Sécurité sociale paie **chaque ligne à l'infirmière de la ligne** : celle du matin touche le soin (BSx) + le déplacement (IFI), les passages suivants seulement le déplacement. Règle du cabinet [0037] : **seul le soin de base (BSA/BSB/BSC) est partagé**, à parts égales entre les **infirmières distinctes** du jour (quel que soit leur nombre de passages) ; IFI, AMI, majorations, IK restent à celle qui les a faits. La rétrocession d'une remplaçante ne porte donc que sur la part de BS (les autres soins s'annulent dans l'écart). Tous les calculs sont en **centimes entiers**.
+
+La cotation Vega étant tronquée (« BSB1+IFI1 (… ») avec un seul montant par ligne, le montant du BS vient des tarifs NGAP `TARIFS_BS_CENTIMES` (BSA 13,00 · BSB 18,20 · BSC 28,70 €, vérifiés sur les totaux de pied de page du PDF) × coefficient. **À mettre à jour si les tarifs changent.**
 
 | Grandeur | Calcul |
 |---|---|
-| `totalCentimes` | somme des montants du groupe (`null` si un montant est illisible → `montantIncomplet`, ni parts ni reversements) |
-| `partCentimes` | `total × passages de l'infirmière ÷ N`, arrondi ; la **dernière** infirmière (ordre de première apparition) reçoit le reste, pour que Σ parts = total |
+| `totalCentimes` | somme des montants du groupe (`null` si un montant est illisible, ou si une ligne est inférieure au tarif de son BS → `montantIncomplet`, ni parts ni reversements) |
+| `bsCentimes` | Σ des BS du groupe (tarif × coefficient) ; `partBsCentimes` = `bs ÷ nb d'infirmières`, arrondi (affichage) |
+| `partCentimes` | `touche − BS facturé par elle + sa part de BS` ; les centimes qui ne se divisent pas restent à celle(s) qui ont facturé le BS, pour que Σ parts = total |
 | `toucheCentimes` | somme des montants de **ses** lignes |
 | `ecartCentimes` | `touche − part` (positif = doit reverser) ; Σ écarts = 0 |
 | `reversements` | glouton : le plus gros débiteur verse au plus gros créancier le minimum des deux, jusqu'à épuisement (déterministe, nombre de virements minimal en pratique) |
@@ -76,7 +79,7 @@ Exemples de référence (vérifiés sur les PDF de test) :
 | Passages | Total | Parts | Touché | Reversement |
 |---|---|---|---|---|
 | FC 20,95 · LR 2,75 | 23,70 | FC 11,85 · LR 11,85 | FC 20,95 · LR 2,75 | FC → LR **9,10 €** |
-| FC 20,95 · FC 2,75 · LR 2,75 | 26,45 | FC 17,63 · LR 8,82 | FC 23,70 · LR 2,75 | FC → LR **6,07 €** |
+| FC 20,95 · FC 2,75 · LR 2,75 | 26,45 | FC 14,60 · LR 11,85 | FC 23,70 · LR 2,75 | FC → LR **9,10 €** (moitié du BSB) |
 
 ## Bilan de la période
 

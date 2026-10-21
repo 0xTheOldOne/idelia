@@ -50,7 +50,8 @@
             <th scope="col" role="columnheader" class="bilan-periode__montant">
               Ce qui lui revient
               <InfoBulle libelle="À propos de « Ce qui lui revient »" :taille="18" alignement="fin">
-                Sa part équitable des soins partagés, selon son nombre de passages chez le patient.
+                Ses propres soins, plus sa part du soin de base (BS), partagé à parts égales entre
+                les infirmières du patient ce jour-là.
               </InfoBulle>
             </th>
             <th scope="col" role="columnheader" class="bilan-periode__montant">
