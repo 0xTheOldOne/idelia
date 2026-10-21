@@ -273,17 +273,7 @@ export default {
 }
 
 .recap-mensuel-pastille {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  height: 2rem;
-  padding: 0 t.$espace-1;
-  border-radius: 50%;
-  border: 1px solid t.$couleur-bordure;
-  font-size: t.$taille-texte-petite;
-  font-weight: t.$graisse-gras;
+  @include m.pastille-initiales;
 }
 
 .recap-mensuel-attenue {

@@ -148,14 +148,14 @@ export function libelleCreneau(code) {
  */
 export const LIBELLES_STATUT_PERSONNE = {
   TITULAIRE: 'Titulaire',
-  REMPLACANT: 'Remplaçant',
+  REMPLACANT: 'Remplaçant(e)',
 };
 
 /**
  * Renvoie le libellé FR d'un statut de personne à partir de son code.
  *
  * @param {string} code - Code statut (`'TITULAIRE'`, `'REMPLACANT'`).
- * @returns {string} Libellé FR (ex. `'REMPLACANT' → 'Remplaçant'`), ou chaîne vide si inconnu.
+ * @returns {string} Libellé FR (ex. `'REMPLACANT' → 'Remplaçant(e)'`), ou chaîne vide si inconnu.
  */
 export function libelleStatutPersonne(code) {
   return LIBELLES_STATUT_PERSONNE[code] ?? '';
