@@ -31,6 +31,14 @@ Cas listés par l'utilisatrice, tous couverts :
 - **Rétrocession** : inchangée dans `fluxComptes.js`. L'écart d'une infirmière vaut désormais `BS facturé − sa part de BS`, donc la rétrocession ne porte que sur le BS.
 - L'affichage reste un **ajustement** du reversement habituel (choix confirmé).
 
+### Question en suspens (2026-10-21)
+
+Soulevée par le cas « TroisDoublons » (FC matin + soir, LR une fois) : quand une infirmière passe deux fois et une autre une fois, faut-il diviser le BS **par infirmière** (règle actuelle → FC → LR 9,10 €) ou **par passage** (les soins du matin sont souvent plus lourds) ? L'équipe n'a pas tranché : **aucune évolution** tant qu'elle n'a pas décidé. La question est affichée dans l'onglet « Règles de calcul ».
+
+## 2 bis. Onglet « Règles de calcul »
+
+Troisième onglet de l'écran de résultat (`src/components/feuilleDeRoute/ReglesCalcul.vue`, statique) : patients concernés, qui reçoit l'argent, ce qui est partagé (tableau des tarifs BS), partage du BS, les 7 cas avec exemple chiffré, rétrocession, bilan, cas non calculés ou signalés. Les montants d'exemple sont calculés avec `TARIFS_BS_CENTIMES` et `partsRetrocession` (IFI 2,75 € et taux 11 % en exemple), pour rester alignés sur le calcul.
+
 ## 3. Fichiers
 
 - `src/domain/feuilleDeRoute/detecterRelais.js` : `TARIFS_BS_CENTIMES`, `montantBsCentimes(cotation)`, nouvelle `repartir`, champs `bsCentimes` / `partBsCentimes` (remplacent `partParPassageCentimes`).

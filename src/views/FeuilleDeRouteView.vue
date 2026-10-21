@@ -136,6 +136,15 @@
             :cas="cas"
             :infirmieres="indexInfirmieres" />
         </div>
+        <div
+          v-show="ongletActif === 'regles'"
+          id="feuille-de-route-panneau-regles"
+          class="feuille-de-route-panneau d-print-none"
+          role="tabpanel"
+          aria-labelledby="feuille-de-route-onglet-regles"
+          tabindex="0">
+          <ReglesCalcul />
+        </div>
       </template>
     </template>
   </div>
@@ -149,6 +158,7 @@
   import BilanPeriode from "@/components/feuilleDeRoute/BilanPeriode.vue";
   import ListeOnglets from "@/components/communs/ListeOnglets.vue";
   import ListeRelais from "@/components/feuilleDeRoute/ListeRelais.vue";
+  import ReglesCalcul from "@/components/feuilleDeRoute/ReglesCalcul.vue";
   import { TAILLE_MAX_PDF_OCTETS, estFichierPdf, lireGlyphesPdf } from "@/adaptateurs/lireGlyphesPdf.js";
   import { extraireSeances } from "@/domain/feuilleDeRoute/extraireSeances.js";
   import { detecterRelais } from "@/domain/feuilleDeRoute/detecterRelais.js";
@@ -181,6 +191,7 @@
   const ONGLETS = Object.freeze([
     { code: "bilan", libelle: "Bilan de la période" },
     { code: "detail", libelle: "Détail par patient" },
+    { code: "regles", libelle: "Règles de calcul" },
   ]);
 
   /**
@@ -220,6 +231,7 @@
       BilanPeriode,
       ListeOnglets,
       ListeRelais,
+      ReglesCalcul,
     },
     data() {
       return { ETAPES, ONGLETS, ...etatInitial() };
