@@ -60,18 +60,25 @@
           <h2 ref="titrePlanning" tabindex="-1" class="planning-resultat-titre">
             {{ planningCourant.nom }}
           </h2>
-          <button
-            v-if="infoGeneration"
-            type="button"
-            class="planning-bouton-info d-none d-md-inline-flex"
-            :title="texteInfoGeneration"
-            :aria-label="texteInfoGeneration"
-            :aria-expanded="infoGenerationVisible ? 'true' : 'false'"
-            aria-controls="planning-info-generation"
-            @click="infoGenerationVisible = !infoGenerationVisible"
-          >
-            <PhInfo :size="20" aria-hidden="true" />
-          </button>
+          <!-- Date de génération en infobulle (survol, focus clavier ou appui
+               sur mobile) : rien n'est affiché sous le titre. -->
+          <span v-if="infoGeneration" class="planning-info">
+            <button
+              type="button"
+              class="planning-bouton-info"
+              aria-label="Informations sur ce planning"
+              aria-describedby="planning-info-generation"
+            >
+              <PhInfo :size="20" aria-hidden="true" />
+            </button>
+            <span id="planning-info-generation" role="tooltip" class="planning-infobulle">
+              Généré le <time :datetime="infoGeneration.genereLe">{{ infoGeneration.dateTexte }}</time>
+              <template v-if="infoGeneration.modifieDepuis">
+                · modifié à la main le
+                <time :datetime="dateModificationIso">{{ infoGeneration.dateModificationTexte }}</time>
+              </template>
+            </span>
+          </span>
           <span v-if="modeEdition" class="planning-badge-edition">
             <PhPencilSimple :size="16" weight="bold" aria-hidden="true" />
             <span>Mode modification — affichage par tournées</span>
@@ -139,24 +146,6 @@
         </div>
       </div>
 
-      <!-- Date de génération en texte : toujours visible sur mobile (pas
-           d'icône d'information, le survol n'y existe pas) ; à partir de `md`,
-           affichée seulement au clic sur l'icône d'information. -->
-      <p
-        v-if="infoGeneration"
-        id="planning-info-generation"
-        class="planning-info-generation"
-        :class="{ 'd-md-none': !infoGenerationVisible }"
-      >
-        <PhClockCounterClockwise :size="16" aria-hidden="true" class="flex-shrink-0" />
-        <span>
-          Généré le <time :datetime="infoGeneration.genereLe">{{ infoGeneration.dateTexte }}</time>
-          <template v-if="infoGeneration.modifieDepuis">
-            · modifié à la main le
-            <time :datetime="dateModificationIso">{{ infoGeneration.dateModificationTexte }}</time>
-          </template>
-        </span>
-      </p>
 
       <p v-if="modeEdition && orientation === 'PERSONNES'" class="alert alert-info planning-message-orientation">
         <PhInfo :size="18" weight="fill" class="flex-shrink-0" aria-hidden="true" />
@@ -242,7 +231,6 @@ import {
   PhCheck,
   PhArrowsClockwise,
   PhShuffle,
-  PhClockCounterClockwise,
   PhPrinter,
 } from '@phosphor-icons/vue';
 
@@ -328,7 +316,6 @@ export default {
     PhCheck,
     PhArrowsClockwise,
     PhShuffle,
-    PhClockCounterClockwise,
     PhPrinter,
     DialogueConfirmation,
     FormulaireGeneration,
@@ -343,8 +330,6 @@ export default {
     return {
       // `true` pendant l'appel au moteur (bascule le libellé du bouton).
       chargement: false,
-      // Détail « Généré le … » affiché sous le titre (clic sur l'icône d'information).
-      infoGenerationVisible: false,
       // Diagnostics volatils du planning courant (`{ violations,
       // tourneesNonCouvertes, score }`), issus soit du `Resultat` d'une
       // génération fraîche, soit de `evaluerCourant` (montage/rechargement).
@@ -429,13 +414,6 @@ export default {
      */
     infoGeneration() {
       return this.planningCourant ? infoGeneration(this.planningCourant) : null;
-    },
-    /** Texte de l'infobulle de l'icône d'information (date de génération). */
-    texteInfoGeneration() {
-      const info = this.infoGeneration;
-      if (!info) return '';
-      const modification = info.modifieDepuis ? ` · modifié à la main le ${info.dateModificationTexte}` : '';
-      return `Généré le ${info.dateTexte}${modification}`;
     },
     /** Horodatage ISO de la dernière modification, pour l'attribut `datetime`. */
     dateModificationIso() {
@@ -877,8 +855,37 @@ export default {
   min-width: 0;
 }
 
-// Icône d'information (date de génération) : infobulle au survol, détail
-// affiché/masqué au clic. Cible cliquable de taille standard.
+// Icône d'information (date de génération) : infobulle au survol ou au
+// focus (appui sur mobile). Le survol porte sur le conteneur, pour que
+// l'infobulle reste affichée quand la souris passe dessus.
+.planning-info {
+  position: relative;
+  display: inline-flex;
+
+  &:hover .planning-infobulle,
+  &:focus-within .planning-infobulle {
+    display: block;
+  }
+}
+
+.planning-infobulle {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: 20rem;
+  padding: t.$espace-1 t.$espace-2;
+  border-radius: t.$rayon-sm;
+  background-color: t.$couleur-texte;
+  color: t.$couleur-texte-inverse;
+  box-shadow: t.$ombre-legere;
+  font-size: t.$taille-texte-petite;
+  font-weight: normal;
+}
+
+// Cible cliquable de taille standard.
 .planning-bouton-info {
   display: inline-flex;
   align-items: center;
@@ -924,17 +931,6 @@ export default {
   border-radius: t.$rayon-lg;
   font-size: t.$taille-texte-petite;
   font-weight: t.$graisse-gras;
-}
-
-// Ligne discrète « Généré le … » sous le titre (feature 0026) : icône
-// décorative + texte, taille de texte standard pour rester lisible.
-.planning-info-generation {
-  display: flex;
-  align-items: center;
-  gap: t.$espace-2;
-  margin: 0 0 t.$espace-3;
-  color: t.$couleur-texte-attenue;
-  font-size: t.$taille-texte-petite;
 }
 
 // Actions collées à droite de l'en-tête, toutes en icône seule : les 4
