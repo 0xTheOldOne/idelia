@@ -16,6 +16,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * @property {number} y        // ordonnée (transform[5]) — origine en bas de page
  * @property {number} largeur  // largeur du fragment (item.width), 0 si inconnue
  * @property {string} str      // texte du fragment (mot ou cellule entière), jamais vide
+ * @property {boolean} [barre] // fragment barré dans le PDF (séance barrée dans Vega)
  *
  * @typedef {Object} Seance
  * @property {string} date           // "YYYY-MM-DD" (ligne de jour précédente)
@@ -25,6 +26,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * @property {string} cotation       // colonne « Cotation », telle qu'imprimée
  * @property {(number|null)} montantCentimes // colonne « Montant » en centimes (20,95 → 2095), null si illisible
  * @property {(string|null)} fin     // "YYYY-MM-DD" (Fin dd/mm/yy → 20yy-mm-dd), null si absente/illisible
+ * @property {boolean} barree      // ligne barrée dans Vega (séance non comptée)
  *
  * @typedef {Object} ResultatExtraction
  * @property {({debut: string, fin: string}|null)} periode  // 1re et dernière date de jour lues
@@ -220,6 +222,7 @@ export function extraireSeances(glyphes) {
       cotation: c.get('cotation') ?? '',
       montantCentimes: convertirMontant(c.get('montant')),
       fin: convertirFin(c.get('fin')),
+      barree: ligne.fragments.some((g) => g.barre === true),
     });
   }
 

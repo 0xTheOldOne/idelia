@@ -195,7 +195,7 @@
   ]);
 
   /**
-   * @returns {{etape: string, nomFichier: string, nbSeances: number,
+   * @returns {{etape: string, nomFichier: string, nbSeances: number, nbBarrees: number,
    *   periode: ({debut: string, fin: string}|null), cas: Array, codeErreur: string, ongletActif: string}}
    */
   function etatInitial() {
@@ -203,6 +203,7 @@
       etape: ETAPES.ATTENTE,
       nomFichier: "",
       nbSeances: 0,
+      nbBarrees: 0,
       periode: null,
       cas: [],
       codeErreur: "",
@@ -266,11 +267,13 @@
       resume() {
         const n = this.nbSeances;
         const seances = `${n} ${n > 1 ? "séances lues" : "séance lue"}`;
+        const b = this.nbBarrees;
+        const barrees = b === 0 ? "" : ` (dont ${b} ${b > 1 ? "barrées dans Vega, ignorées" : "barrée dans Vega, ignorée"})`;
         const p = this.periode;
         const periode = p ? (p.debut === p.fin ? ` le ${this.jourComplet(p.debut)}` : ` du ${this.jourComplet(p.debut)} au ${this.jourComplet(p.fin)}`) : "";
         const c = this.cas.length;
         const patients = c === 0 ? "aucun patient vu par plusieurs infirmières" : `${c} ${c > 1 ? "patients vus" : "patient vu"} par plusieurs infirmières`;
-        return `${seances}${periode} — ${patients}.`;
+        return `${seances}${barrees}${periode} — ${patients}.`;
       },
     },
     mounted() {
@@ -322,6 +325,7 @@
 
           this.cas = detecterRelais(seances);
           this.nbSeances = seances.length;
+          this.nbBarrees = seances.filter((s) => s.barree).length;
           this.periode = periode;
           this.etape = ETAPES.RESULTAT;
           this.$nextTick(() => this.$refs.resume?.focus());

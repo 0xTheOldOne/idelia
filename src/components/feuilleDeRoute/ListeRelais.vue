@@ -31,6 +31,15 @@
               </div>
             </template>
           </div>
+          <div v-if="c.passagesBarres.length > 0" class="liste-relais__barres">
+            <p class="mb-1">Barrée dans Vega, non comptée :</p>
+            <ul class="mb-0">
+              <li v-for="(p, i) in c.passagesBarres" :key="i">
+                <s>{{ nomLong(p.ps) }} à {{ p.heure }} — {{ p.cotation }}<template
+                  v-if="p.montantCentimes !== null"> — {{ euros(p.montantCentimes) }}</template></s>
+              </li>
+            </ul>
+          </div>
           <p v-if="c.montantIncomplet" class="liste-relais__recap">
             Montant illisible pour au moins un passage : impossible de calculer qui reverse quoi.
           </p>
@@ -187,6 +196,12 @@ export default {
     flex-wrap: wrap;
     align-items: center;
   }
+}
+
+// Séances barrées dans Vega : montrées pour comprendre, jamais comptées.
+.liste-relais__barres {
+  color: t.$couleur-texte-attenue;
+  font-size: t.$taille-texte-petite;
 }
 
 .liste-relais__recap {

@@ -59,6 +59,10 @@ Pour chaque groupe **même date + même patient (normalisé) + même Fin** :
 
 La **Fin** distingue deux prises en charge simultanées d'un même patient ; le **nom** distingue deux patients qui auraient la même Fin. Il n'y a **pas** de coupure horaire matin / après-midi : seule la position du passage donne son libellé (`libelleMoment` : Matin / Soir, Matin / Midi / Soir, sinon « Passage n »).
 
+## Séances barrées
+
+Vega barre une séance (non faite) en dessinant sur chaque cellule un rectangle plein très fin (≈ 0,4 pt de haut) au milieu du texte. `lireGlyphesPdf` relève ces traits dans la liste d'opérateurs de chaque page (`getOperatorList`, boîtes de `constructPath` de 0,05 à 1,5 pt de haut ; les bordures du tableau, d'épaisseur nulle, sont écartées) et marque `barre: true` les fragments qu'ils traversent. `extraireSeances` en déduit `Seance.barree` ; `detecterRelais` ignore ces séances (conditions et calcul) et les rend dans `CasRelais.passagesBarres`, pour affichage seulement. Le résumé indique « dont N barrées dans Vega, ignorées ».
+
 ## Répartition et reversements
 
 Dans la réalité, la Sécurité sociale paie **chaque ligne à l'infirmière de la ligne** : celle du matin touche le soin (BSx) + le déplacement (IFI), les passages suivants seulement le déplacement. Règle du cabinet [0037] : **seul le soin de base (BSA/BSB/BSC) est partagé**, à parts égales entre les **infirmières distinctes** du jour (quel que soit leur nombre de passages) ; IFI, AMI, majorations, IK restent à celle qui les a faits. La rétrocession d'une remplaçante ne porte donc que sur la part de BS (les autres soins s'annulent dans l'écart). Tous les calculs sont en **centimes entiers**.

@@ -1,6 +1,7 @@
 /**
  * Détection des patients vus par plusieurs infirmières (feature 0033) : un même patient,
  * soigné plusieurs fois le même jour (soins BSA/BSB/BSC) par au moins deux codes PS différents.
+ * Les séances barrées dans Vega (non faites) sont écartées du calcul.
  * Seul le soin de base (BSA/BSB/BSC) est partagé, à parts égales entre les infirmières
  * distinctes du jour ; les autres soins (IFI, AMI, majorations, IK…) restent à celle qui les a
  * faits (feature 0037). On calcule ensuite qui doit reverser combien à qui (feature 0034).
@@ -38,6 +39,7 @@ import { genId } from '../utils/id.js';
  * @property {string} patient
  * @property {(string|null)} fin               // "YYYY-MM-DD" ou null
  * @property {PassageRelais[]} passages        // triés par heure
+ * @property {PassageRelais[]} passagesBarres  // séances barrées dans Vega du même patient-jour (affichage seul, non comptées)
  * @property {number} nbPassages
  * @property {(number|null)} totalCentimes     // null si un montant est illisible
  * @property {(number|null)} bsCentimes        // montant du soin de base partagé (null si montantIncomplet)
@@ -187,16 +189,20 @@ export function detecterRelais(seances) {
   /** @type {CasRelais[]} */
   const cas = [];
   for (const groupe of groupes.values()) {
-    if (!groupe.some((s) => /^BS[ABC]\d/.test(s.cotation))) continue;
-    const tries = [...groupe].sort(parHeure);
+    // Séances barrées dans Vega : jamais comptées, seulement montrées avec leur cas.
+    const comptees = groupe.filter((s) => !s.barree);
+    if (!comptees.some((s) => /^BS[ABC]\d/.test(s.cotation))) continue;
+    const tries = [...comptees].sort(parHeure);
     if (new Set(tries.map((s) => s.ps)).size < 2) continue;
 
-    const passages = tries.map((s) => ({
+    const versPassage = (s) => ({
       ps: s.ps,
       heure: s.heure,
       cotation: s.cotation,
       montantCentimes: s.montantCentimes ?? null,
-    }));
+    });
+    const passages = tries.map(versPassage);
+    const passagesBarres = groupe.filter((s) => s.barree).sort(parHeure).map(versPassage);
     const n = passages.length;
     // Montant illisible, ou ligne inférieure au tarif de son BS (lecture douteuse) : non calculé.
     const montantIncomplet = passages.some(
@@ -217,6 +223,7 @@ export function detecterRelais(seances) {
       patient: tries[0].patient,
       fin: tries[0].fin,
       passages,
+      passagesBarres,
       nbPassages: n,
       totalCentimes,
       bsCentimes,

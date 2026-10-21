@@ -153,6 +153,7 @@
 
     <h3 class="regles-calcul__sous-titre">8. Ce qui n'est pas calculé ou est signalé</h3>
     <ul>
+      <li>Une séance barrée dans Vega : elle est ignorée (considérée comme non faite). Le résumé en donne le nombre, et le détail par patient la montre barrée.</li>
       <li>Un montant illisible, ou une ligne plus petite que le tarif de son soin de base : le patient n'est pas compté, et sa date est signalée.</li>
       <li>Un code Vega relié à personne de l'équipe : ses sommes sont comptées à part et signalées.</li>
       <li>Une remplaçante sans titulaire : elle est comptée comme si elle recevait l'argent elle-même, et signalée.</li>
