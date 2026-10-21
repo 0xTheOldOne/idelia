@@ -34,19 +34,21 @@
 
     <template v-else>
       <p class="bilan-periode__explication">
-        Chaque infirmière a encaissé ce que ses patients ont payé ; « Ce qui lui revient » est sa
-        part équitable. La différence est ce qu'elle doit reverser ou recevoir.
+        « Soins facturés » est le montant des soins faits par chaque infirmière. Pour une
+        remplaçante, cet argent est versé sur le compte de sa titulaire. « Ce qui lui revient » est
+        sa part équitable. L'écart entre les deux est réglé par les virements entre titulaires,
+        expliqués plus bas.
       </p>
       <table class="bilan-periode__table" role="table">
         <caption class="visually-hidden">
-          Ce que chaque infirmière a encaissé, ce qui lui revient et ce qu'elle doit faire
+          Soins facturés par chaque infirmière, ce qui lui revient et l’écart entre les deux
         </caption>
         <thead role="rowgroup">
           <tr role="row">
             <th scope="col" role="columnheader">Infirmière</th>
-            <th scope="col" role="columnheader" class="bilan-periode__montant">Encaissé</th>
+            <th scope="col" role="columnheader" class="bilan-periode__montant">Soins facturés</th>
             <th scope="col" role="columnheader" class="bilan-periode__montant">Ce qui lui revient</th>
-            <th scope="col" role="columnheader" class="bilan-periode__montant">À faire</th>
+            <th scope="col" role="columnheader" class="bilan-periode__montant">Écart</th>
           </tr>
         </thead>
         <tbody role="rowgroup">
@@ -59,27 +61,27 @@
                 }}
               </small>
             </th>
-            <td role="cell" class="bilan-periode__montant" data-label="Encaissé">
+            <td role="cell" class="bilan-periode__montant" data-label="Soins facturés">
               {{ euros(ligne.toucheCentimes) }}
             </td>
             <td role="cell" class="bilan-periode__montant" data-label="Ce qui lui revient">
               {{ euros(ligne.partCentimes) }}
             </td>
-            <td role="cell" class="bilan-periode__montant bilan-periode__resultat" data-label="À faire">
+            <td role="cell" class="bilan-periode__montant bilan-periode__resultat" data-label="Écart">
               <strong v-if="ligne.soldeCentimes > 0">
-                Doit reverser {{ euros(ligne.soldeCentimes) }}
+                Plus que sa part : {{ euros(ligne.soldeCentimes) }}
               </strong>
               <strong v-else-if="ligne.soldeCentimes < 0">
-                Doit recevoir {{ euros(-ligne.soldeCentimes) }}
+                Moins que sa part : {{ euros(-ligne.soldeCentimes) }}
               </strong>
-              <span v-else class="bilan-periode__attenue">Rien à reverser ni à recevoir</span>
+              <span v-else class="bilan-periode__attenue">Exactement sa part</span>
             </td>
           </tr>
         </tbody>
         <tfoot role="rowgroup">
           <tr role="row" class="bilan-periode__total">
             <th scope="row" role="rowheader">Total</th>
-            <td role="cell" class="bilan-periode__montant" data-label="Encaissé">
+            <td role="cell" class="bilan-periode__montant" data-label="Soins facturés">
               {{ euros(bilan.totalCentimes) }}
             </td>
             <td role="cell" class="bilan-periode__montant" data-label="Ce qui lui revient">
@@ -232,7 +234,7 @@ export default {
         const consigne = "Le taux n'est pas renseigné : complétez sa fiche pour obtenir la somme exacte.";
         return recoit
           ? { debut: `${titulaire} ajoute jusqu'à ${somme} à ce qu'elle reverse à `, nom, fin: `. ${consigne}` }
-          : { debut: '', nom, fin: ` a encaissé trop : ${titulaire} déduit jusqu'à ${somme} de ce qu'elle lui reverse. ${consigne}` };
+          : { debut: '', nom, fin: ` a facturé plus que sa part : ${titulaire} déduit jusqu'à ${somme} de ce qu'elle lui reverse. ${consigne}` };
       }
       const part = this.euros(r.partRemplacanteCentimes);
       const reste = this.euros(r.partTitulaireCentimes);
@@ -245,7 +247,7 @@ export default {
         : {
             debut: '',
             nom,
-            fin: ` a encaissé trop : ${titulaire} déduit ${part} de ce qu'elle lui reverse. ${titulaire} garde la différence à sa charge : ${reste} (taux ${r.taux} %).`,
+            fin: ` a facturé plus que sa part : ${titulaire} déduit ${part} de ce qu'elle lui reverse. ${titulaire} garde la différence à sa charge : ${reste} (taux ${r.taux} %).`,
           };
     },
     /** @param {import('@/domain/feuilleDeRoute/fluxComptes.js').AlerteFlux} a */
