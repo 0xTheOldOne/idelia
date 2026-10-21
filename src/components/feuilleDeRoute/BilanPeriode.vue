@@ -107,13 +107,6 @@
       </template>
       <p v-else class="bilan-periode__aucun">Personne n'a de virement à faire : chaque titulaire a déjà reçu sa part.</p>
 
-      <template v-if="definitionSchema !== null">
-        <h3 class="bilan-periode__sous-titre">Le chemin de l'argent</h3>
-        <SchemaFlux
-          :definition="definitionSchema"
-          legende="Schéma qui résume les virements. Flèche pleine : somme à virer ou à ajouter. Flèche en pointillé : somme à déduire. Toutes les sommes sont aussi écrites en dessous." />
-      </template>
-
       <template v-if="flux.retrocessions.length > 0">
         <h3 class="bilan-periode__sous-titre">À ajouter ou retirer sur le reversement habituel aux remplaçantes</h3>
         <p class="bilan-periode__explication">
@@ -155,8 +148,6 @@ import { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight } from '@phosphor-icons
 import { couvrePlusieursMois } from '@/domain/feuilleDeRoute/bilanReversements.js';
 import { infirmiereDuCode, libelleInfirmiere } from '@/domain/feuilleDeRoute/relierInfirmieres.js';
 import { libellesFlux } from '@/domain/feuilleDeRoute/fluxComptes.js';
-import { definitionSchemaFlux } from '@/domain/feuilleDeRoute/schemaFlux.js';
-import SchemaFlux from '@/components/feuilleDeRoute/SchemaFlux.vue';
 import { libelleJour } from '@/domain/libelles.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { formaterEuros } from '@/domain/utils/montants.js';
@@ -171,7 +162,7 @@ import { formaterEuros } from '@/domain/utils/montants.js';
  */
 export default {
   name: 'BilanPeriode',
-  components: { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight, SchemaFlux },
+  components: { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight },
   props: {
     /** @type {import('vue').PropType<import('@/domain/feuilleDeRoute/bilanReversements.js').BilanPeriode>} */
     bilan: { type: Object, required: true },
@@ -197,13 +188,9 @@ export default {
       const patients = n > 1 ? 'patients vus' : 'patient vu';
       return `Calculé sur ${n} ${patients} par plusieurs infirmières, pour un total de ${this.euros(this.bilan.totalCentimes)}.`;
     },
-    /** Noms affichés par compte / remplaçante (partagés avec le schéma). */
+    /** Noms affichés par compte / remplaçante. */
     libelles() {
       return libellesFlux(this.flux);
-    },
-    /** Texte Mermaid du schéma, ou `null` s'il n'y a rien à dessiner. */
-    definitionSchema() {
-      return definitionSchemaFlux(this.flux, this.libelles);
     },
     texteCasExclus() {
       const n = this.bilan.nbCasExclus;

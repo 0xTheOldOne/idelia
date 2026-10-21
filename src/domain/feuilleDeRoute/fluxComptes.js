@@ -117,7 +117,7 @@ export function calculerFlux(lignes, resoudreCompte) {
 }
 
 /**
- * Noms affichés, partagés par le schéma et les listes : clé de compte ou id de remplaçante
+ * Noms affichés, utilisés par les listes du bilan : clé de compte ou id de remplaçante
  * → « Prénom NOM » ; compte non relié → « XY (non relié) ».
  * @param {FluxComptes} flux
  * @returns {Map<string, string>}
