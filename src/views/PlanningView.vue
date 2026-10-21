@@ -62,23 +62,13 @@
           </h2>
           <!-- Date de génération en infobulle (survol, focus clavier ou appui
                sur mobile) : rien n'est affiché sous le titre. -->
-          <span v-if="infoGeneration" class="planning-info">
-            <button
-              type="button"
-              class="planning-bouton-info"
-              aria-label="Informations sur ce planning"
-              aria-describedby="planning-info-generation"
-            >
-              <PhInfo :size="20" aria-hidden="true" />
-            </button>
-            <span id="planning-info-generation" role="tooltip" class="planning-infobulle">
-              Généré le <time :datetime="infoGeneration.genereLe">{{ infoGeneration.dateTexte }}</time>
-              <template v-if="infoGeneration.modifieDepuis">
-                · modifié à la main le
-                <time :datetime="dateModificationIso">{{ infoGeneration.dateModificationTexte }}</time>
-              </template>
-            </span>
-          </span>
+          <InfoBulle v-if="infoGeneration" libelle="Informations sur ce planning">
+            Généré le <time :datetime="infoGeneration.genereLe">{{ infoGeneration.dateTexte }}</time>
+            <template v-if="infoGeneration.modifieDepuis">
+              · modifié à la main le
+              <time :datetime="dateModificationIso">{{ infoGeneration.dateModificationTexte }}</time>
+            </template>
+          </InfoBulle>
           <span v-if="modeEdition" class="planning-badge-edition">
             <PhPencilSimple :size="16" weight="bold" aria-hidden="true" />
             <span>Mode modification — affichage par tournées</span>
@@ -235,6 +225,7 @@ import {
 } from '@phosphor-icons/vue';
 
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
+import InfoBulle from '@/components/communs/InfoBulle.vue';
 import FormulaireGeneration from '@/components/planning/FormulaireGeneration.vue';
 import ControlesGrille from '@/components/planning/ControlesGrille.vue';
 import GrillePlanning from '@/components/planning/GrillePlanning.vue';
@@ -307,6 +298,7 @@ import { indexerSouhaitsNonRespectes } from '@/domain/souhaitsNonRespectes.js';
 export default {
   name: 'PlanningView',
   components: {
+    InfoBulle,
     PhInfo,
     PhKanban,
     PhUsers,
@@ -853,59 +845,6 @@ export default {
   gap: t.$espace-2;
   flex: 1 1 auto;
   min-width: 0;
-}
-
-// Icône d'information (date de génération) : infobulle au survol ou au
-// focus (appui sur mobile). Le survol porte sur le conteneur, pour que
-// l'infobulle reste affichée quand la souris passe dessus.
-.planning-info {
-  position: relative;
-  display: inline-flex;
-
-  &:hover .planning-infobulle,
-  &:focus-within .planning-infobulle {
-    display: block;
-  }
-}
-
-.planning-infobulle {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 20;
-  width: max-content;
-  max-width: 20rem;
-  padding: t.$espace-1 t.$espace-2;
-  border-radius: t.$rayon-sm;
-  background-color: t.$couleur-texte;
-  color: t.$couleur-texte-inverse;
-  box-shadow: t.$ombre-legere;
-  font-size: t.$taille-texte-petite;
-  font-weight: normal;
-}
-
-// Cible cliquable de taille standard.
-.planning-bouton-info {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: t.$cible-cliquable-min;
-  min-height: t.$cible-cliquable-min;
-  padding: 0;
-  border: 0;
-  border-radius: t.$rayon-md;
-  background: none;
-  color: t.$couleur-texte-attenue;
-
-  &:hover {
-    color: t.$couleur-primaire-foncee;
-  }
-
-  &:focus-visible {
-    outline: t.$epaisseur-focus solid t.$couleur-focus;
-    outline-offset: 2px;
-  }
 }
 
 .planning-resultat-titre {

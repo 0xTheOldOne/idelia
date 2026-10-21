@@ -33,12 +33,6 @@
     </p>
 
     <template v-else>
-      <p class="bilan-periode__explication">
-        « Soins facturés » est le montant des soins faits par chaque infirmière. Pour une
-        remplaçante, cet argent est versé sur le compte de sa titulaire. « Ce qui lui revient » est
-        sa part équitable. L'écart entre les deux est réglé par les virements entre titulaires,
-        expliqués plus bas.
-      </p>
       <table class="bilan-periode__table" role="table">
         <caption class="visually-hidden">
           Soins facturés par chaque infirmière, ce qui lui revient et l’écart entre les deux
@@ -46,9 +40,26 @@
         <thead role="rowgroup">
           <tr role="row">
             <th scope="col" role="columnheader">Infirmière</th>
-            <th scope="col" role="columnheader" class="bilan-periode__montant">Soins facturés</th>
-            <th scope="col" role="columnheader" class="bilan-periode__montant">Ce qui lui revient</th>
-            <th scope="col" role="columnheader" class="bilan-periode__montant">Écart</th>
+            <th scope="col" role="columnheader" class="bilan-periode__montant">
+              Soins facturés
+              <InfoBulle libelle="À propos de « Soins facturés »" :taille="18" alignement="fin">
+                Montant des soins faits par l'infirmière. Pour une remplaçante, cet argent est versé
+                sur le compte de sa titulaire.
+              </InfoBulle>
+            </th>
+            <th scope="col" role="columnheader" class="bilan-periode__montant">
+              Ce qui lui revient
+              <InfoBulle libelle="À propos de « Ce qui lui revient »" :taille="18" alignement="fin">
+                Sa part équitable des soins partagés, selon son nombre de passages chez le patient.
+              </InfoBulle>
+            </th>
+            <th scope="col" role="columnheader" class="bilan-periode__montant">
+              Écart
+              <InfoBulle libelle="À propos de « Écart »" :taille="18" alignement="fin">
+                Différence entre les soins facturés et ce qui lui revient. Elle est réglée par les
+                virements entre titulaires, plus bas.
+              </InfoBulle>
+            </th>
           </tr>
         </thead>
         <tbody role="rowgroup">
@@ -150,6 +161,7 @@ import { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight } from '@phosphor-icons
 import { couvrePlusieursMois } from '@/domain/feuilleDeRoute/bilanReversements.js';
 import { infirmiereDuCode, libelleInfirmiere } from '@/domain/feuilleDeRoute/relierInfirmieres.js';
 import { libellesFlux } from '@/domain/feuilleDeRoute/fluxComptes.js';
+import InfoBulle from '@/components/communs/InfoBulle.vue';
 import { libelleJour } from '@/domain/libelles.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { formaterEuros } from '@/domain/utils/montants.js';
@@ -164,7 +176,7 @@ import { formaterEuros } from '@/domain/utils/montants.js';
  */
 export default {
   name: 'BilanPeriode',
-  components: { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight },
+  components: { PhPrinter, PhInfo, PhWarning, PhArrowsLeftRight, InfoBulle },
   props: {
     /** @type {import('vue').PropType<import('@/domain/feuilleDeRoute/bilanReversements.js').BilanPeriode>} */
     bilan: { type: Object, required: true },
