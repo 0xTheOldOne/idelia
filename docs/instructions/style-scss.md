@@ -1,17 +1,20 @@
 # Instructions — Style SCSS
 
-Références : [ADR 0012](../adr/0012-style-scss.md) (SCSS) et [ADR 0015](../adr/0015-bootstrap-librairie-composants-scss.md) (Bootstrap). Objectif : un rendu **cohérent et très lisible**, au service de l'ergonomie ([architecture 08](../architecture/08-principes-ux-ergonomie.md)).
+Références : [ADR 0012](../adr/0012-style-scss.md) (SCSS), [ADR 0015](../adr/0015-bootstrap-librairie-composants-scss.md) (Bootstrap) et [ADR 0022](../adr/0022-theme-sombre-css-custom-properties.md) (thème clair/sombre). Objectif : un rendu **cohérent et très lisible**, au service de l'ergonomie ([architecture 08](../architecture/08-principes-ux-ergonomie.md)).
 
 ## Organisation (7-1 allégée)
 
 ```
 src/styles/
-  _tokens.scss     # variables : couleurs, espacements, typographie, rayons, ombres, points de rupture
+  _tokens.scss     # variables : palettes claire/sombre, espacements, typographie, rayons, ombres, points de rupture
   _bootstrap.scss  # surcharge des variables Bootstrap (via nos tokens) + import ciblé de Bootstrap
-  _mixins.scss     # mixins réutilisables (media queries, focus, carte, bouton…)
+  _theme.scss      # émet les CSS custom properties --idelia-* des deux palettes (ADR 0022)
+  _mixins.scss     # mixins et fonctions réutilisables (media queries, focus, translucide…)
   _base.scss       # reset léger + styles d'éléments de base (body, titres, liens)
   main.scss        # point d'entrée : @use des partiels + styles globaux
 ```
+
+Ordre d'import dans `main.scss` : `tokens → bootstrap → theme → mixins → base → impression`.
 
 `main.scss` est importé une fois dans `src/main.js`. Les composants stylent en `<style scoped lang="scss">` et importent les tokens/mixins nécessaires via `@use '@/styles/tokens' as *;`.
 
@@ -75,6 +78,15 @@ Centraliser **toutes** les valeurs de design dans `_tokens.scss` — aucune vale
 - **Jamais l'information par la seule couleur** : doubler d'une icône/libellé/motif.
 - **Styles d'impression** : prévoir `@media print` pour les vues de diffusion ([ADR 0009](../adr/0009-workflow-referent-diffusion-lecture.md)) — lisibles en noir & blanc.
 
-## Thème
+## Thème (clair / sombre — ADR 0022)
 
-Un seul thème clair suffit en v1. Si un mode sombre est envisagé plus tard, l'usage systématique des tokens (variables) rend la bascule simple. Ne pas coder de couleurs en dur dans les composants.
+Deux palettes de **mêmes clés** (`$palette-claire`, `$palette-sombre`) vivent dans `_tokens.scss` ; la compilation échoue si leurs clés diffèrent. `_theme.scss` les émet en CSS custom properties `--idelia-<clé>`, sélectionnées par l'attribut Bootstrap `data-bs-theme` (`light` / `dark`) posé sur `<html>`. Les tokens thémables valent `var(--idelia-<clé>)` : les composants écrivent toujours `t.$couleur-fond`.
+
+Règles :
+
+- **Toute nouvelle couleur thémable s'ajoute dans les DEUX palettes**, puis devient un token `$couleur-…` en `var(--idelia-…)`. Jamais de couleur en dur dans un composant ni de règle `[data-bs-theme='dark']` locale : ajouter un token.
+- Les couleurs **identiques dans les deux thèmes** (texte sur aplat, couleurs d'impression…) restent des valeurs fixes dans `_tokens.scss`.
+- `t.clair('…')` et `t.sombre('…')` sont **réservés au pont Bootstrap** (`_bootstrap.scss`) et aux tokens fixes : Bootstrap exige de vraies couleurs à la compilation.
+- **Aucune fonction de couleur Sass** (`rgba`, `mix`, `lighten`, `darken`, `tint-color`, `shade-color`, `color.*`) sur un token thémable : le résultat serait un CSS invalide, ignoré sans erreur. Pour une teinte translucide, utiliser `m.translucide(t.$couleur-x, 0.12)` (`@use '@/styles/mixins' as m;`).
+- Un sous-arbre peut être forcé en clair avec `data-bs-theme="light"` (ex. aperçu A4 de la diffusion). L'impression est toujours en clair.
+- Tout nouveau variant Bootstrap figé à la compilation (ex. `btn-outline-*`) doit être vérifié en sombre et, au besoin, redéclaré dans `color-mode(dark)` en fin de `_bootstrap.scss`.

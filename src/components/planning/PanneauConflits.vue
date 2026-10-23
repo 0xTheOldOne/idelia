@@ -224,6 +224,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .panneau-conflits {
   margin-top: t.$espace-4;
@@ -369,12 +370,12 @@ export default {
   font-size: t.$taille-texte-petite;
 
   &--erreur {
-    background-color: rgba(t.$couleur-erreur, 0.08);
+    background-color: m.translucide(t.$couleur-erreur, 0.08);
     border-left: 3px solid t.$couleur-erreur;
   }
 
   &--avertissement {
-    background-color: rgba(t.$couleur-avertissement, 0.1);
+    background-color: m.translucide(t.$couleur-avertissement, 0.1);
     border-left: 3px dashed t.$couleur-avertissement;
   }
 }

@@ -65,3 +65,6 @@ $RECYCLE.BIN/
 
 # Exports Vega (PDF) et sauvegardes de travail : données réelles, jamais versionnées
 files/
+
+# Recette navigateur (captures/snapshots Playwright MCP) : contiennent des données réelles
+.playwright-mcp/

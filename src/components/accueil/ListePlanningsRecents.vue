@@ -164,6 +164,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .liste-plannings-recents {
   padding: t.$espace-4;
@@ -265,14 +266,14 @@ export default {
 
   &--valide {
     color: t.$couleur-succes;
-    background-color: rgba(t.$couleur-succes, 0.1);
-    border: 1px solid rgba(t.$couleur-succes, 0.3);
+    background-color: m.translucide(t.$couleur-succes, 0.1);
+    border: 1px solid m.translucide(t.$couleur-succes, 0.3);
   }
 
   &--publie {
     color: t.$couleur-primaire;
-    background-color: rgba(t.$couleur-primaire, 0.1);
-    border: 1px solid rgba(t.$couleur-primaire, 0.3);
+    background-color: m.translucide(t.$couleur-primaire, 0.1);
+    border: 1px solid m.translucide(t.$couleur-primaire, 0.3);
   }
 }
 </style>

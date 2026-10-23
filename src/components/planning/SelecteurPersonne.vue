@@ -258,6 +258,7 @@ export default {
   height: t.$espace-4;
   border-radius: 50%;
   border: 1px solid t.$couleur-bordure;
+  box-shadow: 0 0 0 1px t.$couleur-contour-pastille;
 }
 
 .selecteur-personne-nom {

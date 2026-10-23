@@ -847,6 +847,7 @@ export default {
   height: t.$cible-cliquable-min;
   padding: 0;
   border: 2px solid t.$couleur-bordure;
+  box-shadow: 0 0 0 1px t.$couleur-contour-pastille;
   border-radius: 50%;
   cursor: pointer;
 
@@ -883,7 +884,7 @@ export default {
 
 .btn-check:checked + .formulaire-icone-option {
   color: t.$couleur-texte;
-  background-color: rgba(t.$couleur-primaire, 0.12);
+  background-color: m.translucide(t.$couleur-primaire, 0.12);
   border-color: t.$couleur-primaire;
 }
 

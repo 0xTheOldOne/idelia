@@ -186,7 +186,7 @@ export default {
   // Bouton actif : fond léger en plus de la couleur (jamais la seule différence,
   // `aria-pressed` porte l'état pour les lecteurs d'écran).
   &--actif {
-    background-color: rgba(t.$couleur-primaire, 0.12);
+    background-color: m.translucide(t.$couleur-primaire, 0.12);
   }
 }
 
@@ -234,7 +234,7 @@ export default {
   background-color: t.$couleur-fond;
   border: 1px solid t.$couleur-bordure;
   border-radius: t.$rayon-md;
-  box-shadow: 0 4px 12px rgba(t.$couleur-texte, 0.12);
+  box-shadow: 0 4px 12px m.translucide(t.$couleur-texte, 0.12);
 }
 
 .reglages-grille-option {

@@ -40,6 +40,13 @@ const CLE_PREFS_UI = 'idelia:prefs-ui';
  */
 const CLE_PREFS_SAUVEGARDE_AUTO = 'idelia:prefs-sauvegarde-auto';
 
+/**
+ * Clé dédiée à la préférence de thème (feature 0038, ADR 0022), **séparée** du
+ * `SaveDocument` et des autres préférences : un réglage = une clé, jamais
+ * exportée/importée.
+ */
+const CLE_PREFS_THEME = 'idelia:prefs-theme';
+
 /** Fréquences (minutes) proposées par `BlocSauvegardeAutomatique.vue` : seules valeurs acceptées. */
 export const INTERVALLES_SAUVEGARDE_AUTO = Object.freeze([5, 10, 15, 30, 60]);
 
@@ -207,6 +214,35 @@ function enregistrerPreferenceMenuReplie(valeur) {
 }
 
 /**
+ * Lit la préférence de thème (feature 0038). Lecture **synchrone** et
+ * tolérante, comme `lirePreferenceMenuReplie` : la normalisation reste dans
+ * le domaine (`normaliserPreferenceTheme`).
+ *
+ * @returns {string|null} La chaîne stockée, ou `null` si absente ou illisible.
+ */
+function lirePreferenceTheme() {
+  try {
+    return localStorage.getItem(CLE_PREFS_THEME);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Enregistre la préférence de thème (feature 0038) sur sa clé dédiée
+ * `idelia:prefs-theme`. Écriture **best-effort** : les échecs sont ignorés.
+ *
+ * @param {string} valeur - `'AUTO'`, `'CLAIR'` ou `'SOMBRE'` (déjà normalisée).
+ */
+function enregistrerPreferenceTheme(valeur) {
+  try {
+    localStorage.setItem(CLE_PREFS_THEME, valeur);
+  } catch {
+    // Best-effort : une préférence non mémorisée n'est pas bloquante.
+  }
+}
+
+/**
  * Lit la préférence de sauvegarde automatique (feature 0019). Lecture
  * **synchrone** et tolérante, sur le même modèle que
  * `lirePreferenceMenuReplie` : valeurs par défaut si
@@ -315,6 +351,8 @@ export const storageRepository = {
   isAvailable,
   lirePreferenceMenuReplie,
   enregistrerPreferenceMenuReplie,
+  lirePreferenceTheme,
+  enregistrerPreferenceTheme,
   lirePreferenceSauvegardeAuto,
   enregistrerPreferenceSauvegardeAuto,
 };

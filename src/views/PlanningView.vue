@@ -777,6 +777,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .planning-etat-vide {
   display: flex;
@@ -865,7 +866,7 @@ export default {
   gap: t.$espace-1;
   padding: t.$espace-1 t.$espace-2;
   color: t.$couleur-primaire-foncee;
-  background-color: rgba(t.$couleur-primaire, 0.12);
+  background-color: m.translucide(t.$couleur-primaire, 0.12);
   border: 1px solid t.$couleur-primaire;
   border-radius: t.$rayon-lg;
   font-size: t.$taille-texte-petite;
@@ -898,7 +899,7 @@ export default {
   // Bouton actif (mode modification) : fond léger en plus de la couleur,
   // `aria-pressed` porte l'état pour les lecteurs d'écran.
   &--actif {
-    background-color: rgba(t.$couleur-primaire, 0.12);
+    background-color: m.translucide(t.$couleur-primaire, 0.12);
   }
 }
 

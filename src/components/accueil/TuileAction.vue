@@ -128,13 +128,13 @@ export default {
 // portée par le texte, pas par la seule couleur — la tuile garde sa taille,
 // son icône et son titre lisibles dans les deux cas.
 .tuile-action--accent {
-  border-color: t.$couleur-primaire;
-  background-color: t.$couleur-primaire;
+  border-color: t.$couleur-aplat-primaire;
+  background-color: t.$couleur-aplat-primaire;
   color: t.$couleur-texte-inverse;
 
   &:hover {
-    background-color: t.$couleur-primaire-foncee;
-    border-color: t.$couleur-primaire-foncee;
+    background-color: t.$couleur-aplat-primaire-survol;
+    border-color: t.$couleur-aplat-primaire-survol;
   }
 
   .tuile-action__icone {

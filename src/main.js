@@ -10,6 +10,18 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 import '@/styles/main.scss';
+import { appliquerThemeDocument, ecouterImpression } from '@/adaptateurs/themeNavigateur.js';
+
+// Thème (feature 0038, ADR 0022) : appliqué avant tout rendu, pour éviter un flash.
+store.dispatch('ui/initialiserTheme');
+store.watch((_etat, getters) => getters['ui/themeEffectif'], appliquerThemeDocument, {
+  immediate: true,
+});
+// Impression toujours en clair, puis retour au thème courant.
+ecouterImpression({
+  avant: () => appliquerThemeDocument('CLAIR'),
+  apres: () => appliquerThemeDocument(store.getters['ui/themeEffectif']),
+});
 
 // Pas de JS Bootstrap importé ici : aucun composant interactif Bootstrap
 // n'est câblé en feature 0001.

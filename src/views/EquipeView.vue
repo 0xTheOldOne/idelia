@@ -589,7 +589,7 @@ export default {
 // Présentation atténuée des personnes archivées (en plus du libellé et de la
 // section dédiée, jamais la seule différence pour comprendre le statut).
 .equipe-liste--archivee .equipe-ligne {
-  background-color: t.$couleur-fond-clair;
+  background-color: t.$couleur-fond-inactif;
   color: t.$couleur-texte-attenue;
 }
 

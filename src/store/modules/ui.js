@@ -1,4 +1,6 @@
 import { storageRepository } from '@/storage/storageRepository.js';
+import { normaliserPreferenceTheme, resoudreTheme } from '@/domain/theme.js';
+import { ecouterThemeSysteme, systemePrefereSombre } from '@/adaptateurs/themeNavigateur.js';
 
 /**
  * Module Vuex — ui.
@@ -28,6 +30,14 @@ import { storageRepository } from '@/storage/storageRepository.js';
  * (clé `idelia:prefs-ui`, distincte du `SaveDocument`) afin de survivre au
  * rechargement sans jamais entrer dans la sauvegarde métier (§4.2 de la
  * feature 0015).
+ *
+ * `preferenceTheme`/`systemeSombre` (feature 0038, ADR 0022) : préférence de
+ * thème (`AUTO`, `CLAIR`, `SOMBRE`), sur le même modèle que `menuReplie` —
+ * état volatil en mémoire, reflété sur son propre canal `storageRepository`
+ * (clé `idelia:prefs-theme`). `systemeSombre` est le reflet volatil de
+ * `prefers-color-scheme: dark` (jamais persisté, conservé par `REINITIALISER`).
+ * Le getter `themeEffectif` (`CLAIR`/`SOMBRE`) est appliqué sur `<html>` par
+ * `src/main.js`.
  *
  * `sauvegardeAutoActive`/`sauvegardeAutoIntervalleMinutes` (feature 0019) :
  * préférence « sauvegarde automatique », sur le même modèle que
@@ -65,6 +75,9 @@ import { storageRepository } from '@/storage/storageRepository.js';
  */
 let minuteur = null;
 
+/** Garde : l'écoute du thème de l'ordinateur n'est branchée qu'une seule fois. */
+let ecouteThemeBranchee = false;
+
 /**
  * (Ré)arme le minuteur de sauvegarde automatique : annule le précédent s'il y
  * en a un, puis programme un nouveau tick toutes les `intervalleMinutes`
@@ -94,6 +107,8 @@ function etatInitial() {
   return {
     dernierExportLe: null,
     menuReplie: false,
+    preferenceTheme: 'AUTO',
+    systemeSombre: false,
     sauvegardeAutoActive: false,
     sauvegardeAutoIntervalleMinutes: 15,
     fichierSauvegardeActif: false,
@@ -111,6 +126,8 @@ export default {
   state: etatInitial,
   getters: {
     menuReplie: (state) => state.menuReplie,
+    preferenceTheme: (state) => state.preferenceTheme,
+    themeEffectif: (state) => resoudreTheme(state.preferenceTheme, state.systemeSombre),
   },
   mutations: {
     SET_DERNIER_EXPORT(state, iso) {
@@ -118,6 +135,12 @@ export default {
     },
     SET_MENU_REPLIE(state, valeur) {
       state.menuReplie = valeur;
+    },
+    SET_PREFERENCE_THEME(state, preference) {
+      state.preferenceTheme = preference;
+    },
+    SET_SYSTEME_SOMBRE(state, booleen) {
+      state.systemeSombre = booleen;
     },
     SET_SAUVEGARDE_AUTO(state, { active, intervalleMinutes }) {
       state.sauvegardeAutoActive = active;
@@ -142,9 +165,13 @@ export default {
     SET_FICHIER_SAUVEGARDE_INTROUVABLE(state, nom) {
       state.fichierSauvegardeIntrouvable = nom;
     },
-    /** Remet tout l'état du module à ses valeurs initiales. */
+    /**
+     * Remet tout l'état du module à ses valeurs initiales, sauf
+     * `systemeSombre` qui reflète l'ordinateur et non une préférence.
+     */
     REINITIALISER(state) {
-      Object.assign(state, etatInitial());
+      const { systemeSombre } = state;
+      Object.assign(state, etatInitial(), { systemeSombre });
     },
   },
   actions: {
@@ -194,6 +221,33 @@ export default {
      */
     initialiserMenu({ commit }) {
       commit('SET_MENU_REPLIE', storageRepository.lirePreferenceMenuReplie());
+    },
+
+    /**
+     * Restitue la préférence de thème mémorisée, lit le réglage de
+     * l'ordinateur et branche (une seule fois) l'écoute de ses changements.
+     * Appelée au démarrage (`src/main.js`), avant le montage.
+     * @param {import('vuex').ActionContext} context
+     */
+    initialiserTheme({ commit }) {
+      commit('SET_SYSTEME_SOMBRE', systemePrefereSombre());
+      commit('SET_PREFERENCE_THEME', normaliserPreferenceTheme(storageRepository.lirePreferenceTheme()));
+      if (!ecouteThemeBranchee) {
+        ecouteThemeBranchee = true;
+        ecouterThemeSysteme((sombre) => commit('SET_SYSTEME_SOMBRE', sombre));
+      }
+    },
+
+    /**
+     * Change la préférence de thème (valeur normalisée) et la mémorise via
+     * `storageRepository` (canal dédié, hors `SaveDocument`).
+     * @param {import('vuex').ActionContext} context
+     * @param {string} preference - `'AUTO'`, `'CLAIR'` ou `'SOMBRE'`.
+     */
+    choisirTheme({ commit }, preference) {
+      const valeur = normaliserPreferenceTheme(preference);
+      commit('SET_PREFERENCE_THEME', valeur);
+      storageRepository.enregistrerPreferenceTheme(valeur);
     },
 
     /**

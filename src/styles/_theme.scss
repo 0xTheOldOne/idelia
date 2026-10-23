@@ -1,0 +1,40 @@
+// Émission des deux palettes en CSS custom properties `--idelia-*` (ADR 0022).
+// Piloté par l'attribut Bootstrap `data-bs-theme` posé sur <html> (src/main.js) ;
+// l'attribut peut aussi être posé sur un sous-arbre pour le forcer en clair.
+@use 'tokens' as t;
+
+@mixin declarer-palette($palette) {
+  @each $nom, $valeur in $palette {
+    --idelia-#{$nom}: #{$valeur};
+  }
+}
+
+:root,
+[data-bs-theme='light'] {
+  color-scheme: light;
+  @include declarer-palette(t.$palette-claire);
+}
+
+[data-bs-theme='dark'] {
+  color-scheme: dark;
+  @include declarer-palette(t.$palette-sombre);
+}
+
+// Filet anti-flash : avant que main.js ait posé l'attribut (mode Automatique,
+// ordinateur en sombre).
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-bs-theme]) {
+    color-scheme: dark;
+    @include declarer-palette(t.$palette-sombre);
+  }
+}
+
+// Impression : toujours la palette claire (doublé par la bascule beforeprint de
+// main.js). Doit rester EN DERNIER pour l'emporter à spécificité égale.
+@media print {
+  :root,
+  [data-bs-theme] {
+    color-scheme: light;
+    @include declarer-palette(t.$palette-claire);
+  }
+}

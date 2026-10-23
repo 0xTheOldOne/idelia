@@ -487,6 +487,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .cellule-planning {
   display: flex;
@@ -509,25 +510,25 @@ export default {
   // Personne hors présence (0031) : fond hachuré + libellé écrit (jamais la
   // seule couleur), distinct de « Fermé » (centré, italique, sans hachures).
   &--hors-presence {
-    background-color: t.$couleur-fond-clair;
+    background-color: t.$couleur-fond-inactif;
     background-image: repeating-linear-gradient(
       135deg,
       transparent 0,
       transparent 6px,
-      rgba(t.$couleur-texte-attenue, 0.1) 6px,
-      rgba(t.$couleur-texte-attenue, 0.1) 8px
+      m.translucide(t.$couleur-texte-attenue, 0.1) 6px,
+      m.translucide(t.$couleur-texte-attenue, 0.1) 8px
     );
   }
 
   // Surlignage multi-canal (bordure + fond + icône, jamais la seule couleur) :
   // erreurs (dures) et avertissements (souples) distingués par teinte ET icône.
   &--concernee-erreur {
-    background-color: rgba(t.$couleur-erreur, 0.08);
+    background-color: m.translucide(t.$couleur-erreur, 0.08);
     border: 2px solid t.$couleur-erreur;
   }
 
   &--concernee-avertissement {
-    background-color: rgba(t.$couleur-avertissement, 0.1);
+    background-color: m.translucide(t.$couleur-avertissement, 0.1);
     border: 2px dashed t.$couleur-avertissement;
   }
 }
@@ -597,7 +598,7 @@ export default {
 // (groupe implicite unique, occupant toute la case), le rendu reste
 // équivalent au repère de cellule existant.
 .cellule-planning-groupe--cible-depot {
-  background-color: rgba(t.$couleur-primaire, 0.12);
+  background-color: m.translucide(t.$couleur-primaire, 0.12);
   outline: 2px dashed t.$couleur-primaire-foncee;
   outline-offset: 2px;
 }
@@ -635,6 +636,7 @@ export default {
   margin-top: 0.2em;
   border-radius: 50%;
   border: 1px solid t.$couleur-bordure;
+  box-shadow: 0 0 0 1px t.$couleur-contour-pastille;
 }
 
 .cellule-planning-pastille-tournee {
@@ -719,13 +721,13 @@ export default {
   &--obligatoire {
     color: t.$couleur-erreur;
     border: 1px solid t.$couleur-erreur;
-    background-color: rgba(t.$couleur-erreur, 0.08);
+    background-color: m.translucide(t.$couleur-erreur, 0.08);
   }
 
   &--souhait {
     color: t.$couleur-avertissement-texte;
     border: 1px dashed t.$couleur-avertissement;
-    background-color: rgba(t.$couleur-avertissement, 0.1);
+    background-color: m.translucide(t.$couleur-avertissement, 0.1);
   }
 
   &:focus-visible {
@@ -752,12 +754,12 @@ export default {
   }
 
   &--obligatoire {
-    background-color: rgba(t.$couleur-erreur, 0.08);
+    background-color: m.translucide(t.$couleur-erreur, 0.08);
     border-left: 3px solid t.$couleur-erreur;
   }
 
   &--souhait {
-    background-color: rgba(t.$couleur-avertissement, 0.1);
+    background-color: m.translucide(t.$couleur-avertissement, 0.1);
     border-left: 3px dashed t.$couleur-avertissement;
   }
 }

@@ -195,6 +195,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 // Focus clavier (`.menu-item`, `.menu-bascule`) : contour dédié ci-dessous,
 // pas le mixin global `focus-visible` (`_mixins.scss`), pensé pour un fond
@@ -244,7 +245,7 @@ $menu-largeur-repliee: 76px;
   border-radius: 50%;
   // Liseré clair pour détacher la pastille du dégradé : dérivé du token
   // `$couleur-texte-inverse` (blanc), pas une couleur en dur.
-  box-shadow: 0 0 0 2px rgba(t.$couleur-texte-inverse, 0.35);
+  box-shadow: 0 0 0 2px m.translucide(t.$couleur-texte-inverse, 0.35);
 }
 
 .menu-marque__texte {
@@ -346,7 +347,7 @@ $menu-largeur-repliee: 76px;
   // et ne prend pas le blanc plein, pour réserver le traitement fort (fond +
   // barre d'accent + graisse renforcée + texte blanc) au seul item actif.
   &:hover {
-    background-color: rgba(t.$couleur-texte-inverse, 0.08);
+    background-color: m.translucide(t.$couleur-texte-inverse, 0.08);
   }
 
   // Le mixin global `focus-visible` (`_mixins.scss`) cible `$couleur-focus`,
@@ -411,8 +412,8 @@ $menu-largeur-repliee: 76px;
     margin-left: t.$espace-2;
     padding: t.$espace-1 t.$espace-2;
     border-radius: t.$rayon-sm;
-    background-color: t.$couleur-texte;
-    color: t.$couleur-texte-inverse;
+    background-color: t.$couleur-infobulle-fond;
+    color: t.$couleur-infobulle-texte;
     font-size: t.$taille-texte-petite;
     font-weight: t.$graisse-moyenne;
     white-space: nowrap;
@@ -477,7 +478,7 @@ $menu-largeur-repliee: 76px;
   cursor: pointer;
 
   &:hover {
-    background-color: rgba(t.$couleur-texte-inverse, 0.08);
+    background-color: m.translucide(t.$couleur-texte-inverse, 0.08);
   }
 
   // Voir `.menu-item:focus-visible` ci-dessus : contour dédié, visible sur

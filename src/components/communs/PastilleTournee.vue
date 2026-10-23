@@ -1,7 +1,10 @@
 <template>
   <span
     class="pastille-tournee"
-    :class="[`pastille-tournee--${taille}`, { 'pastille-tournee--inverse': fonce }]"
+    :class="[
+      `pastille-tournee--${taille}`,
+      { 'pastille-tournee--inverse': fonce, 'pastille-tournee--claire': claire },
+    ]"
     :style="couleur ? { backgroundColor: couleur } : null"
     aria-hidden="true"
   >
@@ -80,6 +83,10 @@ export default {
     tailleIcone() {
       return TAILLES_ICONE[this.taille];
     },
+    /** @returns {boolean} Vrai si une couleur claire est choisie (icône foncée, quel que soit le thème). */
+    claire() {
+      return Boolean(this.couleur) && !this.fonce;
+    },
     /** @returns {boolean} Vrai si le fond est foncé (icône claire). */
     fonce() {
       return this.couleur ? estCouleurFoncee(this.couleur) : false;
@@ -123,8 +130,18 @@ export default {
     border-color: t.$couleur-texte;
   }
 
+  // Couleur choisie : liseré pour qu'une teinte très foncée reste visible en thème sombre.
+  &[style] {
+    box-shadow: 0 0 0 1px t.$couleur-contour-pastille;
+  }
+
   &--inverse {
     color: t.$couleur-texte-inverse;
+  }
+
+  // Couleur claire choisie : texte foncé même en thème sombre (où `$couleur-texte` est clair).
+  &--claire {
+    color: t.$couleur-texte-sur-pastille;
   }
 }
 

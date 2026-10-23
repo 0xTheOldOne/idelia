@@ -86,8 +86,8 @@ export default {
   max-width: 20rem;
   padding: t.$espace-1 t.$espace-2;
   border-radius: t.$rayon-sm;
-  background-color: t.$couleur-texte;
-  color: t.$couleur-texte-inverse;
+  background-color: t.$couleur-infobulle-fond;
+  color: t.$couleur-infobulle-texte;
   box-shadow: t.$ombre-legere;
   font-size: t.$taille-texte-petite;
   font-weight: normal;

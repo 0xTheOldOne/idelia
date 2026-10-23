@@ -1,6 +1,6 @@
 # ADR 0012 — Style en SCSS
 
-- **Statut** : Accepté — **amendé par l'[ADR 0015](0015-bootstrap-librairie-composants-scss.md)**
+- **Statut** : Accepté — **amendé par l'[ADR 0015](0015-bootstrap-librairie-composants-scss.md)** et par l'[ADR 0022](0022-theme-sombre-css-custom-properties.md) (tokens couleur en CSS custom properties, mode sombre)
 - **Date** : 2026-07-07
 
 > **Mise à jour** : la décision d'utiliser **SCSS** reste valable, mais le **rejet de Bootstrap** ci-dessous est **levé**. Bootstrap 5 est désormais utilisé comme librairie de composants, intégrée en SCSS et thémée via nos tokens — voir [ADR 0015](0015-bootstrap-librairie-composants-scss.md).

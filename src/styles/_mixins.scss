@@ -1,5 +1,12 @@
 // Mixins réutilisables (feature 0001 : socle minimal).
+@use 'sass:math';
 @use 'tokens' as t;
+
+/// Couleur translucide compatible CSS custom properties (ADR 0022) : remplace
+/// `rgba()` sur un token, qui est invalide sur un `var(--…)`.
+@function translucide($couleur, $opacite) {
+  @return color-mix(in srgb, #{$couleur} math.percentage($opacite), transparent);
+}
 
 /// Focus clavier visible — ne jamais supprimer l'outline sans alternative
 /// claire (accessibilité).

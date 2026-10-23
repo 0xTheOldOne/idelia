@@ -8,29 +8,45 @@
 
 // 2) Nos surcharges de variables Bootstrap, à partir de nos tokens.
 //    (Doit se faire AVANT l'import des variables Bootstrap.)
-$primary: t.$couleur-primaire;
-$success: t.$couleur-succes;
-$danger: t.$couleur-erreur;
-$warning: t.$couleur-avertissement;
-// `$info` (encarts informatifs, ex. AbsencesView) : pas de token dédié dans
-// `tokens.scss` ; on réutilise `$couleur-primaire-claire` (variante claire de
-// la couleur de marque) plutôt que le cyan par défaut de Bootstrap, pour
-// rester cohérent avec la palette teal du projet.
-$info: t.$couleur-primaire-claire;
-$body-color: t.$couleur-texte;
+// Thème clair : valeurs hexadécimales lues dans la palette (les fonctions de
+// couleur de Bootstrap exigent de vraies couleurs à la compilation, ADR 0022).
+$primary: t.clair('primaire');
+$success: t.clair('succes');
+$danger: t.clair('erreur');
+$warning: t.clair('avertissement');
+// `$info` (encarts informatifs, ex. AbsencesView) : on réutilise la couleur de
+// marque plutôt que le cyan par défaut de Bootstrap, pour rester cohérent avec
+// la palette teal du projet.
+$info: t.clair('marque');
+$body-color: t.clair('texte');
 // Fond de page sable : le sable ne s'applique qu'ici (canvas de l'app) ; les
-// surfaces (champs, modales…) restent blanches via `$couleur-fond` ci-dessous.
-$body-bg: t.$couleur-page;
-$body-secondary-bg: t.$couleur-fond-clair;
-$body-tertiary-bg: t.$couleur-fond-clair;
+// surfaces (champs, modales…) suivent `$couleur-fond` ci-dessous.
+$body-bg: t.clair('page');
+$body-secondary-bg: t.clair('fond-clair');
+$body-tertiary-bg: t.clair('fond-clair');
 $font-family-base: t.$police-base;
 $font-size-base: t.$taille-texte-base;
 $border-radius: t.$rayon-md;
-$border-color: t.$couleur-bordure;
+$border-color: t.clair('bordure');
 $spacer: t.$espace-3;
-// Champs et modales blancs (surface), posés sur le fond de page sable.
+// Champs et modales : surface, via `var(--idelia-fond)` (suit le thème ; Bootstrap
+// n'applique aucune fonction de couleur sur ces deux variables).
 $input-bg: t.$couleur-fond;
 $modal-content-bg: t.$couleur-fond;
+
+// Thème sombre : surcharges `$*-dark`, à définir AVANT `bootstrap/scss/variables`
+// (qui les déclare avec `!default`).
+$body-color-dark: t.sombre('texte');
+$body-bg-dark: t.sombre('page');
+$body-secondary-bg-dark: t.sombre('fond-clair');
+$body-tertiary-bg-dark: t.sombre('fond-clair');
+$border-color-dark: t.sombre('bordure');
+$link-color-dark: t.sombre('primaire');
+$link-hover-color-dark: t.sombre('primaire-foncee');
+$form-valid-color-dark: t.sombre('succes');
+$form-valid-border-color-dark: t.sombre('succes');
+$form-invalid-color-dark: t.sombre('erreur');
+$form-invalid-border-color-dark: t.sombre('erreur');
 
 // 3) Variables + maps + mixins + racine Bootstrap.
 @import 'bootstrap/scss/variables';
@@ -58,3 +74,20 @@ $modal-content-bg: t.$couleur-fond;
 
 // Classes utilitaires générées à partir des maps ci-dessus.
 @import 'bootstrap/scss/utilities/api';
+
+// Boutons « outline » en sombre : leurs couleurs sont figées à la compilation
+// (teal/gris foncé illisibles sur fond sombre). Variants utilisés dans src/.
+@include color-mode(dark) {
+  .btn-outline-primary {
+    @include button-outline-variant(t.sombre('primaire'));
+  }
+  .btn-outline-secondary {
+    @include button-outline-variant(t.sombre('texte-attenue'));
+  }
+  .btn-outline-danger {
+    @include button-outline-variant(t.sombre('erreur'));
+  }
+  .btn-outline-dark {
+    @include button-outline-variant(t.sombre('texte'));
+  }
+}

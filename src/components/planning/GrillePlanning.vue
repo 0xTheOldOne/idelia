@@ -935,12 +935,12 @@ export default {
   font-weight: t.$graisse-gras;
 
   &--concernee-erreur {
-    background-color: rgba(t.$couleur-erreur, 0.08);
+    background-color: m.translucide(t.$couleur-erreur, 0.08);
     border-top: 3px solid t.$couleur-erreur;
   }
 
   &--concernee-avertissement {
-    background-color: rgba(t.$couleur-avertissement, 0.1);
+    background-color: m.translucide(t.$couleur-avertissement, 0.1);
     border-top: 3px dashed t.$couleur-avertissement;
   }
 }
@@ -1021,6 +1021,7 @@ export default {
   height: t.$espace-3;
   border-radius: 50%;
   border: 1px solid t.$couleur-bordure;
+  box-shadow: 0 0 0 1px t.$couleur-contour-pastille;
 }
 
 // Texte réservé aux lecteurs d'écran (icône de conflit déjà `aria-hidden`,
@@ -1041,6 +1042,7 @@ export default {
   padding: 0;
   min-width: 140px;
   vertical-align: top;
+  background-color: t.$couleur-fond-cellule;
   border-bottom: 1px solid t.$couleur-bordure;
   border-right: 1px solid t.$couleur-bordure;
 }
@@ -1050,7 +1052,7 @@ export default {
 // rendu « inactif » identique partout. Les jours fermés gardent leur propre
 // rendu (« Fermé »).
 .grille-planning-cellule--vide {
-  background-color: t.$couleur-fond-clair;
+  background-color: t.$couleur-fond-inactif;
 }
 
 // Repère visuel de la case survolée comme cible de dépôt pendant un
@@ -1058,7 +1060,7 @@ export default {
 // (jamais la seule couleur), retiré à la fin de la glisse. `outline` (plutôt
 // que `border`) pour ne pas perturber la géométrie de la grille.
 .grille-planning-cellule--cible-depot {
-  background-color: rgba(t.$couleur-primaire, 0.12);
+  background-color: m.translucide(t.$couleur-primaire, 0.12);
   outline: 3px dashed t.$couleur-primaire-foncee;
   outline-offset: -3px;
 }

@@ -33,6 +33,7 @@ Idelia/
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
     │   ├── identifiantsPro.js  # identifiants professionnels d'une personne (normalisation, formats) [0030]
     │   ├── iconesTournee.js    # codes et libellés des icônes de repère des tournées [0029]
+    │   ├── theme.js            # préférence de thème : options, normalisation, résolution Automatique [0038]
     │   ├── rythmeMensuel.js    # jours attendus d'une personne sur une période selon son rythme mensuel [0020, réutilisé par 0024]
     │   ├── recapMensuel.js     # récap par mois et par personne : grandes/petites tournées, jours travaillés, dépassement du rythme [0024]
     │   ├── souhaitsNonRespectes.js # localise les souhaits non respectés (violations PREFERENCE_*) sur les affectations, textes de l'indicateur [0025]
@@ -62,6 +63,7 @@ Idelia/
     ├── adaptateurs/            # I/O navigateur + bibliothèques tierces (jamais de persistance : c'est le rôle de storage/)
     │   ├── lireGlyphesPdf.js   # lecture PDF via pdfjs-dist, chargé à la demande [ADR 0019, 0033]
     │   ├── calendrierScolaire.js # lecture GET de l'API du calendrier scolaire, seul accès réseau [ADR 0020, 0023]
+    │   ├── themeNavigateur.js  # prefers-color-scheme, attribut data-bs-theme, bascule à l'impression [0038, ADR 0022]
     │   └── pressePapiers.js    # copie de texte (API Clipboard) [0027]
     │
     ├── views/                  # écrans (un par route)
@@ -76,7 +78,7 @@ Idelia/
     │
     ├── components/             # composants réutilisables
     │   ├── communs/            # boutons, champs, modale, confirmation, icône, pastille de tournée [0029]…
-    │   ├── parametres/         # blocs de Paramètres : sauvegarde, sauvegarde automatique, BlocVacancesScolaires.vue [0023]
+    │   ├── parametres/         # blocs de Paramètres : sauvegarde, sauvegarde automatique, BlocVacancesScolaires.vue [0023], BlocApparence.vue [0038]
     │   ├── equipe/
     │   ├── tournees/
     │   ├── absences/
@@ -89,6 +91,7 @@ Idelia/
     └── styles/                 # SCSS (voir instructions/style-scss.md)
         ├── _tokens.scss        # couleurs, espacements, typographie, rayons…
         ├── _bootstrap.scss     # surcharge des variables Bootstrap via les tokens + import ciblé [ADR 0015]
+        ├── _theme.scss         # CSS custom properties des deux palettes [ADR 0022]
         ├── _mixins.scss
         ├── _base.scss
         ├── _impression.scss    # @page A4 portrait, fond blanc à l'impression [0012]

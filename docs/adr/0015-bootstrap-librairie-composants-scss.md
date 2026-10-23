@@ -1,6 +1,6 @@
 # ADR 0015 — Utiliser Bootstrap 5 comme librairie de composants, intégrée en SCSS
 
-- **Statut** : Accepté — **amende** l'[ADR 0012](0012-style-scss.md)
+- **Statut** : Accepté — **amende** l'[ADR 0012](0012-style-scss.md) ; **amendé par** l'[ADR 0022](0022-theme-sombre-css-custom-properties.md) (color modes Bootstrap `data-bs-theme`, surcharges `$*-dark`)
 - **Date** : 2026-07-07
 
 ## Contexte

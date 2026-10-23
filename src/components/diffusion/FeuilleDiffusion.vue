@@ -1,5 +1,5 @@
 <template>
-  <article class="feuille-diffusion">
+  <article class="feuille-diffusion" data-bs-theme="light">
     <header class="feuille-diffusion-entete">
       <div class="feuille-diffusion-textes">
         <p class="feuille-diffusion-titre">{{ diffusion.titre }}</p>

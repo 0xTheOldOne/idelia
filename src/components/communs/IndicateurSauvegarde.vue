@@ -173,6 +173,7 @@ export default {
 
 <style scoped lang="scss">
 @use '@/styles/tokens' as t;
+@use '@/styles/mixins' as m;
 
 .indicateur-sauvegarde {
   display: flex;
@@ -217,7 +218,7 @@ export default {
   border-radius: 50%;
   // Liseré clair pour détacher la pastille du dégradé, quelle que soit sa
   // teinte sémantique (même technique que `.menu-marque__pastille` du menu).
-  box-shadow: 0 0 0 2px rgba(t.$couleur-texte-inverse, 0.35);
+  box-shadow: 0 0 0 2px m.translucide(t.$couleur-texte-inverse, 0.35);
 }
 
 .indicateur-sauvegarde--compact-succes .indicateur-sauvegarde__pastille {

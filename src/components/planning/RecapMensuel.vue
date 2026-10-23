@@ -298,7 +298,7 @@ export default {
 // Ligne en dépassement : fond + bordure gauche pleine (jamais la seule couleur,
 // l'icône et le texte la doublent).
 .recap-mensuel-ligne--depasse {
-  background-color: rgba(t.$couleur-erreur, 0.08);
+  background-color: m.translucide(t.$couleur-erreur, 0.08);
 
   > :first-child {
     border-left: 3px solid t.$couleur-erreur;
