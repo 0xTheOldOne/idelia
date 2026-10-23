@@ -101,7 +101,7 @@ Demande prioritaire du porteur.
 
 | N°  | Feature | Résumé | Dépend de | Statut |
 | --- | ------- | ------ | --------- | ------ |
-| 0038 | [Mode sombre](0038-mode-sombre.md) | Section **« Apparence »** dans Paramètres : **Automatique** (comme l'ordinateur, par défaut), **Clair** ou **Sombre**. Application immédiate ; mémorisé sur le poste via `storageRepository` (clé `idelia:prefs-theme`, hors `SaveDocument`). Tokens couleur en CSS custom properties (deux palettes dans `_tokens.scss`), pilotés par l'attribut Bootstrap `data-bs-theme` ; surcharges Bootstrap `$*-dark` et boutons outline redéclarés. Aperçu A4 et impression **toujours en clair** ; thème clair inchangé ([ADR 0022](../docs/adr/0022-theme-sombre-css-custom-properties.md)). | 0003, 0012, 0014, 0015 | ✅     |
+| 0038 | [Mode sombre](0038-mode-sombre.md) | Section **« Apparence »** dans Paramètres : **Automatique** (comme l'ordinateur, par défaut), **Clair** ou **Sombre**. Raccourci **interrupteur « Mode sombre »** dans le menu latéral, sous l'indicateur de sauvegarde (bascule Clair ⇄ Sombre). Application immédiate ; mémorisé sur le poste via `storageRepository` (clé `idelia:prefs-theme`, hors `SaveDocument`). Tokens couleur en CSS custom properties (deux palettes dans `_tokens.scss`), pilotés par l'attribut Bootstrap `data-bs-theme` ; surcharges Bootstrap `$*-dark` et boutons outline redéclarés. Aperçu A4 et impression **toujours en clair** ; thème clair inchangé ([ADR 0022](../docs/adr/0022-theme-sombre-css-custom-properties.md)). | 0003, 0012, 0014, 0015 | ✅     |
 
 ---
 

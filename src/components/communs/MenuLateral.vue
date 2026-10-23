@@ -51,6 +51,27 @@
 
     <button
       type="button"
+      class="menu-bascule menu-theme"
+      role="switch"
+      :aria-checked="themeSombre ? 'true' : 'false'"
+      aria-label="Mode sombre"
+      @click="basculerTheme"
+    >
+      <component
+        :is="themeSombre ? 'PhMoon' : 'PhSun'"
+        :size="20"
+        aria-hidden="true"
+        class="menu-bascule__icone"
+      />
+      <span class="menu-bascule__libelle">Mode sombre</span>
+      <span class="menu-theme__interrupteur" aria-hidden="true"></span>
+      <span class="menu-item__infobulle">
+        {{ themeSombre ? 'Passer en mode clair' : 'Passer en mode sombre' }}
+      </span>
+    </button>
+
+    <button
+      type="button"
       class="menu-bascule"
       :aria-expanded="!menuReplie"
       :aria-label="libelleBascule"
@@ -73,6 +94,8 @@ import {
   PhPath,
   PhGear,
   PhCaretDoubleLeft,
+  PhMoon,
+  PhSun,
 } from '@phosphor-icons/vue';
 
 import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue';
@@ -108,6 +131,8 @@ export default {
     PhPath,
     PhGear,
     PhCaretDoubleLeft,
+    PhMoon,
+    PhSun,
     IndicateurSauvegarde,
   },
   data() {
@@ -149,7 +174,10 @@ export default {
     };
   },
   computed: {
-    ...mapGetters('ui', ['menuReplie']),
+    ...mapGetters('ui', ['menuReplie', 'themeEffectif']),
+    themeSombre() {
+      return this.themeEffectif === 'SOMBRE';
+    },
     ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
     ...mapState('ui', ['fichierSauvegardeActif', 'nomFichierSauvegarde', 'dernierFichierEnregistreLe']),
     /** Chemin du logo de marque, résolu via la base Vite (compatible sous-répertoire GitHub Pages). */
@@ -161,7 +189,14 @@ export default {
     },
   },
   methods: {
-    ...mapActions('ui', ['basculerMenu']),
+    ...mapActions('ui', ['basculerMenu', 'choisirTheme']),
+    /**
+     * Raccourci du menu (0038) : inverse le thème affiché en posant un choix
+     * explicite Clair/Sombre. « Automatique » reste disponible dans Paramètres.
+     */
+    basculerTheme() {
+      this.choisirTheme(this.themeSombre ? 'CLAIR' : 'SOMBRE');
+    },
     /**
      * Un item est actif sur son chemin exact, ou — sauf pour l'accueil (`/`)
      * — sur toute route dont le chemin commence par ce préfixe (ex.
@@ -500,10 +535,70 @@ $menu-largeur-repliee: 76px;
   }
 }
 
+// Interrupteur clair/sombre (0038) : même rendu que le bouton de repli, avec
+// une glissière à droite ; l'état est aussi porté par l'icône (soleil/lune)
+// et annoncé par `role="switch"` — jamais la seule couleur.
+.menu-theme {
+  position: relative;
+  margin-top: t.$espace-3;
+}
+
+.menu-theme__interrupteur {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 20px;
+  margin-left: auto;
+  border: 2px solid t.$couleur-menu-texte;
+  border-radius: 10px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: t.$couleur-menu-texte;
+    transition: transform 0.2s ease;
+  }
+}
+
+.menu-theme[aria-checked='true'] .menu-theme__interrupteur {
+  border-color: t.$couleur-menu-item-actif-accent;
+  background-color: t.$couleur-menu-item-actif-accent;
+
+  &::after {
+    background-color: t.$couleur-menu-texte-actif;
+    transform: translateX(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-theme__interrupteur::after {
+    transition: none;
+  }
+}
+
 .menu-lateral--replie {
   .menu-bascule {
     justify-content: center;
     padding-inline: 0;
+  }
+
+  .menu-theme__interrupteur {
+    display: none;
+  }
+
+  .menu-theme:hover .menu-item__infobulle,
+  .menu-theme:focus-visible .menu-item__infobulle {
+    display: block;
+  }
+
+  // L'icône soleil/lune ne pivote pas comme la flèche de repli.
+  .menu-theme .menu-bascule__icone {
+    transform: none;
   }
 
   .menu-bascule__libelle {
