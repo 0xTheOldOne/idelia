@@ -49,26 +49,18 @@
       />
     </div>
 
-    <button
-      type="button"
-      class="menu-bascule menu-theme"
-      role="switch"
-      :aria-checked="themeSombre ? 'true' : 'false'"
-      aria-label="Mode sombre"
-      @click="basculerTheme"
-    >
-      <component
-        :is="themeSombre ? 'PhMoon' : 'PhSun'"
-        :size="20"
-        aria-hidden="true"
-        class="menu-bascule__icone"
-      />
-      <span class="menu-bascule__libelle">Mode sombre</span>
-      <span class="menu-theme__interrupteur" aria-hidden="true"></span>
-      <span class="menu-item__infobulle">
-        {{ themeSombre ? 'Passer en mode clair' : 'Passer en mode sombre' }}
-      </span>
-    </button>
+    <div class="menu-theme">
+      <button
+        type="button"
+        class="menu-item menu-theme__bouton"
+        :aria-label="libelleTheme"
+        @click="basculerTheme"
+      >
+        <component :is="themeSombre ? 'PhSun' : 'PhMoon'" :size="21" aria-hidden="true" />
+        <span class="menu-item__libelle">{{ libelleTheme }}</span>
+        <span class="menu-item__infobulle">{{ libelleTheme }}</span>
+      </button>
+    </div>
 
     <button
       type="button"
@@ -177,6 +169,10 @@ export default {
     ...mapGetters('ui', ['menuReplie', 'themeEffectif']),
     themeSombre() {
       return this.themeEffectif === 'SOMBRE';
+    },
+    /** L'icône et le libellé annoncent l'action (soleil = repasser en clair). */
+    libelleTheme() {
+      return this.themeSombre ? 'Passer en mode clair' : 'Passer en mode sombre';
     },
     ...mapState(['statutSauvegarde', 'derniereSauvegarde']),
     ...mapState('ui', ['fichierSauvegardeActif', 'nomFichierSauvegarde', 'dernierFichierEnregistreLe']),
@@ -535,70 +531,27 @@ $menu-largeur-repliee: 76px;
   }
 }
 
-// Interrupteur clair/sombre (0038) : même rendu que le bouton de repli, avec
-// une glissière à droite ; l'état est aussi porté par l'icône (soleil/lune)
-// et annoncé par `role="switch"` — jamais la seule couleur.
+// Bascule clair/sombre (0038) : un item de menu (bouton) — hérite du rendu,
+// du repli et du mode étroit des items (icône seule + infobulle, App.vue).
 .menu-theme {
-  position: relative;
-  margin-top: t.$espace-3;
+  margin-top: t.$espace-2;
+  padding: 0 t.$espace-2;
 }
 
-.menu-theme__interrupteur {
-  position: relative;
-  flex-shrink: 0;
-  width: 34px;
-  height: 20px;
-  margin-left: auto;
-  border: 2px solid t.$couleur-menu-texte;
-  border-radius: 10px;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: t.$couleur-menu-texte;
-    transition: transform 0.2s ease;
-  }
-}
-
-.menu-theme[aria-checked='true'] .menu-theme__interrupteur {
-  border-color: t.$couleur-menu-item-actif-accent;
-  background-color: t.$couleur-menu-item-actif-accent;
-
-  &::after {
-    background-color: t.$couleur-menu-texte-actif;
-    transform: translateX(14px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .menu-theme__interrupteur::after {
-    transition: none;
-  }
+.menu-theme__bouton {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: t.$graisse-moyenne;
+  text-align: left;
+  cursor: pointer;
 }
 
 .menu-lateral--replie {
   .menu-bascule {
     justify-content: center;
     padding-inline: 0;
-  }
-
-  .menu-theme__interrupteur {
-    display: none;
-  }
-
-  .menu-theme:hover .menu-item__infobulle,
-  .menu-theme:focus-visible .menu-item__infobulle {
-    display: block;
-  }
-
-  // L'icône soleil/lune ne pivote pas comme la flèche de repli.
-  .menu-theme .menu-bascule__icone {
-    transform: none;
   }
 
   .menu-bascule__libelle {
