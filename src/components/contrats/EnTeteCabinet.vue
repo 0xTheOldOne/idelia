@@ -1,7 +1,7 @@
 <template>
   <header class="entete-cabinet" :class="{ 'entete-cabinet--rempli': !vide }">
     <template v-if="!vide">
-      <img v-if="logo" class="entete-cabinet__logo" :src="logo" alt="" />
+      <img class="entete-cabinet__logo" :src="logo || logoParDefaut" alt="" />
       <div class="entete-cabinet__texte">
         <p v-if="entete.nomCabinet" class="entete-cabinet__nom">{{ entete.nomCabinet }}</p>
         <p v-for="ligne in lignes" :key="ligne" class="entete-cabinet__ligne">{{ ligne }}</p>
@@ -18,9 +18,11 @@
 import { lignesAdresse } from '@/domain/adresse.js';
 import { normaliserLogo } from '@/domain/cabinet.js';
 import { enteteEstVide } from '@/domain/contrats/documents.js';
+import { CHEMIN_LOGO_CABINET_DEFAUT } from '@/adaptateurs/logoCabinetDefaut.js';
 
 /**
  * En-tête de cabinet d'un document imprimable : logo, nom en gras, adresse ligne par ligne.
+ * Sans logo choisi, le logo par défaut d'Idelia est affiché.
  * Les éléments vides ne sont pas affichés ; rien à l'impression si tout est vide.
  * Le logo est re-contrôlé (`normaliserLogo`) avant d'être posé dans `src` (jamais de HTML injecté).
  */
@@ -31,6 +33,9 @@ export default {
     entete: { type: Object, required: true },
     /** Propose le lien vers la page Cabinet à l'écran quand l'en-tête est vide. */
     lienCabinet: { type: Boolean, default: false },
+  },
+  data() {
+    return { logoParDefaut: CHEMIN_LOGO_CABINET_DEFAUT };
   },
   computed: {
     logo() {

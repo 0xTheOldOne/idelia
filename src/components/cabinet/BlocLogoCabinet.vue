@@ -43,8 +43,10 @@
       </template>
       <img v-else-if="logoAffichable" :src="logoAffichable" alt="Logo du cabinet" class="bloc-logo__image">
       <template v-else>
-        <PhImage :size="40" aria-hidden="true" class="bloc-logo__icone-vide" />
-        <span class="bloc-logo__texte bloc-logo__texte--attenue">Aucun logo pour l'instant</span>
+        <img :src="logoParDefaut" alt="Logo par défaut d'Idelia" class="bloc-logo__image bloc-logo__image--defaut">
+        <span class="bloc-logo__texte bloc-logo__texte--attenue">
+          Logo par défaut : il figure sur les documents tant que vous n'en choisissez pas.
+        </span>
       </template>
     </div>
 
@@ -79,12 +81,14 @@ import { PhImage, PhTrash } from '@phosphor-icons/vue';
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import { normaliserLogo, messageErreurLogo } from '@/domain/cabinet.js';
 import { preparerLogo, ACCEPT_LOGO } from '@/adaptateurs/imageLogo.js';
+import { CHEMIN_LOGO_CABINET_DEFAUT } from '@/adaptateurs/logoCabinetDefaut.js';
 
 /**
  * Bloc « Logo » de la page Cabinet (0039). Choix d'une image PNG/JPEG,
  * préparée (réduite, réencodée) par l'adaptateur puis enregistrée via
  * `cabinet/majParametres`. En cas d'échec, l'ancien logo reste en place.
  * Aperçu sur fond blanc, même en mode sombre. Retrait confirmé.
+ * Sans logo choisi, l'aperçu montre le logo par défaut repris sur les documents.
  */
 export default {
   name: 'BlocLogoCabinet',
@@ -92,6 +96,7 @@ export default {
   data() {
     return {
       ACCEPT_LOGO,
+      logoParDefaut: CHEMIN_LOGO_CABINET_DEFAUT,
       /** `true` pendant la préparation de l'image (garde anti double déclenchement). */
       enCours: false,
       confirmationVisible: false,
@@ -204,7 +209,7 @@ export default {
   object-fit: contain;
 }
 
-.bloc-logo__icone-vide {
-  color: t.$couleur-texte-attenue;
+.bloc-logo__image--defaut {
+  max-height: 100px;
 }
 </style>
