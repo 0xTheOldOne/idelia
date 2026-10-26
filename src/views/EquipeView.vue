@@ -245,9 +245,10 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * présentation local à l'écran.
  *
  * Consultation (feature 0030) : « Informations utiles » (personnes actives et
- * archivées) ouvre `ModaleInformationsUtiles` ; « Modifier ces informations »
- * ferme d'abord la consultation, puis ouvre la fiche sur l'onglet
- * professionnel (`champInitial: 'identifiants'`) après l'événement de fermeture.
+ * archivées) ouvre `ModaleInformationsUtiles` ; le crayon d'une rubrique
+ * (feature 0040) ferme d'abord la consultation, puis ouvre la fiche sur
+ * l'onglet correspondant après l'événement de fermeture (`champInitial` :
+ * `'coordonnees'` ou `'identifiants'`, payload de l'événement `modifier`).
  *
  * Liens profonds (feature 0027, envoi du planning par e-mail), paramètres
  * d'URL de `/equipe` :
@@ -295,7 +296,7 @@ export default {
       // (Bootstrap n'affiche qu'une modale à la fois).
       informationsVisible: false,
       personneInformations: null,
-      ficheApresInformations: false,
+      champApresInformations: null,
       // Pilotage de la confirmation d'archivage.
       confirmationVisible: false,
       personneAArchiver: null,
@@ -430,16 +431,18 @@ export default {
       this.personneInformations = personne;
       this.informationsVisible = true;
     },
-    onModifierDepuisInformations() {
-      this.ficheApresInformations = true;
+    /** @param {'coordonnees'|'identifiants'} champ - Rubrique dont le crayon est cliqué. */
+    onModifierDepuisInformations(champ) {
+      this.champApresInformations = champ;
       this.informationsVisible = false;
     },
     /** Appelé quand la fermeture de la consultation est terminée. */
     onFermetureInformations() {
       this.informationsVisible = false;
-      if (this.ficheApresInformations) {
-        this.ficheApresInformations = false;
-        this.ouvrirEdition(this.personneInformations, 'identifiants');
+      if (this.champApresInformations) {
+        const champ = this.champApresInformations;
+        this.champApresInformations = null;
+        this.ouvrirEdition(this.personneInformations, champ);
       }
     },
     onEnregistrer(champs) {

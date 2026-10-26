@@ -12,10 +12,11 @@ import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
 import { normaliserAdresse } from '@/domain/adresse.js';
+import { normaliserDateNaissance } from '@/domain/coordonnees.js';
 import { verifierVersion, verifierDocument } from '@/domain/validationImport.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 11;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -342,6 +343,34 @@ MIGRATIONS[10] = (doc) => {
       ? { ...doc.cabinet, adresseCabinet: normaliserAdresse(doc.cabinet.adresseCabinet), logo: doc.cabinet.logo ?? null }
       : doc.cabinet;
   return { ...doc, cabinet };
+};
+
+/**
+ * Migration v11 → v12 (feature 0040) : coordonnées des personnes.
+ *
+ * - Chaque `Personne` (objet) de `doc.personnes` reçoit
+ *   `adresse: normaliserAdresse(personne.adresse)` (absent ou malformé → 4 chaînes
+ *   vides) et `dateNaissance: normaliserDateNaissance(personne.dateNaissance)`
+ *   (absent ou invalide → `null`). Idempotent.
+ * - Élément non objet laissé tel quel : `verifierStructure` le rejettera.
+ * - `tournees`, `absences`, `plannings`, `cabinet` : inchangés.
+ *
+ * @param {object} doc - Document de version 11.
+ * @returns {object} Document équivalent en version 12 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[11] = (doc) => {
+  const personnes = Array.isArray(doc.personnes)
+    ? doc.personnes.map((personne) =>
+      personne && typeof personne === 'object' && !Array.isArray(personne)
+        ? {
+          ...personne,
+          adresse: normaliserAdresse(personne.adresse),
+          dateNaissance: normaliserDateNaissance(personne.dateNaissance),
+        }
+        : personne
+    )
+    : doc.personnes;
+  return { ...doc, personnes };
 };
 
 /**

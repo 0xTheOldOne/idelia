@@ -419,6 +419,108 @@
       </div>
 
       <div
+        v-show="ongletActif === 'coordonnees'"
+        id="personne-panneau-coordonnees"
+        role="tabpanel"
+        aria-labelledby="personne-onglet-coordonnees"
+        tabindex="0"
+      >
+        <p class="form-text mb-3">
+          Facultatif. Ces informations servent à préparer les contrats de remplacement. Elles restent
+          enregistrées sur cet ordinateur et sont incluses dans les sauvegardes. Vous pourrez les
+          retrouver et les copier depuis la page Équipe (bouton « Informations utiles »).
+        </p>
+
+        <fieldset class="mb-4">
+          <legend class="form-label fw-bold fs-6">Adresse</legend>
+          <div class="row g-3">
+            <div v-for="champ in CHAMPS_LIGNES_ADRESSE" :key="champ.cle" class="col-12">
+              <label :for="`personne-adresse-${champ.cle}`" class="form-label">{{ champ.libelle }}</label>
+              <input
+                :id="`personne-adresse-${champ.cle}`"
+                v-model="formulaire.adresse[champ.cle]"
+                type="text"
+                class="form-control"
+                :maxlength="LONGUEURS_MAX_ADRESSE[champ.cle]"
+                autocomplete="off"
+                :placeholder="champ.exemple"
+              >
+            </div>
+
+            <div class="col-sm-4">
+              <label for="personne-adresse-code-postal" class="form-label">{{ champCodePostal.libelle }}</label>
+              <input
+                id="personne-adresse-code-postal"
+                v-model="formulaire.adresse.codePostal"
+                type="text"
+                inputmode="numeric"
+                :maxlength="LONGUEURS_MAX_ADRESSE.codePostal"
+                autocomplete="off"
+                class="form-control formulaire-code-postal"
+                :placeholder="champCodePostal.exemple"
+                :class="{ 'is-invalid': v$.formulaire.adresse.codePostal.$error }"
+                :aria-describedby="v$.formulaire.adresse.codePostal.$error ? 'personne-adresse-code-postal-erreur' : null"
+                @blur="normaliserCodePostalSaisi"
+              >
+              <p
+                v-if="v$.formulaire.adresse.codePostal.$error"
+                id="personne-adresse-code-postal-erreur"
+                class="formulaire-erreur"
+              >
+                <PhWarning :size="14" weight="bold" aria-hidden="true" />
+                <span>{{ v$.formulaire.adresse.codePostal.$errors[0].$message }}</span>
+              </p>
+            </div>
+
+            <div class="col-sm-8">
+              <label for="personne-adresse-ville" class="form-label">{{ champVille.libelle }}</label>
+              <input
+                id="personne-adresse-ville"
+                v-model="formulaire.adresse.ville"
+                type="text"
+                class="form-control"
+                :maxlength="LONGUEURS_MAX_ADRESSE.ville"
+                autocomplete="off"
+                :placeholder="champVille.exemple"
+              >
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="mb-2">
+          <label for="personne-date-naissance" class="form-label">Date de naissance</label>
+          <input
+            id="personne-date-naissance"
+            v-model="formulaire.dateNaissance"
+            type="date"
+            class="form-control formulaire-date-naissance"
+            :min="bornesNaissance.min"
+            :max="bornesNaissance.max"
+            autocomplete="off"
+            :class="{ 'is-invalid': v$.formulaire.dateNaissance.$error }"
+            :aria-describedby="
+              describedBy(
+                'personne-date-naissance-aide',
+                v$.formulaire.dateNaissance.$error ? 'personne-date-naissance-erreur' : null
+              )
+            "
+            @blur="v$.formulaire.dateNaissance.$touch()"
+          >
+          <div id="personne-date-naissance-aide" class="form-text">
+            Vous pouvez taper la date au clavier : le jour, le mois, puis l'année.
+          </div>
+          <p
+            v-if="v$.formulaire.dateNaissance.$error"
+            id="personne-date-naissance-erreur"
+            class="formulaire-erreur"
+          >
+            <PhWarning :size="14" weight="bold" aria-hidden="true" />
+            <span>{{ v$.formulaire.dateNaissance.$errors[0].$message }}</span>
+          </p>
+        </div>
+      </div>
+
+      <div
         v-show="ongletActif === 'pro'"
         id="personne-panneau-pro"
         role="tabpanel"
@@ -499,6 +601,21 @@ import {
   normaliserTauxRetrocession,
   estTauxRetrocessionValide,
 } from '@/domain/personnes.js';
+import { dateUtil } from '@/domain/utils/dates.js';
+import {
+  LONGUEURS_MAX_ADRESSE,
+  adresseVide,
+  normaliserAdresse,
+  normaliserCodePostal,
+  estCodePostalValide,
+} from '@/domain/adresse.js';
+import {
+  CHAMPS_ADRESSE_PERSONNE,
+  normaliserDateNaissance,
+  estDateNaissancePassee,
+  estAgeNaissancePlausible,
+  bornesDateNaissance,
+} from '@/domain/coordonnees.js';
 import { estRythmeMensuelValide, normaliserRythmeMensuel } from '@/domain/rythmeMensuel.js';
 import {
   normaliserInitialesVega,
@@ -533,7 +650,8 @@ export default {
      * `'email'` (lien profond depuis l'envoi du planning, feature 0027) ou
      * `'identifiants'` (ouvre l'onglet « Informations professionnelles », feature 0030) ou
      * `'remplacement'` (lien profond depuis le bilan, feature 0036 : focus sur « Remplace en
-     * priorité » ou « Rétrocession », et affichage immédiat de ce qui manque).
+     * priorité » ou « Rétrocession », et affichage immédiat de ce qui manque) ou
+     * `'coordonnees'` (ouvre l'onglet « Adresse et naissance », feature 0040).
      */
     champInitial: { type: String, default: 'prenom' },
   },
@@ -548,11 +666,17 @@ export default {
       STATUTS_PERSONNE_OPTIONS,
       CHAMPS_IDENTIFIANTS,
       LONGUEUR_MAX_IDENTIFIANT,
+      LONGUEURS_MAX_ADRESSE,
+      // Lignes pleine largeur de l'adresse ; code postal et ville ont leur propre rendu.
+      CHAMPS_LIGNES_ADRESSE: CHAMPS_ADRESSE_PERSONNE.filter((c) => c.cle.startsWith('ligne')),
+      champCodePostal: CHAMPS_ADRESSE_PERSONNE.find((c) => c.cle === 'codePostal'),
+      champVille: CHAMPS_ADRESSE_PERSONNE.find((c) => c.cle === 'ville'),
       ONGLETS_FICHE: [
         { code: 'general', libelle: 'Informations générales' },
+        { code: 'coordonnees', libelle: 'Adresse et naissance' },
         { code: 'pro', libelle: 'Informations professionnelles' },
       ],
-      ongletActif: this.champInitial === 'identifiants' ? 'pro' : 'general',
+      ongletActif: this.ongletInitial(),
       // Identifiant unique du `<form>`, pour relier le bouton « Enregistrer »
       // du pied de modale (hors du `<form>`) via l'attribut HTML `form`.
       idFormulaire: `formulaire-personne-${genId()}`,
@@ -591,6 +715,13 @@ export default {
         resultat[cle] = avertissementIdentifiant(cle, this.formulaire.identifiants[cle]);
       }
       return resultat;
+    },
+    /** Date du jour `"YYYY-MM-DD"`, pour les bornes et contrôles de la date de naissance. */
+    aujourdhui() {
+      return dateUtil.format(new Date());
+    },
+    bornesNaissance() {
+      return bornesDateNaissance(this.aujourdhui);
     },
     titreModale() {
       return this.personne ? 'Modifier la personne' : 'Ajouter une personne';
@@ -682,6 +813,24 @@ export default {
             (valeur, parent) => !parent.dateEntree || !valeur || valeur >= parent.dateEntree
           ),
         },
+        adresse: {
+          codePostal: {
+            format: helpers.withMessage(
+              'Indiquez un code postal à 5 chiffres (ex. 69003).',
+              (valeur) => estCodePostalValide(normaliserCodePostal(valeur))
+            ),
+          },
+        },
+        dateNaissance: {
+          passee: helpers.withMessage(
+            'La date de naissance doit être une date passée.',
+            (valeur) => estDateNaissancePassee(valeur, this.aujourdhui)
+          ),
+          age: helpers.withMessage(
+            'Vérifiez la date de naissance : l\'âge doit être compris entre 16 et 100 ans.',
+            (valeur) => estAgeNaissancePlausible(valeur, this.aujourdhui)
+          ),
+        },
         contact: {
           email: {
             email: helpers.withMessage(
@@ -725,6 +874,8 @@ export default {
             telephone: this.personne.contact?.telephone ?? '',
           },
           notes: this.personne.notes ?? '',
+          adresse: { ...normaliserAdresse(this.personne.adresse) },
+          dateNaissance: this.personne.dateNaissance ?? '',
           identifiants: { ...normaliserIdentifiants(this.personne.identifiants) },
         };
       }
@@ -743,8 +894,26 @@ export default {
         dateSortie: '',
         contact: { email: '', telephone: '' },
         notes: '',
+        adresse: adresseVide(),
+        dateNaissance: '',
         identifiants: { ...normaliserIdentifiants(null) },
       };
+    },
+
+    /**
+     * Onglet affiché à l'ouverture selon `champInitial`.
+     * @returns {('general'|'coordonnees'|'pro')}
+     */
+    ongletInitial() {
+      if (this.champInitial === 'identifiants') return 'pro';
+      if (this.champInitial === 'coordonnees') return 'coordonnees';
+      return 'general';
+    },
+
+    /** Au départ du champ « Code postal » : retire les espaces (« 75 011 » → « 75011 »), puis valide. */
+    normaliserCodePostalSaisi() {
+      this.formulaire.adresse.codePostal = normaliserCodePostal(this.formulaire.adresse.codePostal);
+      this.v$.formulaire.adresse.codePostal.$touch();
     },
 
     /**
@@ -755,7 +924,7 @@ export default {
      */
     reinitialiser() {
       this.formulaire = this.construireFormulaire();
-      this.ongletActif = this.champInitial === 'identifiants' ? 'pro' : 'general';
+      this.ongletActif = this.ongletInitial();
       this.v$.$reset();
       this.soumissionInvalide = false;
     },
@@ -770,6 +939,10 @@ export default {
     onAffichee() {
       if (this.champInitial === 'identifiants') {
         this.$el.querySelector(`#personne-identifiant-${CHAMPS_IDENTIFIANTS[0].cle}`)?.focus();
+        return;
+      }
+      if (this.champInitial === 'coordonnees') {
+        this.$el.querySelector('#personne-adresse-ligne1')?.focus();
         return;
       }
       if (this.champInitial === 'remplacement') {
@@ -856,18 +1029,21 @@ export default {
      * @returns {Array<{ validation: Object, id: string }>}
      */
     champsEnOrdre() {
+      const f = this.v$.formulaire;
       return [
-        { validation: this.v$.formulaire.prenom, id: 'personne-prenom' },
-        { validation: this.v$.formulaire.nom, id: 'personne-nom' },
-        { validation: this.v$.formulaire.initialesVega, id: 'personne-initiales-vega' },
-        { validation: this.v$.formulaire.titulaireId, id: 'personne-titulaire' },
-        { validation: this.v$.formulaire.tauxRetrocession, id: 'personne-retrocession' },
-        { validation: this.v$.formulaire.couleur, id: 'personne-couleur-libre' },
-        { validation: this.v$.formulaire.quotite, id: 'personne-quotite' },
-        { validation: this.v$.formulaire.joursTravaillesParMois, id: 'personne-rythme' },
-        { validation: this.v$.formulaire.dateSortie, id: 'personne-date-sortie' },
-        { validation: this.v$.formulaire.contact.email, id: 'personne-email' },
-        { validation: this.v$.formulaire.notes, id: 'personne-notes' },
+        { onglet: 'general', validation: f.prenom, id: 'personne-prenom' },
+        { onglet: 'general', validation: f.nom, id: 'personne-nom' },
+        { onglet: 'general', validation: f.initialesVega, id: 'personne-initiales-vega' },
+        { onglet: 'general', validation: f.titulaireId, id: 'personne-titulaire' },
+        { onglet: 'general', validation: f.tauxRetrocession, id: 'personne-retrocession' },
+        { onglet: 'general', validation: f.couleur, id: 'personne-couleur-libre' },
+        { onglet: 'general', validation: f.quotite, id: 'personne-quotite' },
+        { onglet: 'general', validation: f.joursTravaillesParMois, id: 'personne-rythme' },
+        { onglet: 'general', validation: f.dateSortie, id: 'personne-date-sortie' },
+        { onglet: 'general', validation: f.contact.email, id: 'personne-email' },
+        { onglet: 'general', validation: f.notes, id: 'personne-notes' },
+        { onglet: 'coordonnees', validation: f.adresse.codePostal, id: 'personne-adresse-code-postal' },
+        { onglet: 'coordonnees', validation: f.dateNaissance, id: 'personne-date-naissance' },
       ];
     },
 
@@ -878,11 +1054,13 @@ export default {
      * l'utilisateur chercher le message d'erreur dans une longue modale.
      */
     focusPremierChampErrone() {
-      const premierEnErreur = this.champsEnOrdre().find((champ) => champ.validation.$error);
+      const enErreur = this.champsEnOrdre().filter((champ) => champ.validation.$error);
+      // Priorité à l'onglet affiché ; sinon premier champ en erreur dans l'ordre des onglets.
+      const premierEnErreur =
+        enErreur.find((champ) => champ.onglet === this.ongletActif) ?? enErreur[0];
       if (!premierEnErreur) return;
-      // Tous les champs validés sont dans l'onglet général : on y revient si besoin,
-      // puis on focalise une fois le panneau réaffiché.
-      if (this.ongletActif !== 'general') this.ongletActif = 'general';
+      // On bascule sur l'onglet du champ si besoin, puis on focalise une fois le panneau réaffiché.
+      if (this.ongletActif !== premierEnErreur.onglet) this.ongletActif = premierEnErreur.onglet;
       this.$nextTick(() => {
         this.$el.querySelector(`#${premierEnErreur.id}`)?.focus();
       });
@@ -914,6 +1092,8 @@ export default {
           telephone: this.formulaire.contact.telephone || null,
         },
         notes: this.formulaire.notes,
+        adresse: normaliserAdresse(this.formulaire.adresse),
+        dateNaissance: normaliserDateNaissance(this.formulaire.dateNaissance || null),
         identifiants: normaliserIdentifiants(this.formulaire.identifiants),
       });
     },
@@ -950,6 +1130,14 @@ export default {
 
 .formulaire-retrocession {
   max-width: 10rem;
+}
+
+.formulaire-code-postal {
+  max-width: 8rem;
+}
+
+.formulaire-date-naissance {
+  max-width: 14rem;
 }
 
 .formulaire-pastille {

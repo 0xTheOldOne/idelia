@@ -12,6 +12,8 @@ import { normaliserInitialesVega } from '@/domain/initialesVega.js';
 import { estCouleurFoncee } from '@/domain/utils/couleurs.js';
 import { normaliserRythmeMensuel } from '@/domain/rythmeMensuel.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
+import { normaliserAdresse } from '@/domain/adresse.js';
+import { normaliserDateNaissance } from '@/domain/coordonnees.js';
 
 /**
  * @typedef {Object} IdentifiantsPro
@@ -44,6 +46,8 @@ import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
  * @property {(string|null)} dateEntree - Date d'arrivée `"YYYY-MM-DD"`, ou `null`.
  * @property {(string|null)} dateSortie - Date de départ `"YYYY-MM-DD"`, ou `null`.
  * @property {ContactPersonne} contact
+ * @property {import('@/domain/adresse.js').AdressePostale} adresse - Adresse postale, bloc toujours complet (4 clés, `''` par défaut) (0040).
+ * @property {(string|null)} dateNaissance - Date de naissance `"YYYY-MM-DD"`, ou `null` (0040).
  * @property {string} notes
  * @property {(string|null)} initialesVega - Code « PS » dans Vega (2-4 car. A-Z0-9, majuscules), ou null.
  * @property {IdentifiantsPro} identifiants - Identifiants professionnels, bloc toujours complet (6 clés, `null` par défaut) (0030).
@@ -86,6 +90,8 @@ export function creerPersonne(champs = {}) {
       email: champs.contact?.email ?? null,
       telephone: champs.contact?.telephone ?? null,
     },
+    adresse: normaliserAdresse(champs.adresse),
+    dateNaissance: normaliserDateNaissance(champs.dateNaissance),
     notes: champs.notes ?? '',
     initialesVega: normaliserInitialesVega(champs.initialesVega),
     identifiants: normaliserIdentifiants(champs.identifiants),

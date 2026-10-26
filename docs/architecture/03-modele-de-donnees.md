@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 11,             // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession, v11 = cabinet.adresseCabinet + cabinet.logo)
+  "schemaVersion": 12,             // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession, v11 = cabinet.adresseCabinet + cabinet.logo, v12 = Personne.adresse + dateNaissance)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -26,7 +26,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 10,
+  "schemaVersion": 12,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -44,6 +44,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
       "statut": "TITULAIRE", "actif": true, "couleur": "#2E86AB",
       "quotite": 100, "joursTravaillesParMois": 15, "titulaireId": null, "tauxRetrocession": null, "dateEntree": "2019-09-01", "dateSortie": null,
       "contact": { "email": null, "telephone": "0600000000" },
+      "adresse": { "ligne1": "", "ligne2": "", "codePostal": "", "ville": "" }, "dateNaissance": null,
       "ordreAffichage": 1, "notes": "", "initialesVega": "CM",
       "identifiants": { "rpps": null, "adeli": null, "ordinal": null, "cps": null, "carteProfessionnelle": null, "siret": null },
       "preferences": [
@@ -136,6 +137,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[8]` (v8 → v9)** — [feature 0023](../../features/0023-reperes-calendaires.md), [ADR 0020](../adr/0020-exception-reseau-api-calendrier-scolaire.md) : `cabinet.zoneScolaire` = `normaliserZoneScolaire(...)` (idempotent : absent ou inconnu → `null`) et racine `vacancesScolaires` = `normaliserCacheVacances(...)` (idempotent : absent → `[]` ; entrées invalides écartées). Les autres entités sont inchangées. `verifierIntegrite` n'est pas modifiée : le cache ne bloque jamais une ouverture.
 - **`MIGRATIONS[9]` (v9 → v10)** : chaque `Personne` reçoit `tauxRetrocession: personne.tauxRetrocession ?? null` (idempotent). `null` = taux non renseigné. Les autres entités sont inchangées.
 - **`MIGRATIONS[10]` (v10 → v11)** — [feature 0039](../../features/0039-page-cabinet-et-menu.md) : `cabinet.adresseCabinet` = `normaliserAdresse(...)` (idempotent : absent ou malformé → 4 chaînes vides) et `cabinet.logo = cabinet.logo ?? null`. Les autres entités sont inchangées. Un logo non conforme ne bloque jamais l'import : `fromSaveDocument` le ramène à `null` et `importer` affiche un avertissement.
+- **`MIGRATIONS[11]` (v11 → v12)** — [feature 0040](../../features/0040-coordonnees-des-personnes.md) : chaque `Personne` (objet) reçoit `adresse: normaliserAdresse(personne.adresse)` (idempotent : absent ou malformé → 4 chaînes vides) et `dateNaissance: normaliserDateNaissance(personne.dateNaissance)` (absent ou invalide → `null`). Les autres entités sont inchangées. Un bloc absent ou `null` dans un fichier déjà en v12 est normalisé par `fromSaveDocument`, sans erreur.
 
 ## Intégrité référentielle
 

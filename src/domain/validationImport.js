@@ -126,8 +126,9 @@ function controlerChamps(obj, regles, contexte, erreurs) {
  *   (collections racine ; pour les imbriquées, la règle `tableau` du parent suffit).
  * @param {{ champ: string, regles: object, libelle: string }[]} [options.sous]
  *   - Sous-collections portées par chaque élément.
+ * @param {string} [options.adresse] - Champ portant une AdressePostale à contrôler (REGLES_ADRESSE, 0040).
  */
-function controlerCollection(liste, regles, libelle, erreurs, { plafond, sous = [] } = {}) {
+function controlerCollection(liste, regles, libelle, erreurs, { plafond, sous = [], adresse } = {}) {
   if (!Array.isArray(liste)) return;
   if (plafond && liste.length > plafond.max) {
     erreurs.push(`Trop d'éléments dans « ${plafond.nom} » (maximum ${plafond.max}).`);
@@ -143,6 +144,8 @@ function controlerCollection(liste, regles, libelle, erreurs, { plafond, sous = 
     for (const s of sous) {
       controlerCollection(item[s.champ], s.regles, `${contexte}, ${s.libelle}`, erreurs);
     }
+    // Objet adresse imbriqué (0040) : `controlerAdresse` ne contrôle que si c'est un objet.
+    if (adresse) controlerAdresse(item[adresse], `${contexte}, ${adresse}`, erreurs);
   });
 }
 
@@ -193,6 +196,8 @@ const REGLES_PERSONNE = {
   dateEntree: { type: 'date' },
   dateSortie: { type: 'date' },
   contact: { type: 'objet' },
+  adresse: { type: 'objet' },
+  dateNaissance: { type: 'date' },
   notes: { type: 'texte', max: LONGUEUR_LONGUE },
   initialesVega: { type: 'texte', max: LONGUEUR_ID },
   ordreAffichage: { type: 'nombre' },
@@ -283,6 +288,7 @@ const COLLECTIONS = [
   {
     nom: 'personnes', regles: REGLES_PERSONNE, libelle: 'Personne',
     sous: [{ champ: 'preferences', regles: REGLES_PREFERENCE, libelle: 'souhait' }],
+    adresse: 'adresse',
   },
   {
     nom: 'tournees', regles: REGLES_TOURNEE, libelle: 'Tournée',
@@ -349,8 +355,8 @@ function verifierStructure(doc) {
     erreurs.push('Le champ « vacancesScolaires » est invalide.');
   }
 
-  for (const { nom, regles, libelle, sous } of COLLECTIONS) {
-    controlerCollection(doc[nom], regles, libelle, erreurs, { plafond: { nom, max: MAX[nom] }, sous });
+  for (const { nom, regles, libelle, sous, adresse } of COLLECTIONS) {
+    controlerCollection(doc[nom], regles, libelle, erreurs, { plafond: { nom, max: MAX[nom] }, sous, adresse });
   }
 
   return { ok: erreurs.length === 0, erreurs };

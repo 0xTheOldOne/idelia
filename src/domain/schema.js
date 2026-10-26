@@ -17,6 +17,7 @@ import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
 import { adresseVide, normaliserAdresse } from '@/domain/adresse.js';
 import { normaliserLogo } from '@/domain/cabinet.js';
+import { normaliserDateNaissance } from '@/domain/coordonnees.js';
 
 // ---------------------------------------------------------------------------
 // Enums / constantes du domaine (codes stables, MAJUSCULES_SNAKE)
@@ -210,6 +211,20 @@ export function toSaveDocument(rootState, options) {
 }
 
 /**
+ * Garantit la forme des blocs d'une personne chargée (jamais bloquant).
+ * @param {*} p - Personne du document migré.
+ * @returns {object}
+ */
+function normaliserPersonneChargee(p) {
+  return {
+    ...p,
+    identifiants: normaliserIdentifiants(p?.identifiants),
+    adresse: normaliserAdresse(p?.adresse),
+    dateNaissance: normaliserDateNaissance(p?.dateNaissance),
+  };
+}
+
+/**
  * Reconstruit la forme racine de l'état Vuex à partir d'un SaveDocument
  * **déjà migré et vérifié** (`migrate` puis `verifierIntegrite` en amont,
  * couche `storage/`). `plannings.selectionId` est une sélection volatile,
@@ -236,8 +251,8 @@ export function fromSaveDocument(doc) {
         logo: normaliserLogo(doc.cabinet?.logo),
       },
     },
-    // `identifiants` : forme garantie (6 clés), jamais bloquant (0030).
-    personnes: { items: (doc.personnes ?? []).map((p) => ({ ...p, identifiants: normaliserIdentifiants(p?.identifiants) })) },
+    // `identifiants`, `adresse`, `dateNaissance` : forme garantie, jamais bloquant (0030, 0040).
+    personnes: { items: (doc.personnes ?? []).map(normaliserPersonneChargee) },
     // `icone` : valeur hors liste (fichier modifié à la main) → `null`, jamais bloquant (0029).
     tournees: { items: (doc.tournees ?? []).map((t) => ({ ...t, icone: normaliserIconeTournee(t?.icone) })) },
     absences: { items: doc.absences ?? [] },

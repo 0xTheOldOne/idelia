@@ -29,6 +29,7 @@ Idelia/
     ├── domain/                 # LOGIQUE MÉTIER PURE (aucun import Vue/Vuex)
     │   ├── schema.js           # enums, valeurs par défaut, toSaveDocument/fromSaveDocument, verifierIntegrite
     │   ├── adresse.js          # adresse postale générique : forme, normalisation, code postal, affichage (cabinet 0039, personnes 0040)
+    │   ├── coordonnees.js      # date de naissance et rubriques « Adresse et naissance » d'une personne (adresse : voir adresse.js) [0040]
     │   ├── scheduling/         # moteur de planification (voir 05)
     │   ├── remplacement.js     # identification des remplaçantes (estRemplacante) [0021]
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]

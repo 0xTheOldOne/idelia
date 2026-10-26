@@ -8,7 +8,7 @@ Idelia s'organise autour d'un petit nombre d'écrans clairs, accessibles depuis 
 |---|---|---|---|
 | `/` | **Accueil** | Vue d'ensemble, actions rapides, état de la sauvegarde | `0013` |
 | `/cabinet` | **Cabinet** | Identité du cabinet (nom, adresse, logo des en-têtes de documents), jours d'ouverture, créneaux de travail, rythme de travail | `0003`, `0039` |
-| `/equipe` | **Équipe** | Gérer les personnes du cabinet (ajout/édition/désactivation, rythme mensuel, remplaçant(e) rattaché(e), informations professionnelles : onglet de la fiche et consultation « Informations utiles ») | `0004`, `0020`, `0030` |
+| `/equipe` | **Équipe** | Gérer les personnes du cabinet (ajout/édition/désactivation, rythme mensuel, remplaçant(e) rattaché(e), informations professionnelles, adresse et date de naissance : onglets de la fiche et consultation « Informations utiles ») | `0004`, `0020`, `0030`, `0040` |
 | `/equipe/:id/souhaits` | **Souhaits** | Souhaits & préférences d'une personne | `0005` |
 | `/tournees` | **Tournées** | Gérer les tournées et leurs horaires | `0006` |
 | `/absences` | **Absences & congés** | Saisir les absences (saisie directe, sans validation en v1) | `0007`, `0017` |

@@ -51,6 +51,8 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | dateEntree | `"YYYY-MM-DD"` \| null | non | premier jour de présence (inclus) ; **active** : le moteur ne planifie pas la personne avant [0031] |
 | dateSortie | `"YYYY-MM-DD"` \| null | non | dernier jour de présence (inclus), ≥ `dateEntree` ; **active** : pas de planification après. Borne vide = ouverte. Règle unique dans `src/domain/presence.js` (`etatPresenceLe`, `estPresentLe`, `aDesDatesDePresence`, `libellePresenceLe`, `precisionPresenceLe`, `fractionPresence`) [0031] |
 | contact | `{ email?, telephone? }` | non | |
+| adresse | `AdressePostale` | oui (bloc toujours présent) | 4 clés, `''` par défaut ; voir « AdressePostale » ci-dessous (utilisée aussi par `Personne.adresse` [0040]) |
+| dateNaissance | `"YYYY-MM-DD"` \| null | non | `null` par défaut ; à la saisie : date passée, âge entre 16 et 100 ans ; normalisation dans `src/domain/coordonnees.js` [0040] |
 | ordreAffichage | integer | non | |
 | notes | string | non | |
 | initialesVega | string `^[A-Z0-9]{2,4}$` \| null | non | code « PS » de la personne dans Vega ; `null` si non renseigné ; **unique** parmi toutes les personnes (actives et archivées) ; stocké en majuscules, sans espaces [0034] |
