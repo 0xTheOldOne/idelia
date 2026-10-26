@@ -19,7 +19,7 @@
     "quill": "2.0.2",
     "vue": "^3.5.42",
     "vue-debounce": "^5.0.1",
-    "vue-router": "^4.6.4",
+    "vue-router": "^5.4.0",
     "vuex": "^4.1.0"
   },
   "devDependencies": {
