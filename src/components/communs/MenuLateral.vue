@@ -39,16 +39,6 @@
 
     <div class="menu-espaceur"></div>
 
-    <div class="menu-pied">
-      <IndicateurSauvegarde
-        compact
-        :statut="statutSauvegarde"
-        :derniere-sauvegarde="derniereSauvegarde"
-        :nom-fichier="fichierSauvegardeActif ? nomFichierSauvegarde : null"
-        :dernier-fichier-le="dernierFichierEnregistreLe"
-      />
-    </div>
-
     <div class="menu-theme">
       <button
         type="button"
@@ -73,7 +63,17 @@
         exact-active-class=""
       >
         <component :is="itemParametres.icone" :size="21" aria-hidden="true" />
-        <span class="menu-item__libelle">{{ itemParametres.libelle }}</span>
+        <span class="menu-parametres__textes">
+          <span class="menu-item__libelle">{{ itemParametres.libelle }}</span>
+          <IndicateurSauvegarde
+            compact
+            class="menu-parametres__sauvegarde"
+            :statut="statutSauvegarde"
+            :derniere-sauvegarde="derniereSauvegarde"
+            :nom-fichier="fichierSauvegardeActif ? nomFichierSauvegarde : null"
+            :dernier-fichier-le="dernierFichierEnregistreLe"
+          />
+        </span>
         <span class="menu-item__infobulle">{{ itemParametres.libelle }}</span>
       </router-link>
     </div>
@@ -126,7 +126,7 @@ import IndicateurSauvegarde from '@/components/communs/IndicateurSauvegarde.vue'
  * règle « actif = chemin exact ou préfixe » explicitement voulue (feature
  * 0015 §6.4), et pose lui-même `aria-current="page"` sur l'item courant.
  *
- * Le pied du menu affiche l'indicateur de sauvegarde en variante compacte
+ * Le lien Paramètres (pied du menu) porte l'indicateur de sauvegarde en variante compacte
  * (`IndicateurSauvegarde` avec `compact`), alimenté par `statutSauvegarde`/
  * `derniereSauvegarde` (état racine, lus ici via `mapState` et passés en
  * props : l'indicateur reste présentational, sans accès direct au store).
@@ -503,29 +503,52 @@ $menu-largeur-repliee: 76px;
 }
 
 // -----------------------------------------------------------------------
-// Pied : espaceur + indicateur de sauvegarde (compact) + bouton de repli
+// Pied : espaceur + indicateur de sauvegarde (dans le lien Paramètres) + bouton de repli
 // -----------------------------------------------------------------------
 .menu-espaceur {
   flex: 1 1 auto;
 }
 
-.menu-pied {
+// Indicateur de sauvegarde porté par le lien Paramètres (une ligne de menu
+// économisée). Déplié : « Sauvegardé · HH:mm » en tout petit sous le libellé,
+// sans pastille (le texte porte l'information). Replié (et fenêtre étroite,
+// App.vue) : seule la pastille, en bas à droite de l'engrenage.
+// `IndicateurSauvegarde` étant un composant enfant, `:deep()` atteint ses
+// éléments internes (seule sa racine hérite du hash de portée du parent).
+.menu-parametres__textes {
   display: flex;
-  padding: 0 t.$espace-3;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
 }
 
-// Replié : seule la pastille (ou l'icône d'alerte) reste visible, centrée —
-// le libellé disparaît comme les libellés d'items. `IndicateurSauvegarde`
-// étant un composant enfant, `:deep()` est nécessaire pour atteindre ses
-// éléments internes (seule sa racine hérite du hash de portée du parent).
-.menu-lateral--replie {
-  .menu-pied {
-    justify-content: center;
-    padding-inline: 0;
-  }
+.menu-parametres__sauvegarde {
+  font-size: 0.7rem;
+  font-weight: t.$graisse-normale;
+  opacity: 0.85;
 
+  :deep(.indicateur-sauvegarde__pastille) {
+    display: none;
+  }
+}
+
+.menu-lateral--replie {
   :deep(.indicateur-sauvegarde__texte) {
     display: none;
+  }
+
+  .menu-parametres__sauvegarde {
+    position: absolute;
+    top: calc(50% + 3px);
+    left: calc(50% + 4px);
+    opacity: 1;
+    pointer-events: none;
+
+    :deep(.indicateur-sauvegarde__pastille) {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+    }
   }
 
   // En cas d'échec, l'icône d'alerte remplace la pastille : l'erreur ne

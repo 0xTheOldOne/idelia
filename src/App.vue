@@ -173,11 +173,20 @@ $menu-largeur-repliee: 76px;
     transform: translateY(-50%) !important;
   }
 
-  // Indicateur de sauvegarde : seule la pastille (ou l'icône d'alerte) reste,
-  // centrée, comme au repli manuel ; le libellé reste dans l'infobulle.
-  :deep(.menu-pied) {
-    justify-content: center !important;
-    padding-inline: 0 !important;
+  // Indicateur de sauvegarde (porté par le lien Paramètres) : seule la pastille
+  // (ou l'icône d'alerte) reste, en bas à droite de l'engrenage, comme au repli manuel.
+  :deep(.menu-parametres__sauvegarde) {
+    position: absolute !important;
+    top: calc(50% + 3px) !important;
+    left: calc(50% + 4px) !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+  }
+
+  :deep(.menu-parametres__sauvegarde .indicateur-sauvegarde__pastille) {
+    display: inline-block !important;
+    width: 8px !important;
+    height: 8px !important;
   }
 
   :deep(.indicateur-sauvegarde__texte) {
