@@ -194,13 +194,13 @@ export default {
           nom: 'contrats',
           titre: 'Contrats',
           items: [
-            { nom: 'contrats', chemin: '/contrats', libelle: 'Documents', icone: 'PhSignature' },
             {
               nom: 'modeles-contrats',
               chemin: '/modeles-contrats',
               libelle: 'Modèles',
               icone: 'PhFileText',
             },
+            { nom: 'contrats', chemin: '/contrats', libelle: 'Documents', icone: 'PhSignature' },
           ],
         },
       ],

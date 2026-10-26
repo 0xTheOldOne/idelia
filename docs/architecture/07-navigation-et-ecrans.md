@@ -24,7 +24,7 @@ Idelia s'organise autour d'un petit nombre d'écrans clairs, accessibles depuis 
 
 ## Principes de navigation
 
-- **Menu latéral toujours visible** (déplié : icônes Phosphor + libellés, Accueil seul en tête (sans titre), puis groupes « Pilotage » / « Planning » / « Contrats » (« Documents », 0042, puis « Modèles », 0041), **Paramètres en pied de menu** sous la bascule de thème ; replié : rail d'icônes seules avec infobulles au survol/focus). Repli **réversible** et **mémorisé** d'une session à l'autre ; sous ~992 px, repli automatique en rail. Icônes Phosphor ([ADR 0013](../adr/0013-icones-phosphor.md)) ; l'écran courant est mis en évidence par **fond + barre d'accent + graisse** (`aria-current`), jamais par la seule couleur.
+- **Menu latéral toujours visible** (déplié : icônes Phosphor + libellés, Accueil seul en tête (sans titre), puis groupes « Pilotage » / « Planning » / « Contrats » (« Modèles », 0041, puis « Documents », 0042), **Paramètres en pied de menu** sous la bascule de thème ; replié : rail d'icônes seules avec infobulles au survol/focus). Repli **réversible** et **mémorisé** d'une session à l'autre ; sous ~992 px, repli automatique en rail. Icônes Phosphor ([ADR 0013](../adr/0013-icones-phosphor.md)) ; l'écran courant est mis en évidence par **fond + barre d'accent + graisse** (`aria-current`), jamais par la seule couleur.
 - **Une action principale par écran**, visuellement dominante (ex. « Générer le planning »).
 - **Fil d'Ariane** ou titre d'écran explicite en permanence : l'utilisateur sait toujours où il est.
 - **Actions destructrices** protégées par confirmation ; retour/annulation possibles.
