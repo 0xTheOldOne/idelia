@@ -18,7 +18,7 @@ Les modèles de contrats ([0041](../../features/0041-modeles-de-contrats.md)) et
 
 Nous utilisons **`quill` 2.x** (Delta JSON), avec les contraintes suivantes :
 
-- **version exacte** dans `package.json` (sans `^`) : **2.0.3** (publiée le 2024-11-30, dernière 2.x stable, publiée depuis plus de 2 semaines) ; montée de version volontaire et contrôlée ;
+- **version exacte** dans `package.json` (sans `^`) : **2.0.2**. La 2.0.3 (2024-11-30), installée au départ, fait l'objet de l'avis [GHSA-v3m3-f69x-jf25](https://github.com/advisories/GHSA-v3m3-f69x-jf25) (XSS via l'export HTML `getSemanticHTML`, fonction qu'Idelia n'utilise pas) : retour à la 2.0.2 le 2026-10-26 (`npm audit` propre), recette Contrats refaite. Montée de version volontaire et contrôlée ;
 - **sans wrapper Vue** (`vue-quill`, `@vueup/vue-quill` écartés : dépendance en plus, souvent en retard sur Quill, orientés Composition API) ;
 - **chargée à la demande** : `import()` dynamique et routes paresseuses, pour que le bundle principal reste inchangé ; **isolée** derrière un seul adaptateur, `src/adaptateurs/editeurRiche.js` (hors `src/domain/`, [ADR 0008](0008-moteur-planification-module-pur.md)), à l'image de pdf.js ([ADR 0019](0019-lecture-pdf-pdfjs.md)) ;
 - thème **core** seulement : `quill.core.css` structurel, aucune icône Quill ; barre d'outils écrite en Vue avec icônes Phosphor, couleurs par les tokens ([ADR 0022](0022-theme-sombre-css-custom-properties.md)) ;
