@@ -1,29 +1,26 @@
 <template>
-  <header class="entete-cabinet" :class="{ 'entete-cabinet--rempli': !vide }">
-    <template v-if="!vide">
-      <img class="entete-cabinet__logo" :src="logo || logoParDefaut" alt="" />
-      <div class="entete-cabinet__texte">
-        <p v-if="entete.nomCabinet" class="entete-cabinet__nom">{{ entete.nomCabinet }}</p>
-        <p v-for="ligne in lignes" :key="ligne" class="entete-cabinet__ligne">{{ ligne }}</p>
-      </div>
-    </template>
-    <p v-else-if="lienCabinet" class="entete-cabinet__aide d-print-none">
-      L'en-tête est vide : renseignez le nom, l'adresse et le logo dans la page
-      <router-link :to="{ name: 'cabinet' }">Cabinet</router-link>.
-    </p>
+  <header class="entete-cabinet entete-cabinet--rempli">
+    <img class="entete-cabinet__logo" :src="logo || logoParDefaut" alt="" />
+    <div class="entete-cabinet__texte">
+      <p v-if="entete.nomCabinet" class="entete-cabinet__nom">{{ entete.nomCabinet }}</p>
+      <p v-for="ligne in lignes" :key="ligne" class="entete-cabinet__ligne">{{ ligne }}</p>
+      <p v-if="sansCoordonnees && lienCabinet" class="entete-cabinet__aide d-print-none">
+        Le nom et l'adresse du cabinet ne sont pas renseignés : complétez-les dans la page
+        <router-link :to="{ name: 'cabinet' }">Cabinet</router-link>.
+      </p>
+    </div>
   </header>
 </template>
 
 <script>
 import { lignesAdresse } from '@/domain/adresse.js';
 import { normaliserLogo } from '@/domain/cabinet.js';
-import { enteteEstVide } from '@/domain/contrats/documents.js';
 import { CHEMIN_LOGO_CABINET_DEFAUT } from '@/adaptateurs/logoCabinetDefaut.js';
 
 /**
  * En-tête de cabinet d'un document imprimable : logo, nom en gras, adresse ligne par ligne.
- * Sans logo choisi, le logo par défaut d'Idelia est affiché.
- * Les éléments vides ne sont pas affichés ; rien à l'impression si tout est vide.
+ * Le logo est toujours imprimé : celui du cabinet, sinon le logo par défaut d'Idelia.
+ * Nom et adresse absents : simple aide à l'écran (jamais imprimée).
  * Le logo est re-contrôlé (`normaliserLogo`) avant d'être posé dans `src` (jamais de HTML injecté).
  */
 export default {
@@ -44,8 +41,8 @@ export default {
     lignes() {
       return lignesAdresse(this.entete.adresseCabinet);
     },
-    vide() {
-      return enteteEstVide({ ...this.entete, logo: this.logo });
+    sansCoordonnees() {
+      return !this.entete.nomCabinet && this.lignes.length === 0;
     },
   },
 };

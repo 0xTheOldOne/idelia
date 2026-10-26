@@ -8,7 +8,6 @@
 import { copieJson } from '@/domain/utils/json.js';
 import { genId } from '@/domain/utils/id.js';
 import { dateUtil } from '@/domain/utils/dates.js';
-import { normaliserAdresse } from '@/domain/adresse.js';
 import { estLogoValide } from '@/domain/cabinet.js';
 import { figerEnteteCabinet, normaliserDocument } from '@/domain/contrats/documentsNormalisation.js';
 import { estChampLibre } from '@/domain/contrats/catalogueMarqueurs.js';
@@ -186,16 +185,6 @@ export function enteteAffichee(document, parametres) {
       ? figerEnteteCabinet(document.enteteCabinet)
       : figerEnteteCabinet(parametres);
   return { ...base, logo: estLogoValide(parametres?.logo) ? parametres.logo : null };
-}
-
-/**
- * `true` si l'en-tête affiché ne contient ni nom, ni adresse, ni logo.
- * @param {EnteteAffichee} entete
- * @returns {boolean}
- */
-export function enteteEstVide(entete) {
-  const a = normaliserAdresse(entete?.adresseCabinet);
-  return !entete?.nomCabinet && !entete?.logo && !(a.ligne1 || a.ligne2 || a.codePostal || a.ville);
 }
 
 /** @param {DocumentContrat} doc @returns {boolean} Brouillon. */

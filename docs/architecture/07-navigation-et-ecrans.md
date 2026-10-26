@@ -47,7 +47,7 @@ Les principes d'ergonomie détaillés sont dans [`08-principes-ux-ergonomie.md`]
 
 ## Écran Cabinet
 
-Sections dans l'ordre : identité (nom, adresse, logo), jours d'ouverture, créneaux de travail, rythme de travail. Chaque modification est **enregistrée automatiquement**. Le logo (PNG ou JPEG) est réduit à 400 px au plus, soumis à un plafond de poids, inclus dans la sauvegarde/export, et prévisualisé sur fond blanc (rendu des en-têtes de documents). Sans logo choisi, le **logo par défaut** d'Idelia (bâton d'Asclépios teal, `public/logo-cabinet-defaut.png`, jamais enregistré dans les données) est affiché dans l'aperçu et en tête des documents.
+Sections dans l'ordre : identité (nom, adresse, logo), jours d'ouverture, créneaux de travail, rythme de travail. Chaque modification est **enregistrée automatiquement**. Le logo (PNG ou JPEG) est réduit à 400 px au plus, soumis à un plafond de poids, inclus dans la sauvegarde/export, et prévisualisé sur fond blanc (rendu des en-têtes de documents). Sans logo choisi, le **logo par défaut** d'Idelia (bâton d'Asclépios teal, `public/logo-cabinet-defaut.png`, jamais enregistré dans les données) est affiché dans l'aperçu et en tête des documents, y compris quand le nom et l'adresse du cabinet sont vides (le logo est toujours imprimé).
 
 ## Écran Paramètres : vacances scolaires
 
