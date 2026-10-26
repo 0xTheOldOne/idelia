@@ -240,7 +240,26 @@ Non bloquant : un cache absent ou malformé est normalisé (`[]`/filtré), jamai
 
 `ChampLibre` (imbriqué) : `{ cle: 'saisie.<GUID>', libelle: string 1..80, type: 'TEXTE' \| 'DATE' \| 'NOMBRE' \| 'TAUX_RETROCESSION' }`. `cle` unique dans le modèle ; **au plus un** champ `TAUX_RETROCESSION` par modèle (valeur attendue 0..100, comparée à `Personne.tauxRetrocession` par 0042). Aucune référence vers une autre entité.
 
-**Document contractuel** (`documentsContrats`) : collection réservée, toujours vide en 0041 ; forme et règles définies par la feature 0042.
+### DocumentContrat (racine du SaveDocument, `documentsContrats`, 0042)
+
+| champ | type | oblig. | notes |
+|---|---|---|---|
+| id | GUID | oui | `genId()` |
+| personneId | GUID | oui | personne (active ou archivée) ; intégrité vérifiée |
+| modeleId | GUID | oui | modèle d'origine (jamais supprimé, seulement archivé) ; intégrité vérifiée |
+| titre | string | oui | 1..200 caractères |
+| type | `'CONTRAT'` | `'AVENANT'` | oui | recopié du modèle |
+| contenu | Delta Quill `{ ops }` | oui | copie figée du texte du modèle, **aucun embed `marqueur`** (tout est devenu du texte) ; jamais de HTML |
+| valeursSaisies | `ValeurSaisie[]` | oui | ≤ 100 ; `{ cle, libelle, type, valeur }` |
+| statut | `'BROUILLON'` | `'SIGNE'` | oui | `SIGNE` est définitif (ni modification ni suppression) |
+| signeLe | "YYYY-MM-DD" | null | non | posé à la signature |
+| enteteCabinet | `EnteteCabinet` | null | non | `null` en brouillon (en-tête lu en direct) ; figé à la signature |
+| archive | boolean | oui | seul un document signé s'archive |
+| createdAt / updatedAt | ISO UTC | oui | |
+
+`EnteteCabinet` = `{ nomCabinet: string, adresseCabinet: AdressePostale }` : nom et adresse du cabinet **figés à la signature**. **Le logo n'est jamais figé ni stocké** dans un document : l'en-tête affiche toujours le logo actuel du cabinet ; une clé `logo` trouvée dans un fichier est ignorée puis retirée à la relecture (`normaliserDocument`).
+
+Invariants : `personneId` et `modeleId` résolvent à l'import (`verifierIntegrite`) ; le texte d'un document ne change plus si le modèle est modifié ; un document signé est définitif.
 
 ## Relations
 

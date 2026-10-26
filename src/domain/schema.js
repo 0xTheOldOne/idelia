@@ -19,6 +19,7 @@ import { adresseVide, normaliserAdresse } from '@/domain/adresse.js';
 import { normaliserLogo } from '@/domain/cabinet.js';
 import { normaliserDateNaissance } from '@/domain/coordonnees.js';
 import { normaliserModeleContrat } from '@/domain/contrats/modeles.js';
+import { normaliserDocument } from '@/domain/contrats/documentsNormalisation.js';
 
 // ---------------------------------------------------------------------------
 // Enums / constantes du domaine (codes stables, MAJUSCULES_SNAKE)
@@ -126,7 +127,7 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
  * @property {{ items: object[] }} absences
  * @property {{ items: object[], selectionId: (string|null) }} plannings
  * @property {{ entrees: import('@/domain/calendrier/vacancesScolaires.js').EntreeVacances[] }} vacancesScolaires - Cache des vacances (0023).
- * @property {{ modeles: import('@/domain/contrats/modeles.js').ModeleContrat[], documents: object[] }} contrats - Modèles de contrats (0041) ; `documents` réservé à 0042.
+ * @property {{ modeles: import('@/domain/contrats/modeles.js').ModeleContrat[], documents: object[] }} contrats - Modèles de contrats (0041) ; `documents` (0042).
  */
 
 /**
@@ -140,7 +141,7 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
  * @property {object[]} plannings
  * @property {import('@/domain/calendrier/vacancesScolaires.js').EntreeVacances[]} vacancesScolaires - Cache des vacances scolaires (0023).
  * @property {import('@/domain/contrats/modeles.js').ModeleContrat[]} modelesContrats - Modèles de contrats (0041).
- * @property {object[]} documentsContrats - Documents contractuels (toujours vide en 0041, réservé à 0042).
+ * @property {import('@/domain/contrats/documents.js').DocumentContrat[]} documentsContrats - Documents contractuels (0042).
  */
 
 /**
@@ -275,10 +276,10 @@ export function fromSaveDocument(doc) {
     plannings: { items: doc.plannings ?? [], selectionId: null },
     // Cache malformé → `[]` / entrées filtrées, jamais bloquant (0023).
     vacancesScolaires: { entrees: normaliserCacheVacances(doc.vacancesScolaires) },
-    // Forme garantie, contenu Delta jamais réécrit (0041). `documents` : réservé à 0042.
+    // Forme garantie, contenu Delta jamais réécrit (0041).
     contrats: {
       modeles: (doc.modelesContrats ?? []).map(normaliserModeleContrat),
-      documents: doc.documentsContrats ?? [],
+      documents: (doc.documentsContrats ?? []).map(normaliserDocument),
     },
   };
 }
@@ -298,9 +299,9 @@ export function fromSaveDocument(doc) {
  * `affectation.tourneeId`, `planning.referentId` (s'il est non nul),
  * `personne.titulaireId` (s'il est non nul, vers une personne active ou
  * archivée) et `preference.params.tourneeIds` (souhaits `PREFERENCE_TOURNEE`)
- * doivent résoudre vers une entité existante. Aucun contrôle référentiel pour
- * `modelesContrats` en 0041 (un modèle ne référence aucune entité) : 0042 y
- * ajoutera `document.personneId` et `document.modeleId`.
+ * doivent résoudre vers une entité existante. Un modèle ne référence aucune
+ * entité ; chaque `documentsContrats[].personneId` (personne active ou archivée)
+ * et `documentsContrats[].modeleId` (modèle actif ou archivé) doit exister (0042).
  *
  * @param {SaveDocument} doc - Document structurellement valide.
  * @returns {ResultatIntegrite} Verdict et liste des erreurs éventuelles.
@@ -341,6 +342,20 @@ export function verifierIntegrite(doc) {
     if (personne.titulaireId != null && !idsPersonnes.has(personne.titulaireId)) {
       erreurs.push(
         `Personne « ${personne.id} » : la personne remplacée en priorité « ${personne.titulaireId} » est introuvable.`
+      );
+    }
+  }
+
+  const idsModeles = new Set((doc.modelesContrats ?? []).map((m) => m.id));
+  for (const document of doc.documentsContrats ?? []) {
+    if (!idsPersonnes.has(document.personneId)) {
+      erreurs.push(
+        `Document « ${document.id} » : la personne « ${document.personneId} » référencée est introuvable.`
+      );
+    }
+    if (!idsModeles.has(document.modeleId)) {
+      erreurs.push(
+        `Document « ${document.id} » : le modèle « ${document.modeleId} » référencé est introuvable.`
       );
     }
   }

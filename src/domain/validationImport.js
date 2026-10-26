@@ -27,7 +27,8 @@ import { dateUtil } from '@/domain/utils/dates.js';
 import { estGuid } from '@/domain/utils/id.js';
 import { LONGUEURS_MAX_ADRESSE } from '@/domain/adresse.js';
 import { estDeltaModeleValide } from '@/domain/contrats/delta.js';
-import { PREFIXE_SAISIE } from '@/domain/contrats/catalogueMarqueurs.js';
+import { PREFIXE_SAISIE, estCleMarqueurValide } from '@/domain/contrats/catalogueMarqueurs.js';
+import { STATUTS_DOCUMENT } from '@/domain/contrats/documents.js';
 
 /** Taille maximale d'un fichier de sauvegarde importé (octets) : 10 Mo. */
 export const TAILLE_MAX_FICHIER_OCTETS = 10 * 1024 * 1024;
@@ -48,6 +49,7 @@ const MAX = Object.freeze({
   modelesContrats: 200,
   documentsContrats: 5000,
   champsLibres: 50,
+  valeursSaisies: 100,
 });
 
 const LONGUEUR_ID = 100;
@@ -94,6 +96,10 @@ const CONTROLEURS = {
   enum: (v, o) => o.valeurs.includes(v),
   // Delta Quill d'un modèle de contrat : liste blanche stricte, jamais de HTML (0041).
   delta: (v) => estDeltaModeleValide(v),
+  // Valeur saisie à la génération d'un document : texte court ou nombre fini (0042).
+  texteOuNombre: (v) => (typeof v === 'string' && v.length <= 2000) || (typeof v === 'number' && Number.isFinite(v)),
+  // Clé de marqueur : catalogue ou `saisie.<GUID>` (0041).
+  cleMarqueur: (v) => typeof v === 'string' && estCleMarqueurValide(v),
   // Clé d'un champ à compléter : `saisie.<GUID>` (0041).
   cleSaisie: (v, o) =>
     typeof v === 'string' && v.length <= (o.max ?? LONGUEUR_ID)
@@ -314,6 +320,35 @@ const REGLES_CHAMP_LIBRE = {
   type: { type: 'enum', valeurs: TYPES_CHAMP_LIBRE, requis: true },
 };
 
+const REGLES_DOCUMENT_CONTRAT = {
+  id: { type: 'id', requis: true },
+  personneId: { type: 'id', requis: true },
+  modeleId: { type: 'id', requis: true },
+  titre: { type: 'texte', max: 200, requis: true },
+  type: { type: 'enum', valeurs: TYPES_MODELE_CONTRAT, requis: true },
+  contenu: { type: 'delta', requis: true },
+  valeursSaisies: { type: 'tableau', max: MAX.valeursSaisies },
+  statut: { type: 'enum', valeurs: STATUTS_DOCUMENT, requis: true },
+  signeLe: { type: 'date' },
+  enteteCabinet: { type: 'objet' },
+  archive: { type: 'booleen' },
+  createdAt: { type: 'horodatage' },
+  updatedAt: { type: 'horodatage' },
+};
+
+const REGLES_VALEUR_SAISIE = {
+  cle: { type: 'cleMarqueur', requis: true },
+  libelle: { type: 'texte', max: 80 },
+  type: { type: 'enum', valeurs: TYPES_CHAMP_LIBRE, requis: true },
+  valeur: { type: 'texteOuNombre' },
+};
+
+// `logo` volontairement absent : jamais figé, ignoré puis retiré par `normaliserDocument` (0042).
+const REGLES_ENTETE_CABINET = {
+  nomCabinet: REGLES_CABINET.nomCabinet,
+  adresseCabinet: REGLES_CABINET.adresseCabinet,
+};
+
 /** Collections racine du document, dans l'ordre de contrôle (et de messages). */
 const COLLECTIONS = [
   {
@@ -333,6 +368,10 @@ const COLLECTIONS = [
   {
     nom: 'modelesContrats', regles: REGLES_MODELE_CONTRAT, libelle: 'Modèle de contrat',
     sous: [{ champ: 'champsLibres', regles: REGLES_CHAMP_LIBRE, libelle: 'champ à compléter' }],
+  },
+  {
+    nom: 'documentsContrats', regles: REGLES_DOCUMENT_CONTRAT, libelle: 'Document',
+    sous: [{ champ: 'valeursSaisies', regles: REGLES_VALEUR_SAISIE, libelle: 'valeur saisie' }],
   },
 ];
 
@@ -390,17 +429,35 @@ function verifierStructure(doc) {
     erreurs.push('Le champ « vacancesScolaires » est invalide.');
   }
 
-  // Documents contractuels (0042) : liste d'objets seulement ; règles détaillées en 0042.
-  if (!Array.isArray(doc.documentsContrats)) {
-    erreurs.push('Le champ « documentsContrats » doit être une liste.');
-  } else if (doc.documentsContrats.length > MAX.documentsContrats) {
-    erreurs.push(`Trop d'éléments dans « documentsContrats » (maximum ${MAX.documentsContrats}).`);
-  } else if (!doc.documentsContrats.every(estObjet)) {
-    erreurs.push('Le champ « documentsContrats » contient un élément invalide.');
-  }
-
   for (const { nom, regles, libelle, sous, adresse } of COLLECTIONS) {
     controlerCollection(doc[nom], regles, libelle, erreurs, { plafond: { nom, max: MAX[nom] }, sous, adresse });
+  }
+
+  // En-tête figé des documents signés (0042) : nom + adresse, jamais de logo.
+  if (Array.isArray(doc.documentsContrats)) {
+    doc.documentsContrats.forEach((d, i) => {
+      if (!estObjet(d)) return;
+      const prefixe = `Document contractuel n°${i + 1}`;
+      // Un document n'a que du texte : aucun embed (image, etc.).
+      const ops = Array.isArray(d.contenu?.ops) ? d.contenu.ops : [];
+      if (ops.some((op) => estObjet(op) && typeof op.insert !== 'string')) {
+        erreurs.push(`${prefixe} : le contenu ne peut contenir que du texte.`);
+      }
+      if (d.statut === 'SIGNE') {
+        if (typeof d.signeLe !== 'string' || !dateUtil.estDateValide(d.signeLe)) {
+          erreurs.push(`${prefixe} : un document signé doit avoir une date de signature valide.`);
+        }
+        if (!estObjet(d.enteteCabinet)) {
+          erreurs.push(`${prefixe} : un document signé doit avoir un en-tête du cabinet.`);
+        }
+      } else if (d.statut === 'BROUILLON' && d.enteteCabinet !== null && d.enteteCabinet !== undefined) {
+        erreurs.push(`${prefixe} : un brouillon ne peut pas avoir d'en-tête figé.`);
+      }
+      if (!estObjet(d.enteteCabinet)) return;
+      const contexte = `Document n°${i + 1}, en-tête`;
+      controlerChamps(d.enteteCabinet, REGLES_ENTETE_CABINET, contexte, erreurs);
+      controlerAdresse(d.enteteCabinet.adresseCabinet, `${contexte}, adresseCabinet`, erreurs);
+    });
   }
 
   // Un seul champ « Taux de rétrocession » par modèle (0041).

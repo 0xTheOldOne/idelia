@@ -1,6 +1,9 @@
 <template>
   <div class="editeur-riche">
     <BarreOutilsEditeur
+      v-if="!lectureSeule"
+      class="d-print-none"
+      :avec-insertion-champs="avecInsertionChamps"
       :champs-libres="champsLibres"
       :formats="formats"
       :desactive="lectureSeule || !editeurPret"
@@ -11,11 +14,11 @@
       @nouveau-champ="$emit('nouveau-champ')"
     />
 
-    <p class="editeur-riche__legende">
+    <p v-if="avecInsertionChamps" class="editeur-riche__legende">
       En couleur : rempli automatiquement. En pointillés : demandé lors de la création du document.
     </p>
 
-    <div class="editeur-riche__aide">
+    <div v-if="avecInsertionChamps" class="editeur-riche__aide">
       <button
         type="button"
         class="btn btn-link editeur-riche__aide-bouton"
@@ -39,7 +42,7 @@
       </div>
     </div>
 
-    <div v-if="avertissement" class="alert alert-warning editeur-riche__avertissement" role="status">
+    <div v-if="avertissement" class="alert alert-warning editeur-riche__avertissement d-print-none" role="status">
       <PhWarning :size="20" aria-hidden="true" />
       <span class="editeur-riche__avertissement-texte">{{ avertissement }}</span>
       <button type="button" class="btn-close" aria-label="Fermer l'avertissement" @click="avertissement = ''"></button>
@@ -85,6 +88,8 @@ export default {
     /** Champs à compléter du modèle (`{ cle, libelle, type }`), pour libellés et menu. */
     champsLibres: { type: Array, default: () => [] },
     lectureSeule: { type: Boolean, default: false },
+    /** Menu « Insérer un champ » dans la barre (faux pour un document généré). */
+    avecInsertionChamps: { type: Boolean, default: true },
     /** Nom accessible de la zone de texte. */
     libelleAccessible: { type: String, default: '' },
   },

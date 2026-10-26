@@ -245,6 +245,9 @@ $impression-taille-texte-petite: 7.5pt;
 $impression-taille-titre: 18pt;
 $impression-taille-sous-titre: 12pt;
 $impression-hauteur-logo: 20mm;
+$impression-marge-interieure-document: 10mm; // s'ajoute aux 10 mm de @page : 20 mm au total (0042)
+$impression-taille-texte-document: 11pt; // texte d'un document contractuel (0042)
+$impression-hauteur-logo-document: 18mm; // logo de l'en-tête d'un document (0042)
 $impression-fond-repere-dimanche: clair('fond-clair'); // ligne de dimanche grisée
 
 // ---------------------------------------------------------------------------

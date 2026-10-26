@@ -96,6 +96,15 @@
                 <PhShootingStar :size="18" aria-hidden="true" />
                 <span class="d-md-none" aria-hidden="true">Souhaits</span>
               </router-link>
+              <router-link
+                class="btn btn-outline-secondary equipe-bouton-icone equipe-bouton-contrats"
+                title="Contrats et avenants"
+                :aria-label="`Contrats et avenants de ${nomComplet(personne)}`"
+                :to="{ name: 'contrats-personne', params: { id: personne.id } }"
+              >
+                <PhSignature :size="18" aria-hidden="true" />
+                <span class="d-md-none" aria-hidden="true">Contrats et avenants</span>
+              </router-link>
               <button
                 type="button"
                 class="btn btn-outline-danger equipe-bouton-icone equipe-bouton-archiver"
@@ -221,6 +230,7 @@ import {
   PhShootingStar,
   PhArrowLeft,
   PhIdentificationCard,
+  PhSignature,
 } from '@phosphor-icons/vue';
 
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
@@ -249,6 +259,8 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * (feature 0040) ferme d'abord la consultation, puis ouvre la fiche sur
  * l'onglet correspondant après l'événement de fermeture (`champInitial` :
  * `'coordonnees'` ou `'identifiants'`, payload de l'événement `modifier`).
+ *
+ * Contrats (feature 0042) : l'icône signature ouvre `/contrats/<id>` (documents de la personne).
  *
  * Liens profonds (feature 0027, envoi du planning par e-mail), paramètres
  * d'URL de `/equipe` :
@@ -279,6 +291,7 @@ export default {
     PhShootingStar,
     PhArrowLeft,
     PhIdentificationCard,
+    PhSignature,
     DialogueConfirmation,
     ModaleInformationsUtiles,
     FormulairePersonne,
@@ -545,6 +558,11 @@ export default {
 // « Archiver » retire la personne de la liste active : écarté des autres actions
 // (en plus de sa couleur), relecture ui-ux 0030.
 .equipe-bouton-archiver {
+  margin-left: t.$espace-3;
+}
+
+// « Contrats et avenants » forme un groupe à part, entre la fiche et l'archivage (0042).
+.equipe-bouton-contrats {
   margin-left: t.$espace-3;
 }
 

@@ -1,6 +1,8 @@
 <template>
   <ModaleBase :visible="visible" :titre="titre" @fermeture="$emit('annuler')">
-    <p class="mb-0">{{ message }}</p>
+    <p :class="$slots.default ? 'mb-3' : 'mb-0'">{{ message }}</p>
+    <!-- Contenu complémentaire facultatif (ex. un champ de saisie). -->
+    <slot />
 
     <template #pied>
       <button type="button" class="btn btn-outline-secondary" @click="$emit('annuler')">
@@ -25,6 +27,8 @@ import ModaleBase from '@/components/communs/ModaleBase.vue';
  * La fermeture initiée par Bootstrap (`@fermeture` — croix, Échap, clic hors
  * fenêtre) équivaut toujours à **Annuler** : c'est un choix non destructif,
  * jamais une confirmation implicite.
+ *
+ * Slot par défaut facultatif : contenu affiché sous le message (ex. une date à saisir).
  */
 export default {
   name: 'DialogueConfirmation',

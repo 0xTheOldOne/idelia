@@ -40,7 +40,7 @@ Idelia/
     │   ├── recapMensuel.js     # récap par mois et par personne : grandes/petites tournées, jours travaillés, dépassement du rythme [0024]
     │   ├── souhaitsNonRespectes.js # localise les souhaits non respectés (violations PREFERENCE_*) sur les affectations, textes de l'indicateur [0025]
     │   ├── trameWeekend.js     # weekends travaillés / de repos d'une trame « un weekend sur X » [0022]
-    │   ├── contrats/           # modèles de contrats : catalogue des marqueurs, Delta, remplacement [0041]
+    │   ├── contrats/           # modèles de contrats : catalogue des marqueurs, Delta, remplacement [0041] ; documents.js : génération, statuts, en-tête figé, écart de taux [0042]
     │   ├── calendrier/         # repères calendaires, logique pure, aucun fetch [0023]
     │   │   ├── joursFeries.js  # 11 fériés nationaux, Pâques par algorithme
     │   │   ├── vacancesScolaires.js # zones, années scolaires, normalisation de la réponse API et du cache, messages
@@ -80,11 +80,13 @@ Idelia/
     │   ├── PlanningView.vue
     │   ├── DiffusionView.vue   # aperçu imprimable /planning/:id/diffusion [0012]
     │   ├── FeuilleDeRouteView.vue  # relais matin/après-midi depuis un PDF Vega [0033]
+    │   ├── ContratsView.vue    # documents d'une personne : liste, nouveau document, archivage [0042]
+    │   ├── DocumentContratView.vue # feuille A4 d'un document : édition, signature, impression [0042]
     │   └── ParametresView.vue
     │
     ├── components/             # composants réutilisables
     │   ├── communs/            # boutons, champs, modale, confirmation, icône, pastille de tournée [0029]…
-    │   ├── contrats/           # modèles de contrats : liste, éditeur riche, barre d'outils, marqueurs [0041]
+    │   ├── contrats/           # modèles de contrats (liste, éditeur riche, barre d'outils, marqueurs) [0041] et documents (FeuilleDocument, EnTeteCabinet, BadgeStatutDocument, ListeDocumentsPersonne, ModaleNouveauDocument, ChampSaisieDocument) [0042]
     │   ├── cabinet/            # blocs de la page Cabinet : identité, logo, jours d'ouverture, créneaux, rythme [0039]
     │   ├── parametres/         # blocs de Paramètres : sauvegarde, sauvegarde automatique, BlocVacancesScolaires.vue [0023], BlocApparence.vue [0038]
     │   ├── equipe/

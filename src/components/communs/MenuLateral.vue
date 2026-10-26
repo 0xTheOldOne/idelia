@@ -102,6 +102,7 @@ import {
   PhCalendarBlank,
   PhPath,
   PhFileText,
+  PhSignature,
   PhGear,
   PhCaretDoubleLeft,
   PhMoon,
@@ -141,6 +142,7 @@ export default {
     PhCalendarBlank,
     PhPath,
     PhFileText,
+    PhSignature,
     PhGear,
     PhCaretDoubleLeft,
     PhMoon,
@@ -191,8 +193,8 @@ export default {
         {
           nom: 'contrats',
           titre: 'Contrats',
-          // « Documents » (`/contrats`, `PhSignature`) sera inséré en tête par 0042.
           items: [
+            { nom: 'contrats', chemin: '/contrats', libelle: 'Documents', icone: 'PhSignature' },
             {
               nom: 'modeles-contrats',
               chemin: '/modeles-contrats',

@@ -1,6 +1,6 @@
 # Feature 0042 — Documents contractuels
 
-- **Statut** : À faire
+- **Statut** : Fait
 - **Dépend de** :
   - `0041` (modèles de contrats) : module Vuex `contrats` (`{ modeles, documents }`, getters `modeleById`, `modelesActifs`, `documents`), collection racine `documentsContrats` **déjà persistée vide en v13**, domaine pur `src/domain/contrats/` (`construireContexte`, `valeurMarqueur`, `remplacerMarqueurs`, `marqueursNonResolus` dans `marqueurs.js` ; `estDeltaModeleValide`, `clesMarqueursUtilisees` dans `delta.js` ; `estCleMarqueurValide`, `libelleMarqueur`, `estChampLibre` dans `catalogueMarqueurs.js`), champs libres `ChampLibre { cle: 'saisie.<GUID>', libelle, type }` avec `TYPES_CHAMP_LIBRE` = `'TEXTE'|'DATE'|'NOMBRE'|'TAUX_RETROCESSION'`, composant `EditeurRiche.vue` (Quill chargé à la demande par `src/adaptateurs/editeurRiche.js`), styles `_editeur-riche.scss`, enregistrement explicite des modèles (bouton, Ctrl+S, garde de sortie), groupe de menu « Contrats » (avec « Modèles » seulement) ;
   - et donc `0039` (identité du cabinet : `nomCabinet`, `adresseCabinet` (`AdressePostale`), `logo` ; `src/domain/adresse.js` : `normaliserAdresse`, `lignesAdresse`, `adresseSurUneLigne` ; `src/domain/cabinet.js` : `estLogoValide`, `LOGO_LONGUEUR_MAX` ; validation partagée `REGLES_ADRESSE` / `controlerAdresse`, contrôleur `logo`) et `0040` (`Personne.adresse`, `dateNaissance`) ;

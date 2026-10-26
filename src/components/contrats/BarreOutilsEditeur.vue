@@ -44,6 +44,7 @@
     </div>
 
     <MenuInsererChamp
+      v-if="avecInsertionChamps"
       :champs-libres="champsLibres"
       :desactive="desactive"
       @choisir="(cle) => $emit('choisir', cle)"
@@ -84,6 +85,8 @@ export default {
     /** Formats du texte sous le curseur (`{ bold: true, header: 1… }`). */
     formats: { type: Object, default: () => ({}) },
     desactive: { type: Boolean, default: false },
+    /** Affiche le menu « Insérer un champ » (faux pour un document déjà généré). */
+    avecInsertionChamps: { type: Boolean, default: true },
   },
   emits: ['format', 'annuler', 'retablir', 'choisir', 'nouveau-champ'],
   computed: {

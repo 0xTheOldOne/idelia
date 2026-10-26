@@ -20,7 +20,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   "plannings": [ /* Planning[] (affectations imbriquées) */ ],
   "vacancesScolaires": [ /* cache des vacances : { zone, anneeScolaire, recupereLe, periodes[] }[] */ ],
   "modelesContrats": [ /* ModeleContrat[] (champsLibres imbriqués, contenu = Delta Quill, jamais de HTML) */ ],
-  "documentsContrats": [ /* réservé à 0042, toujours vide en 0041 */ ]
+  "documentsContrats": [ /* DocumentContrat[] (0042, sans migration : v13 ; contenu = Delta sans embed, valeursSaisies imbriquées, enteteCabinet = { nomCabinet, adresseCabinet } sans logo) */ ]
 }
 ```
 

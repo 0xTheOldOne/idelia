@@ -293,7 +293,7 @@ const MOIS_LONGS_FR = [
 function formatDateLongueFr(dateStr) {
   if (!estDateValide(dateStr)) return '';
   const [annee, mois, jour] = dateStr.split('-').map(Number);
-  return `${jour} ${MOIS_LONGS_FR[mois - 1]} ${annee}`;
+  return `${jour === 1 ? '1er' : jour} ${MOIS_LONGS_FR[mois - 1]} ${annee}`;
 }
 
 export const dateUtil = {

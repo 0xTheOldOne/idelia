@@ -42,6 +42,19 @@ const routes = [
     name: 'modele-contrat',
     component: () => import('@/views/ModeleContratView.vue'),
   },
+  // Documents (0042) : `contrats` et `contrats-personne` partagent `ContratsView` ;
+  // rechargement direct fiable (le bootstrap hydrate le store avant le montage, motif `souhaits`).
+  { path: '/contrats', name: 'contrats', component: () => import('@/views/ContratsView.vue') },
+  {
+    path: '/contrats/:id',
+    name: 'contrats-personne',
+    component: () => import('@/views/ContratsView.vue'),
+  },
+  {
+    path: '/contrats/:id/documents/:documentId',
+    name: 'document-contrat',
+    component: () => import('@/views/DocumentContratView.vue'),
+  },
   { path: '/parametres', name: 'parametres', component: ParametresView },
 ];
 
