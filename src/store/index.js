@@ -5,6 +5,7 @@ import { TAILLE_MAX_FICHIER_OCTETS } from '@/domain/validationImport.js';
 import { CURRENT_SCHEMA_VERSION, preparerDocument } from '@/storage/migrations.js';
 import { storageRepository } from '@/storage/storageRepository.js';
 import { dateUtil } from '@/domain/utils/dates.js';
+import { logoNonConforme, MESSAGE_LOGO_NON_REPRIS } from '@/domain/cabinet.js';
 
 import cabinet from './modules/cabinet';
 import personnes from './modules/personnes';
@@ -531,12 +532,15 @@ export default createStore({
      * capturée et renvoyée sous forme de résultat exploitable par la
      * future UI d'import (feature 0008).
      *
+     * Logo du cabinet (0039) : un logo non conforme n'empêche jamais l'import ; il est
+     * remplacé par `null` (`fromSaveDocument`) et un toast d'avertissement le signale.
+     *
      * @param {import('vuex').ActionContext} context
      * @param {File|string} fichierOuTexte - Fichier (`File`, avec `.text()`)
      *   ou chaîne JSON directe.
      * @returns {Promise<{ ok: boolean, message: string, erreurs?: string[] }>}
      */
-    async importer({ commit, state }, fichierOuTexte) {
+    async importer({ commit, dispatch, state }, fichierOuTexte) {
       const MESSAGE_GENERIQUE = "L'import a échoué. Le fichier n'a pas pu être utilisé ; vos données actuelles sont conservées.";
       try {
         // Pré-contrôle sans lecture pour un `File` ; une chaîne est contrôlée après lecture.
@@ -569,6 +573,10 @@ export default createStore({
           return { ok: false, message: preparation.message, erreurs: preparation.erreurs };
         }
 
+        // Logo non conforme (0039) : jamais bloquant, `fromSaveDocument` le ramène à `null`
+        // et on prévient l'utilisatrice après l'enregistrement.
+        const logoEcarte = logoNonConforme(preparation.doc.cabinet?.logo);
+
         commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
         // REPLACE_ALL est filtrée par le plugin, mais les données ont changé :
         // le fichier actif (conservé) sera mis à jour au prochain enregistrement.
@@ -580,6 +588,10 @@ export default createStore({
         await flushImmediat({ state, commit });
         commit('SET_DERNIERE_SAUVEGARDE', new Date().toISOString());
         commit('SET_STATUT_SAUVEGARDE', 'ENREGISTRE');
+
+        if (logoEcarte) {
+          dispatch('notifications/notifier', { type: 'avertissement', message: MESSAGE_LOGO_NON_REPRIS }, { root: true });
+        }
 
         return { ok: true, message: 'Import réussi.' };
       } catch (e) {

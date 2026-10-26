@@ -1,6 +1,6 @@
 # Feature 0039 — Page Cabinet et menu
 
-- **Statut** : À faire
+- **Statut** : Fait
 - **Dépend de** : `0003` (écran Paramètres : brouillon local + Vuelidate + `cabinet/majParametres`, rubriques Jours d'ouverture, Créneaux de travail, Rythme de travail), `0015` (menu latéral repliable `MenuLateral.vue`, état actif `estActif()`, infobulles en menu replié et en fenêtre étroite `App.vue`), `0038` (bouton « Passer en mode sombre » du pied de menu, `.menu-theme`, dont on reprend le style pour Paramètres).
 - **Prépare** : `0040` (coordonnées des personnes), `0041` (modèles de contrats, marqueurs `cabinet.*`, groupe de menu « Contrats »), `0042` (documents contractuels : **en-tête logo + nom + adresse du cabinet**).
 - **ADR liés** : [0005](../docs/adr/0005-persistance-localstorage-derriere-repository.md) (persistance via `storageRepository`), [0006](../docs/adr/0006-sauvegarde-partage-par-export-import-json.md) (le logo voyage dans la sauvegarde), [0008](../docs/adr/0008-moteur-planification-module-pur.md) (validation pure dans `src/domain/`), [0011](../docs/adr/0011-validation-vuelidate-vue-debounce.md) (Vuelidate, vue-debounce), [0013](../docs/adr/0013-icones-phosphor.md) (icône `PhBuildings`), [0015](../docs/adr/0015-bootstrap-librairie-composants-scss.md), [0016](../docs/adr/0016-router-mode-hash-pour-pages.md) (route `/cabinet` en mode hash). **Aucun nouvel ADR** : le traitement d'image passe par `<canvas>`, API native du navigateur, sans dépendance.

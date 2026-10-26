@@ -15,6 +15,8 @@
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
+import { adresseVide, normaliserAdresse } from '@/domain/adresse.js';
+import { normaliserLogo } from '@/domain/cabinet.js';
 
 // ---------------------------------------------------------------------------
 // Enums / constantes du domaine (codes stables, MAJUSCULES_SNAKE)
@@ -93,6 +95,8 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
 /**
  * @typedef {Object} ParametresCabinet
  * @property {string} nomCabinet
+ * @property {import('@/domain/adresse.js').AdressePostale} adresseCabinet - Adresse postale du cabinet (0039).
+ * @property {(string|null)} logo - Data URL PNG/JPEG (0039), `null` = aucun logo.
  * @property {number[]} joursOuverture - Jours ISO 1-7 (1 = lundi … 7 = dimanche).
  * @property {string[]} creneauxActifs - Sous-ensemble de {@link CRENEAUX}.
  * @property {number} reposHebdoMin
@@ -147,6 +151,8 @@ export function etatParDefaut() {
     cabinet: {
       parametres: {
         nomCabinet: '',
+        adresseCabinet: adresseVide(),
+        logo: null,
         joursOuverture: [1, 2, 3, 4, 5, 6],
         creneauxActifs: ['MATIN', 'APRES_MIDI'],
         reposHebdoMin: 2,
@@ -224,6 +230,10 @@ export function fromSaveDocument(doc) {
         couleursParDefaut: COULEURS_PAR_DEFAUT,
         // Zone inconnue → `null`, jamais bloquant (0023).
         zoneScolaire: normaliserZoneScolaire(doc.cabinet?.zoneScolaire),
+        adresseCabinet: normaliserAdresse(doc.cabinet?.adresseCabinet),
+        // Assainissement (0039) : un logo non conforme ne bloque jamais l'import, il est
+        // écarté ici et l'action `importer` le signale.
+        logo: normaliserLogo(doc.cabinet?.logo),
       },
     },
     // `identifiants` : forme garantie (6 clés), jamais bloquant (0030).

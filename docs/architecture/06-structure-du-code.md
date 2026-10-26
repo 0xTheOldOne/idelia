@@ -28,6 +28,7 @@ Idelia/
     │
     ├── domain/                 # LOGIQUE MÉTIER PURE (aucun import Vue/Vuex)
     │   ├── schema.js           # enums, valeurs par défaut, toSaveDocument/fromSaveDocument, verifierIntegrite
+    │   ├── adresse.js          # adresse postale générique : forme, normalisation, code postal, affichage (cabinet 0039, personnes 0040)
     │   ├── scheduling/         # moteur de planification (voir 05)
     │   ├── remplacement.js     # identification des remplaçantes (estRemplacante) [0021]
     │   ├── initialesVega.js    # règles du champ Personne.initialesVega [0034]
@@ -62,12 +63,14 @@ Idelia/
     │
     ├── adaptateurs/            # I/O navigateur + bibliothèques tierces (jamais de persistance : c'est le rôle de storage/)
     │   ├── lireGlyphesPdf.js   # lecture PDF via pdfjs-dist, chargé à la demande [ADR 0019, 0033]
+    │   ├── imageLogo.js        # préparation du logo du cabinet : décodage, réduction ≤ 400 px, réencodage PNG/JPEG via canvas [0039]
     │   ├── calendrierScolaire.js # lecture GET de l'API du calendrier scolaire, seul accès réseau [ADR 0020, 0023]
     │   ├── themeNavigateur.js  # prefers-color-scheme, attribut data-bs-theme, bascule à l'impression [0038, ADR 0022]
     │   └── pressePapiers.js    # copie de texte (API Clipboard) [0027]
     │
     ├── views/                  # écrans (un par route)
     │   ├── AccueilView.vue
+    │   ├── CabinetView.vue     # identité du cabinet et règles d'organisation [0039]
     │   ├── EquipeView.vue
     │   ├── TourneesView.vue
     │   ├── AbsencesView.vue
@@ -78,6 +81,7 @@ Idelia/
     │
     ├── components/             # composants réutilisables
     │   ├── communs/            # boutons, champs, modale, confirmation, icône, pastille de tournée [0029]…
+    │   ├── cabinet/            # blocs de la page Cabinet : identité, logo, jours d'ouverture, créneaux, rythme [0039]
     │   ├── parametres/         # blocs de Paramètres : sauvegarde, sauvegarde automatique, BlocVacancesScolaires.vue [0023], BlocApparence.vue [0038]
     │   ├── equipe/
     │   ├── tournees/

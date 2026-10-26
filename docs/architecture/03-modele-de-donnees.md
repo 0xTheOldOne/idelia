@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 10,             // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession)
+  "schemaVersion": 11,             // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession, v11 = cabinet.adresseCabinet + cabinet.logo)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -30,6 +30,8 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
+    "adresseCabinet": { "ligne1": "12 rue des Lilas", "ligne2": "", "codePostal": "69003", "ville": "Lyon" },
+    "logo": null,
     "joursOuverture": [1, 2, 3, 4, 5, 6],
     "creneauxActifs": ["MATIN", "APRES_MIDI"],
     "reposHebdoMin": 2, "maxJoursConsecutifs": 6, "premierJourSemaine": 1,
@@ -133,6 +135,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[7]` (v7 → v8)** — [feature 0030](../../features/0030-personne-informations-professionnelles.md) : chaque `Personne` reçoit `identifiants: normaliserIdentifiants(personne.identifiants)` (idempotent : absent → 6 `null` ; valeurs existantes normalisées ; clés inconnues ignorées). Les autres entités sont inchangées. Un bloc absent ou non objet dans un fichier déjà en v8 est normalisé par `fromSaveDocument`, sans erreur.
 - **`MIGRATIONS[8]` (v8 → v9)** — [feature 0023](../../features/0023-reperes-calendaires.md), [ADR 0020](../adr/0020-exception-reseau-api-calendrier-scolaire.md) : `cabinet.zoneScolaire` = `normaliserZoneScolaire(...)` (idempotent : absent ou inconnu → `null`) et racine `vacancesScolaires` = `normaliserCacheVacances(...)` (idempotent : absent → `[]` ; entrées invalides écartées). Les autres entités sont inchangées. `verifierIntegrite` n'est pas modifiée : le cache ne bloque jamais une ouverture.
 - **`MIGRATIONS[9]` (v9 → v10)** : chaque `Personne` reçoit `tauxRetrocession: personne.tauxRetrocession ?? null` (idempotent). `null` = taux non renseigné. Les autres entités sont inchangées.
+- **`MIGRATIONS[10]` (v10 → v11)** — [feature 0039](../../features/0039-page-cabinet-et-menu.md) : `cabinet.adresseCabinet` = `normaliserAdresse(...)` (idempotent : absent ou malformé → 4 chaînes vides) et `cabinet.logo = cabinet.logo ?? null`. Les autres entités sont inchangées. Un logo non conforme ne bloque jamais l'import : `fromSaveDocument` le ramène à `null` et `importer` affiche un avertissement.
 
 ## Intégrité référentielle
 

@@ -22,6 +22,7 @@ import {
   verifierIntegrite,
 } from '@/domain/schema.js';
 import { dateUtil } from '@/domain/utils/dates.js';
+import { LONGUEURS_MAX_ADRESSE } from '@/domain/adresse.js';
 
 /** Taille maximale d'un fichier de sauvegarde importé (octets) : 10 Mo. */
 export const TAILLE_MAX_FICHIER_OCTETS = 10 * 1024 * 1024;
@@ -145,8 +146,32 @@ function controlerCollection(liste, regles, libelle, erreurs, { plafond, sous = 
   });
 }
 
+/** Règles d'une AdressePostale (adresse du cabinet 0039, adresse des personnes 0040). */
+const REGLES_ADRESSE = {
+  ligne1: { type: 'texte', max: LONGUEURS_MAX_ADRESSE.ligne1 },
+  ligne2: { type: 'texte', max: LONGUEURS_MAX_ADRESSE.ligne2 },
+  codePostal: { type: 'texte', max: LONGUEURS_MAX_ADRESSE.codePostal },
+  ville: { type: 'texte', max: LONGUEURS_MAX_ADRESSE.ville },
+};
+
+/**
+ * Contrôle une adresse postale : si `valeur` est un objet, vérifie ses champs
+ * (REGLES_ADRESSE). Une valeur non objet est déjà signalée par la règle `objet` du parent.
+ * Le format du code postal n'est pas contrôlé à l'import (tolérance), seulement sa longueur.
+ * @param {*} valeur
+ * @param {string} contexte - Libellé du contexte pour les messages.
+ * @param {string[]} erreurs - Liste d'erreurs alimentée.
+ */
+function controlerAdresse(valeur, contexte, erreurs) {
+  if (estObjet(valeur)) {
+    controlerChamps(valeur, REGLES_ADRESSE, contexte, erreurs);
+  }
+}
+
+// `logo` volontairement absent : jamais bloquant, assaini par `normaliserLogo` (0039).
 const REGLES_CABINET = {
   nomCabinet: { type: 'texte' },
+  adresseCabinet: { type: 'objet' },
   joursOuverture: { type: 'tableau', max: 7, requis: true, elements: 'jourIso', libelleElements: "les jours d'ouverture" },
   creneauxActifs: { type: 'tableau', max: 3, requis: true, elements: 'creneau', libelleElements: 'les créneaux actifs' },
   reposHebdoMin: { type: 'entier', min: 0, max: 7 },
@@ -317,6 +342,7 @@ function verifierStructure(doc) {
     erreurs.push('Le champ « cabinet » doit être un objet.');
   } else {
     controlerChamps(doc.cabinet, REGLES_CABINET, 'Réglages du cabinet', erreurs);
+    controlerAdresse(doc.cabinet.adresseCabinet, 'Adresse du cabinet', erreurs);
   }
   if (doc.vacancesScolaires !== undefined && doc.vacancesScolaires !== null
     && (!Array.isArray(doc.vacancesScolaires) || doc.vacancesScolaires.length > MAX.vacances)) {

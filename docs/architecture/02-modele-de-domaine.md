@@ -186,7 +186,9 @@ Modèle **segments** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segme
 
 | champ | type | oblig. | notes |
 |---|---|---|---|
-| nomCabinet | string | non | |
+| nomCabinet | string | non | éditable dans Cabinet (0039) ; max 100 caractères à la saisie |
+| adresseCabinet | `AdressePostale` | oui (forme garantie) | adresse du cabinet (0039) ; défaut : 4 chaînes vides ; voir `src/domain/adresse.js` |
+| logo | string | null | oui (`null` possible) | data URL `data:image/png;base64,…` ou `data:image/jpeg;base64,…`, ≤ 200 000 caractères, ≤ 400 px de côté ; valeur non conforme ramenée à `null` à l'import (0039) |
 | joursOuverture | number[1..7] | oui | défaut `[1,2,3,4,5,6]` |
 | creneauxActifs | Creneau[] | oui | défaut `[MATIN, APRES_MIDI]` |
 | reposHebdoMin | integer | oui | défaut `2` (jours de repos/semaine) |
@@ -195,6 +197,17 @@ Modèle **segments** ([ADR 0017](../adr/0017-modelisation-tournees-coupees-segme
 | couleursParDefaut | string[] | non | palette de suggestion |
 | zoneScolaire | string \| null | oui (`null` possible) | code de zone des vacances scolaires (`ZONE_A`, `ZONE_B`, `ZONE_C`, `CORSE`, `GUADELOUPE`, `MARTINIQUE`, `GUYANE`, `REUNION`, `MAYOTTE`) ; défaut `null` = aucune zone, aucune requête réseau ; valeur inconnue ramenée à `null` ([feature 0023](../../features/0023-reperes-calendaires.md)) |
 | updatedAt | ISO UTC | oui | |
+
+### AdressePostale (structure de valeur partagée)
+
+Utilisée par le cabinet (0039) et, en 0040, par les personnes. Module `src/domain/adresse.js`.
+
+| champ | type | notes |
+|---|---|---|
+| ligne1 | string | max 150 caractères |
+| ligne2 | string | complément, max 150 caractères |
+| codePostal | string | max 10 à la saisie ; vide ou 5 chiffres (espaces retirés) |
+| ville | string | max 100 caractères |
 
 ### VacancesScolaires (cache, racine du SaveDocument)
 

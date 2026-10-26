@@ -11,10 +11,11 @@ import { genId } from '@/domain/utils/id.js';
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
+import { normaliserAdresse } from '@/domain/adresse.js';
 import { verifierVersion, verifierDocument } from '@/domain/validationImport.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 11;
 
 /** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
 const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -321,6 +322,26 @@ MIGRATIONS[9] = (doc) => {
     )
     : doc.personnes;
   return { ...doc, personnes };
+};
+
+/**
+ * Migration v10 → v11 (feature 0039) : identité du cabinet.
+ *
+ * - `cabinet` (si objet) : `adresseCabinet` normalisée (idempotent : absent ou
+ *   malformé → 4 chaînes vides) et `logo: cabinet.logo ?? null`.
+ * - Un `logo` présent mais non conforme n'est PAS corrigé ici : il est écarté
+ *   par `fromSaveDocument` (jamais bloquant).
+ * - Le reste du document est inchangé.
+ *
+ * @param {object} doc - Document de version 10.
+ * @returns {object} Document équivalent en version 11 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[10] = (doc) => {
+  const cabinet =
+    doc.cabinet && typeof doc.cabinet === 'object' && !Array.isArray(doc.cabinet)
+      ? { ...doc.cabinet, adresseCabinet: normaliserAdresse(doc.cabinet.adresseCabinet), logo: doc.cabinet.logo ?? null }
+      : doc.cabinet;
+  return { ...doc, cabinet };
 };
 
 /**

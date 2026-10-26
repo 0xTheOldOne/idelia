@@ -57,3 +57,57 @@
   white-space: nowrap;
   overflow: hidden;
 }
+
+/// Case à cocher + libellé : cible cliquable confortable (~44 px), libellé
+/// entier cliquable (feature 0039, repris de Paramètres).
+@mixin case-confortable {
+  display: flex;
+  align-items: center;
+  min-height: t.$cible-cliquable-min;
+  padding-left: 0;
+
+  // Bootstrap positionne la case via `float` + marge négative : on neutralise
+  // cette technique au profit d'un simple flexbox.
+  .form-check-input {
+    float: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0;
+    margin-left: 0;
+    margin-right: t.$espace-2;
+    flex-shrink: 0;
+  }
+
+  .form-check-label {
+    cursor: pointer;
+  }
+}
+
+/// `<legend>` portant un vrai titre `<h2>` : on neutralise le style par défaut
+/// du navigateur en gardant le groupement `fieldset`/`legend`.
+@mixin legende-titre {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin-bottom: t.$espace-3;
+  border: 0;
+
+  h2 {
+    margin-bottom: 0;
+  }
+}
+
+/// Message d'erreur sous un champ ou un groupe de cases (icône + texte).
+@mixin message-erreur-champ {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$espace-1;
+  margin: t.$espace-2 0 0;
+  color: t.$couleur-erreur;
+  font-size: t.$taille-texte-petite;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 0.15em;
+  }
+}

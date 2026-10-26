@@ -7,6 +7,7 @@ Idelia s'organise autour d'un petit nombre d'écrans clairs, accessibles depuis 
 | Route | Écran | Rôle | Feature |
 |---|---|---|---|
 | `/` | **Accueil** | Vue d'ensemble, actions rapides, état de la sauvegarde | `0013` |
+| `/cabinet` | **Cabinet** | Identité du cabinet (nom, adresse, logo des en-têtes de documents), jours d'ouverture, créneaux de travail, rythme de travail | `0003`, `0039` |
 | `/equipe` | **Équipe** | Gérer les personnes du cabinet (ajout/édition/désactivation, rythme mensuel, remplaçant(e) rattaché(e), informations professionnelles : onglet de la fiche et consultation « Informations utiles ») | `0004`, `0020`, `0030` |
 | `/equipe/:id/souhaits` | **Souhaits** | Souhaits & préférences d'une personne | `0005` |
 | `/tournees` | **Tournées** | Gérer les tournées et leurs horaires | `0006` |
@@ -14,11 +15,11 @@ Idelia s'organise autour d'un petit nombre d'écrans clairs, accessibles depuis 
 | `/planning` | **Planning** | Générer, éditer (drag & drop), voir les conflits et les souhaits non respectés, récap mensuel par personne | `0010`, `0011`, `0023`, `0024`, `0025` |
 | `/planning/:id/diffusion` | **Diffusion** | Impression / export PDF (repères : dimanches, fériés « F », vacances « V »), envoi par e-mail à l'équipe (messagerie de l'utilisatrice) | `0012`, `0023`, `0027` |
 | `/feuille-de-route` | **Feuille de route** | Repérer, depuis la liste des séances exportée de Vega (PDF), les patients soignés le matin et l'après-midi par deux infirmières différentes, avec qui reverse combien à qui, patient par patient et en bilan de la période (imprimable, sans nom de patient ; noms via les initiales Vega de l'équipe) — lu sur le poste, rien n'est conservé | `0033`, `0034`, `0035` |
-| `/parametres` | **Paramètres** | Réglages cabinet, **vacances scolaires** (zone, mise à jour des dates), sauvegarde / import / export | `0003`, `0008`, `0023` |
+| `/parametres` | **Paramètres** | Affichage, apparence, **vacances scolaires** (zone, mise à jour des dates), sauvegarde / import / export, sauvegarde automatique | `0003`, `0008`, `0019`, `0023`, `0038`, `0039` |
 
 ## Principes de navigation
 
-- **Menu latéral toujours visible** (déplié : icônes Phosphor + libellés, groupés « Pilotage » / « Planning » ; replié : rail d'icônes seules avec infobulles au survol/focus). Repli **réversible** et **mémorisé** d'une session à l'autre ; sous ~992 px, repli automatique en rail. Icônes Phosphor ([ADR 0013](../adr/0013-icones-phosphor.md)) ; l'écran courant est mis en évidence par **fond + barre d'accent + graisse** (`aria-current`), jamais par la seule couleur.
+- **Menu latéral toujours visible** (déplié : icônes Phosphor + libellés, Accueil seul en tête (sans titre), puis groupes « Pilotage » / « Planning », **Paramètres en pied de menu** sous la bascule de thème, groupe « Contrats » à venir (0041) ; replié : rail d'icônes seules avec infobulles au survol/focus). Repli **réversible** et **mémorisé** d'une session à l'autre ; sous ~992 px, repli automatique en rail. Icônes Phosphor ([ADR 0013](../adr/0013-icones-phosphor.md)) ; l'écran courant est mis en évidence par **fond + barre d'accent + graisse** (`aria-current`), jamais par la seule couleur.
 - **Une action principale par écran**, visuellement dominante (ex. « Générer le planning »).
 - **Fil d'Ariane** ou titre d'écran explicite en permanence : l'utilisateur sait toujours où il est.
 - **Actions destructrices** protégées par confirmation ; retour/annulation possibles.
@@ -38,6 +39,10 @@ Les principes d'ergonomie détaillés sont dans [`08-principes-ux-ergonomie.md`]
 
 - **Planning** : repères dans l'en-tête de ligne du jour uniquement (dimanche et férié : fond teinté, « Férié : Toussaint » ; vacances : barre à gauche et ligne « Vacances »). Les vacances manquantes sont récupérées en arrière-plan, sans bloquer l'écran.
 - **Diffusion / impression** : marqueurs « F » (férié) et « V » (vacances) lisibles en noir et blanc, légende « Repères » ; si la zone est choisie mais les vacances non récupérables, alerte non imprimée avec « Réessayer ».
+
+## Écran Cabinet
+
+Sections dans l'ordre : identité (nom, adresse, logo), jours d'ouverture, créneaux de travail, rythme de travail. Chaque modification est **enregistrée automatiquement**. Le logo (PNG ou JPEG) est réduit à 400 px au plus, soumis à un plafond de poids, inclus dans la sauvegarde/export, et prévisualisé sur fond blanc (rendu des en-têtes de documents).
 
 ## Écran Paramètres : vacances scolaires
 

@@ -10,6 +10,9 @@
  * Action `majParametres` (feature 0003) : met à jour les paramètres via une
  * fusion immuable, en réutilisant la mutation `REPLACE` (aucune nouvelle
  * mutation).
+ *
+ * Identité du cabinet (feature 0039) : `adresseCabinet` et `logo` se modifient
+ * aussi via `majParametres` (aucune nouvelle mutation ni action).
  */
 export default {
   namespaced: true,

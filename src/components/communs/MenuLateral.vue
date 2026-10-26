@@ -11,12 +11,12 @@
     <nav class="menu-nav" aria-label="Navigation principale">
       <div
         v-for="(groupe, index) in groupes"
-        :key="groupe.titre"
+        :key="groupe.nom"
         class="menu-groupe"
-        role="group"
-        :aria-labelledby="idTitreGroupe(index)"
+        :role="groupe.titre ? 'group' : null"
+        :aria-labelledby="groupe.titre ? idTitreGroupe(index) : null"
       >
-        <p :id="idTitreGroupe(index)" class="menu-groupe__titre">
+        <p v-if="groupe.titre" :id="idTitreGroupe(index)" class="menu-groupe__titre">
           <span class="menu-groupe__titre-texte">{{ groupe.titre }}</span>
         </p>
         <router-link
@@ -62,6 +62,22 @@
       </button>
     </div>
 
+    <div class="menu-parametres">
+      <router-link
+        :to="itemParametres.chemin"
+        class="menu-item"
+        :class="{ 'menu-item--actif': estActif(itemParametres) }"
+        :aria-current="estActif(itemParametres) ? 'page' : null"
+        :aria-label="itemParametres.libelle"
+        active-class=""
+        exact-active-class=""
+      >
+        <component :is="itemParametres.icone" :size="21" aria-hidden="true" />
+        <span class="menu-item__libelle">{{ itemParametres.libelle }}</span>
+        <span class="menu-item__infobulle">{{ itemParametres.libelle }}</span>
+      </router-link>
+    </div>
+
     <button
       type="button"
       class="menu-bascule"
@@ -79,6 +95,7 @@
 import { mapActions, mapGetters, mapState } from 'vuex';
 import {
   PhHouse,
+  PhBuildings,
   PhUsers,
   PhKanban,
   PhCalendarX,
@@ -116,6 +133,7 @@ export default {
   name: 'MenuLateral',
   components: {
     PhHouse,
+    PhBuildings,
     PhUsers,
     PhKanban,
     PhCalendarX,
@@ -131,9 +149,15 @@ export default {
     return {
       groupes: [
         {
+          nom: 'tete',
+          titre: null,
+          items: [{ nom: 'accueil', chemin: '/', libelle: 'Accueil', icone: 'PhHouse' }],
+        },
+        {
+          nom: 'pilotage',
           titre: 'Pilotage',
           items: [
-            { nom: 'accueil', chemin: '/', libelle: 'Accueil', icone: 'PhHouse' },
+            { nom: 'cabinet', chemin: '/cabinet', libelle: 'Cabinet', icone: 'PhBuildings' },
             { nom: 'equipe', chemin: '/equipe', libelle: 'Équipe', icone: 'PhUsers' },
             { nom: 'tournees', chemin: '/tournees', libelle: 'Tournées', icone: 'PhKanban' },
             {
@@ -145,6 +169,7 @@ export default {
           ],
         },
         {
+          nom: 'planning',
           titre: 'Planning',
           items: [
             {
@@ -159,10 +184,17 @@ export default {
               libelle: 'Feuille de route',
               icone: 'PhPath',
             },
-            { nom: 'parametres', chemin: '/parametres', libelle: 'Paramètres', icone: 'PhGear' },
           ],
         },
+        // Le groupe « Contrats » sera ajouté ici par la feature 0041.
       ],
+      // Paramètres : en pied de menu, sous la bascule de thème.
+      itemParametres: {
+        nom: 'parametres',
+        chemin: '/parametres',
+        libelle: 'Paramètres',
+        icone: 'PhGear',
+      },
     };
   },
   computed: {
@@ -529,6 +561,12 @@ $menu-largeur-repliee: 76px;
   .menu-bascule__icone {
     transition: none;
   }
+}
+
+// Lien Paramètres (0039) : item de menu en pied, sous la bascule de thème.
+.menu-parametres {
+  margin-top: t.$espace-1;
+  padding: 0 t.$espace-2;
 }
 
 // Bascule clair/sombre (0038) : un item de menu (bouton) — hérite du rendu,

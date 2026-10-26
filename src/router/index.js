@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 
 import AccueilView from '@/views/AccueilView.vue';
+import CabinetView from '@/views/CabinetView.vue';
 import EquipeView from '@/views/EquipeView.vue';
 import SouhaitsView from '@/views/SouhaitsView.vue';
 import TourneesView from '@/views/TourneesView.vue';
@@ -18,9 +19,11 @@ import FeuilleDeRouteView from '@/views/FeuilleDeRouteView.vue';
  * (`/planning/:id/diffusion`), même principe de rechargement direct.
  * `feuille-de-route` (feature 0033) est une route sœur de `planning` : écran
  * autonome, sans paramètre, qui ne persiste rien.
+ * `cabinet` (feature 0039) : identité du cabinet et règles d'organisation, sans paramètre.
  */
 const routes = [
   { path: '/', name: 'accueil', component: AccueilView },
+  { path: '/cabinet', name: 'cabinet', component: CabinetView },
   { path: '/equipe', name: 'equipe', component: EquipeView },
   { path: '/equipe/:id/souhaits', name: 'souhaits', component: SouhaitsView },
   { path: '/tournees', name: 'tournees', component: TourneesView },
