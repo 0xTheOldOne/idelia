@@ -1,6 +1,6 @@
 # Feature 0041 — Modèles de contrats
 
-- **Statut** : À faire
+- **Statut** : Fait
 - **Dépend de** :
   - [`0039`](0039-page-cabinet-et-menu.md) (page Cabinet : `ParametresCabinet.nomCabinet`, `ParametresCabinet.adresseCabinet` (`AdressePostale`), `ParametresCabinet.logo` ; module pur `src/domain/adresse.js` (`lignesAdresse`, `adresseSurUneLigne`) ; menu réorganisé ; migration **v10 → v11**) ;
   - [`0040`](0040-coordonnees-des-personnes.md) (coordonnées des personnes : `Personne.adresse` (`AdressePostale`), `Personne.dateNaissance` ; migration **v11 → v12** ; **pas de lieu de naissance**, décision du porteur) ;
@@ -237,7 +237,7 @@ export function clesMarqueursUtilisees(delta) {}
 - `champLibreUtilise(contenu, cle)` → boolean.
 - `champTauxRetrocession(champsLibres)` → le premier `ChampLibre` de type `TAUX_RETROCESSION`, ou `null`. 0042 s'en sert pour son rappel « taux saisi ≠ taux de la fiche ».
 - `peutAjouterTauxRetrocession(champsLibres, cleEnCours)` → `false` si un **autre** champ (clé ≠ `cleEnCours`) a déjà ce type.
-- `estTauxRetrocessionValide(valeur)` → nombre fini dans `BORNES_TAUX_RETROCESSION`. Utilisé par `valeurMarqueur` et par la saisie de 0042.
+- `estTauxSaisiValide(valeur)` (nom distinct de `estTauxRetrocessionValide` de `personnes.js`, qui n'accepte que des entiers) → nombre fini dans `BORNES_TAUX_RETROCESSION`. Utilisé par `valeurMarqueur` et par la saisie de 0042.
 - `normaliserModeleContrat(brut)` : utilisé par `fromSaveDocument`. `champsLibres` absent → `[]` ; `actif` absent → `true`. Il ne réécrit **jamais** le contenu : un contenu invalide a déjà été refusé par la validation.
 
 ### 5.5 `src/domain/contrats/marqueurs.js` (**créer**), fonctions destinées à 0042

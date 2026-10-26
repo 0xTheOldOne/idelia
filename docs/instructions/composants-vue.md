@@ -45,6 +45,7 @@ export default {
 - **Événements** déclarés dans `emits`, nommés en `kebab-case`.
 - **`data()`** ne contient que de l'**état d'UI local** (ouverture d'un panneau, brouillon de formulaire). L'état partagé/persistant vit dans le **store**.
 - **Pas de logique métier dans le composant** : appeler des getters/actions du store, ou des fonctions pures de `src/domain/`. Un composant orchestre l'affichage, il ne calcule pas un planning.
+- **Bibliothèque impérative (Quill…)** : instance hors `data()` (le proxy réactif la casse), affectée en `mounted` et détruite dans `beforeUnmount` ; jamais de `v-html` sur du contenu utilisateur.
 - **Découpage** : préférer des composants petits. Distinguer les composants « écran » (`views/`) des composants réutilisables (`components/`).
 - **Icônes** exclusivement via `@phosphor-icons/vue` ([ADR 0013](../adr/0013-icones-phosphor.md)), toujours accompagnées d'un libellé ou d'un `aria-label`.
 - **Style** : utiliser les **classes/composants Bootstrap** ([ADR 0015](../adr/0015-bootstrap-librairie-composants-scss.md)) pour ce qu'il couvre (grille, boutons, formulaires, modales, utilitaires) ; le SCSS `scoped` du composant sert au spécifique. Pour les composants interactifs, préférer une bascule **Vue simple** plutôt que la JS impérative de Bootstrap quand c'est trivial (voir [style-scss](style-scss.md)).

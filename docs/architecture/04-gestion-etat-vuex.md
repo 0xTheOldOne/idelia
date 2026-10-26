@@ -12,6 +12,7 @@ Le store Vuex ([ADR 0003](../adr/0003-stack-vue-vite-optionsapi-vuex-router.md))
 | `absences` | `{ items: [] }` | `parPersonne`, `validesSur(periode)`, `enConflit(affectation)` | CRUD, `changerStatut` · `REPLACE` |
 | `plannings` | `{ items: [], selectionId }` | `courant`, `affectationsDe(id)`, `besoinsNonCouverts`, `conflits` | CRUD planning + CRUD affectation, `generer`, `verrouiller` · `REPLACE` |
 | `vacancesScolaires` | `{ entrees: [] }` (cache par zone et année scolaire) | `entrees`, `zoneCourante`, `periodesZoneCourante`, `entreesZoneCourante` | `assurerCouverture`, `mettreAJour`, `changerZone` · `ENREGISTRER`, `GARDER_ZONE`, `REPLACE` |
+| `contrats` | `{ modeles: [], documents: [] }` (`documents` réservé à 0042) | `modeleById`, `modelesActifs`, `modelesArchives`, `documents` | `assurerModelesDeDepart`, `creerModele`, `enregistrerModele`, `renommerModele`, `dupliquerModele`, `archiverModele`, `restaurerModele` · `REPLACE`, `ADD_MODELE`, `UPDATE_MODELE` |
 | `ui` (**non persisté**) | mode d'affichage, filtres, état drag&drop, panneaux | — | mutations UI |
 | racine `app` | `schemaVersion`, statut de sauvegarde (ex. `derniereSauvegarde`) | — | `bootstrap`, `importer`, `exporter`, `reinitialiser` + mutation `REPLACE_ALL` |
 
@@ -50,7 +51,7 @@ flush immédiat de la persistance
 
 ## Où va quoi
 
-- **Données persistées** : `cabinet`, `personnes`, `tournees`, `absences`, `plannings`, `vacancesScolaires` (cache).
+- **Données persistées** : `cabinet`, `personnes`, `tournees`, `absences`, `plannings`, `vacancesScolaires` (cache), `contrats` (modèles ; l'état d'édition d'un modèle reste volatil, dans la vue).
 - **État volatile** (jamais persisté) : `ui` (sélection courante, filtres d'affichage, état du drag & drop, ouverture de panneaux).
 - **Calculé, jamais stocké** : les diagnostics/conflits d'un planning (via getters s'appuyant sur le moteur, [05](05-moteur-de-planification.md)).
 

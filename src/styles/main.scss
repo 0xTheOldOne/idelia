@@ -1,9 +1,10 @@
 // Point d'entrée SCSS de l'application — importé une seule fois dans
-// src/main.js. Ordre impératif : tokens -> bootstrap -> theme -> mixins -> base -> impression.
+// src/main.js. Ordre impératif : tokens -> bootstrap -> theme -> mixins -> base -> editeur-riche -> impression.
 // (`theme` émet les custom properties `--idelia-*` des deux palettes, ADR 0022.)
 @use 'tokens';
 @use 'bootstrap';
 @use 'theme';
 @use 'mixins';
 @use 'base';
+@use 'editeur-riche';
 @use 'impression';

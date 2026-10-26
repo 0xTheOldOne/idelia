@@ -18,6 +18,7 @@ import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calend
 import { adresseVide, normaliserAdresse } from '@/domain/adresse.js';
 import { normaliserLogo } from '@/domain/cabinet.js';
 import { normaliserDateNaissance } from '@/domain/coordonnees.js';
+import { normaliserModeleContrat } from '@/domain/contrats/modeles.js';
 
 // ---------------------------------------------------------------------------
 // Enums / constantes du domaine (codes stables, MAJUSCULES_SNAKE)
@@ -65,6 +66,15 @@ export const ORIGINES_AFFECTATION = Object.freeze(['AUTO', 'MANUEL']);
 
 /** Statuts d'un Planning. @type {ReadonlyArray<string>} */
 export const STATUTS_PLANNING = Object.freeze(['BROUILLON', 'VALIDE', 'PUBLIE']);
+
+/** Types d'un modèle de contrat (0041). @type {ReadonlyArray<string>} */
+export const TYPES_MODELE_CONTRAT = Object.freeze(['CONTRAT', 'AVENANT']);
+
+/** Types d'un champ à compléter d'un modèle de contrat (0041). @type {ReadonlyArray<string>} */
+export const TYPES_CHAMP_LIBRE = Object.freeze(['TEXTE', 'DATE', 'NOMBRE', 'TAUX_RETROCESSION']);
+
+/** Bornes de la saisie d'un taux de rétrocession (%), alignées sur `Personne.tauxRetrocession`. */
+export const BORNES_TAUX_RETROCESSION = Object.freeze({ min: 0, max: 100 });
 
 /**
  * Palette de couleurs de repère suggérées (Personnes/Tournees), accordée à
@@ -116,6 +126,7 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
  * @property {{ items: object[] }} absences
  * @property {{ items: object[], selectionId: (string|null) }} plannings
  * @property {{ entrees: import('@/domain/calendrier/vacancesScolaires.js').EntreeVacances[] }} vacancesScolaires - Cache des vacances (0023).
+ * @property {{ modeles: import('@/domain/contrats/modeles.js').ModeleContrat[], documents: object[] }} contrats - Modèles de contrats (0041) ; `documents` réservé à 0042.
  */
 
 /**
@@ -128,6 +139,8 @@ export const COULEURS_PAR_DEFAUT = Object.freeze([
  * @property {object[]} absences
  * @property {object[]} plannings
  * @property {import('@/domain/calendrier/vacancesScolaires.js').EntreeVacances[]} vacancesScolaires - Cache des vacances scolaires (0023).
+ * @property {import('@/domain/contrats/modeles.js').ModeleContrat[]} modelesContrats - Modèles de contrats (0041).
+ * @property {object[]} documentsContrats - Documents contractuels (toujours vide en 0041, réservé à 0042).
  */
 
 /**
@@ -169,6 +182,7 @@ export function etatParDefaut() {
     absences: { items: [] },
     plannings: { items: [], selectionId: null },
     vacancesScolaires: { entrees: [] },
+    contrats: { modeles: [], documents: [] },
   };
 }
 
@@ -207,6 +221,8 @@ export function toSaveDocument(rootState, options) {
     absences: rootState.absences.items,
     plannings: rootState.plannings.items,
     vacancesScolaires: rootState.vacancesScolaires.entrees,
+    modelesContrats: rootState.contrats.modeles,
+    documentsContrats: rootState.contrats.documents,
   };
 }
 
@@ -259,6 +275,11 @@ export function fromSaveDocument(doc) {
     plannings: { items: doc.plannings ?? [], selectionId: null },
     // Cache malformé → `[]` / entrées filtrées, jamais bloquant (0023).
     vacancesScolaires: { entrees: normaliserCacheVacances(doc.vacancesScolaires) },
+    // Forme garantie, contenu Delta jamais réécrit (0041). `documents` : réservé à 0042.
+    contrats: {
+      modeles: (doc.modelesContrats ?? []).map(normaliserModeleContrat),
+      documents: doc.documentsContrats ?? [],
+    },
   };
 }
 
@@ -277,7 +298,9 @@ export function fromSaveDocument(doc) {
  * `affectation.tourneeId`, `planning.referentId` (s'il est non nul),
  * `personne.titulaireId` (s'il est non nul, vers une personne active ou
  * archivée) et `preference.params.tourneeIds` (souhaits `PREFERENCE_TOURNEE`)
- * doivent résoudre vers une entité existante.
+ * doivent résoudre vers une entité existante. Aucun contrôle référentiel pour
+ * `modelesContrats` en 0041 (un modèle ne référence aucune entité) : 0042 y
+ * ajoutera `document.personneId` et `document.modeleId`.
  *
  * @param {SaveDocument} doc - Document structurellement valide.
  * @returns {ResultatIntegrite} Verdict et liste des erreurs éventuelles.

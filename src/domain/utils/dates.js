@@ -278,6 +278,24 @@ function dateCalendaireDepuisInstant(iso) {
   return new Date(ms + 12 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+const MOIS_LONGS_FR = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
+
+/**
+ * Date longue française (« 3 novembre 2026 »), par
+ * découpage de chaîne : sans objet Date.
+ *
+ * @param {string} dateStr - Date "YYYY-MM-DD".
+ * @returns {string} Date longue, ou chaîne vide si la date est invalide.
+ */
+function formatDateLongueFr(dateStr) {
+  if (!estDateValide(dateStr)) return '';
+  const [annee, mois, jour] = dateStr.split('-').map(Number);
+  return `${jour} ${MOIS_LONGS_FR[mois - 1]} ${annee}`;
+}
+
 export const dateUtil = {
   parse,
   format,
@@ -291,6 +309,7 @@ export const dateUtil = {
   formatHeureFr,
   formatHorodatageDateHeureFr,
   formatDateFr,
+  formatDateLongueFr,
   debutSemaine,
   debutMois,
   moisSuivant,

@@ -101,6 +101,7 @@ import {
   PhCalendarX,
   PhCalendarBlank,
   PhPath,
+  PhFileText,
   PhGear,
   PhCaretDoubleLeft,
   PhMoon,
@@ -139,6 +140,7 @@ export default {
     PhCalendarX,
     PhCalendarBlank,
     PhPath,
+    PhFileText,
     PhGear,
     PhCaretDoubleLeft,
     PhMoon,
@@ -186,7 +188,19 @@ export default {
             },
           ],
         },
-        // Le groupe « Contrats » sera ajouté ici par la feature 0041.
+        {
+          nom: 'contrats',
+          titre: 'Contrats',
+          // « Documents » (`/contrats`, `PhSignature`) sera inséré en tête par 0042.
+          items: [
+            {
+              nom: 'modeles-contrats',
+              chemin: '/modeles-contrats',
+              libelle: 'Modèles',
+              icone: 'PhFileText',
+            },
+          ],
+        },
       ],
       // Paramètres : en pied de menu, sous la bascule de thème.
       itemParametres: {

@@ -31,6 +31,17 @@ const routes = [
   { path: '/planning', name: 'planning', component: PlanningView },
   { path: '/planning/:id/diffusion', name: 'diffusion', component: DiffusionView },
   { path: '/feuille-de-route', name: 'feuille-de-route', component: FeuilleDeRouteView },
+  // Contrats (0041) : routes paresseuses, pour que Quill reste hors du chunk d'entrée.
+  {
+    path: '/modeles-contrats',
+    name: 'modeles-contrats',
+    component: () => import('@/views/ModelesContratsView.vue'),
+  },
+  {
+    path: '/modeles-contrats/:id',
+    name: 'modele-contrat',
+    component: () => import('@/views/ModeleContratView.vue'),
+  },
   { path: '/parametres', name: 'parametres', component: ParametresView },
 ];
 

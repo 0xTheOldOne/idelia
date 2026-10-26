@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 12,             // entier, en tête : pilote les migrations (v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession, v11 = cabinet.adresseCabinet + cabinet.logo, v12 = Personne.adresse + dateNaissance)
+  "schemaVersion": 13,             // entier, en tête : pilote les migrations (v13 = modelesContrats + documentsContrats, v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession, v11 = cabinet.adresseCabinet + cabinet.logo, v12 = Personne.adresse + dateNaissance)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -18,7 +18,9 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
   "tournees":  [ /* Tournee[] */ ],
   "absences":  [ /* Absence[] (à plat, avec personneId) */ ],
   "plannings": [ /* Planning[] (affectations imbriquées) */ ],
-  "vacancesScolaires": [ /* cache des vacances : { zone, anneeScolaire, recupereLe, periodes[] }[] */ ]
+  "vacancesScolaires": [ /* cache des vacances : { zone, anneeScolaire, recupereLe, periodes[] }[] */ ],
+  "modelesContrats": [ /* ModeleContrat[] (champsLibres imbriqués, contenu = Delta Quill, jamais de HTML) */ ],
+  "documentsContrats": [ /* réservé à 0042, toujours vide en 0041 */ ]
 }
 ```
 
@@ -26,7 +28,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -101,7 +103,9 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
       "zone": "ZONE_A", "anneeScolaire": "2026-2027", "recupereLe": "2026-10-14T08:00:00.000Z",
       "periodes": [ { "libelle": "Vacances de la Toussaint", "debut": "2026-10-17", "fin": "2026-11-01" } ]
     }
-  ]
+  ],
+  "modelesContrats": [],
+  "documentsContrats": []
 }
 ```
 
@@ -138,6 +142,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[9]` (v9 → v10)** : chaque `Personne` reçoit `tauxRetrocession: personne.tauxRetrocession ?? null` (idempotent). `null` = taux non renseigné. Les autres entités sont inchangées.
 - **`MIGRATIONS[10]` (v10 → v11)** — [feature 0039](../../features/0039-page-cabinet-et-menu.md) : `cabinet.adresseCabinet` = `normaliserAdresse(...)` (idempotent : absent ou malformé → 4 chaînes vides) et `cabinet.logo = cabinet.logo ?? null`. Les autres entités sont inchangées. Un logo non conforme ne bloque jamais l'import : `fromSaveDocument` le ramène à `null` et `importer` affiche un avertissement.
 - **`MIGRATIONS[11]` (v11 → v12)** — [feature 0040](../../features/0040-coordonnees-des-personnes.md) : chaque `Personne` (objet) reçoit `adresse: normaliserAdresse(personne.adresse)` (idempotent : absent ou malformé → 4 chaînes vides) et `dateNaissance: normaliserDateNaissance(personne.dateNaissance)` (absent ou invalide → `null`). Les autres entités sont inchangées. Un bloc absent ou `null` dans un fichier déjà en v12 est normalisé par `fromSaveDocument`, sans erreur.
+- **`MIGRATIONS[12]` (v12 → v13)** — [feature 0041](../../features/0041-modeles-de-contrats.md) : racines `modelesContrats` et `documentsContrats` = la liste existante si c'en est une, sinon `[]` (idempotent). `documentsContrats` reste vide en 0041 (réservé à 0042, sans nouvelle migration). Les modèles de départ ne sont pas créés par la migration. À l'import, `contenu` (Delta) est contrôlé par la liste blanche `estDeltaModeleValide` (ni lien, ni image, ni `retain`/`delete`), `champsLibres[].cle` doit valoir `saisie.<GUID>`, au plus un champ `TAUX_RETROCESSION` par modèle ; `verifierIntegrite` n'ajoute aucun contrôle référentiel (0042 : `personneId`, `modeleId`).
 
 ## Intégrité référentielle
 

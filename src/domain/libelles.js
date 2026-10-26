@@ -19,6 +19,8 @@ import {
   TYPES_ABSENCE,
   STATUTS_ABSENCE,
   STATUTS_PLANNING,
+  TYPES_MODELE_CONTRAT,
+  TYPES_CHAMP_LIBRE,
 } from '@/domain/schema.js';
 import { FREQUENCE_WEEKEND_MIN, FREQUENCE_WEEKEND_MAX } from '@/domain/trameWeekend.js';
 
@@ -533,3 +535,53 @@ export const LIBELLES_CAUSE_VIOLATION = {
 export function libelleCauseViolation(code) {
   return LIBELLES_CAUSE_VIOLATION[code] ?? 'Autres points';
 }
+
+/** Libellés FR des types de modèle de contrat (0041). */
+export const LIBELLES_TYPE_MODELE_CONTRAT = {
+  CONTRAT: 'Contrat',
+  AVENANT: 'Avenant',
+};
+
+/**
+ * @param {string} code - 'CONTRAT' ou 'AVENANT'.
+ * @returns {string} Libellé FR, ou chaîne vide si inconnu.
+ */
+export function libelleTypeModeleContrat(code) {
+  return LIBELLES_TYPE_MODELE_CONTRAT[code] ?? '';
+}
+
+/** Options (code + libellé) des types de modèle de contrat, pour les radios. */
+export const TYPES_MODELE_CONTRAT_OPTIONS = TYPES_MODELE_CONTRAT.map((code) => ({
+  code,
+  libelle: libelleTypeModeleContrat(code),
+}));
+
+/** Libellés FR des types de champ à compléter (0041). */
+export const LIBELLES_TYPE_CHAMP_LIBRE = {
+  TEXTE: 'Texte',
+  DATE: 'Date',
+  NOMBRE: 'Nombre',
+  TAUX_RETROCESSION: 'Taux de rétrocession (%)',
+};
+
+/**
+ * @param {string} code - Code de TYPES_CHAMP_LIBRE.
+ * @returns {string} Libellé FR, ou chaîne vide si inconnu.
+ */
+export function libelleTypeChampLibre(code) {
+  return LIBELLES_TYPE_CHAMP_LIBRE[code] ?? '';
+}
+
+/** Options (code + libellé) des types de champ à compléter, pour les radios. */
+export const TYPES_CHAMP_LIBRE_OPTIONS = TYPES_CHAMP_LIBRE.map((code) => ({
+  code,
+  libelle: libelleTypeChampLibre(code),
+}));
+
+/** Une phrase d'aide par type de champ à compléter (radios de ModaleChampLibre). */
+export const AIDES_TYPE_CHAMP_LIBRE = {
+  TEXTE: 'Un texte libre, par exemple un lieu ou un nom.',
+  DATE: 'Une date choisie dans un calendrier.',
+  NOMBRE: 'Un nombre, avec une virgule si besoin. Écrivez vous-même l’unité dans le texte du modèle.',
+  TAUX_RETROCESSION: 'Un pourcentage entre 0 et 100. Idelia le comparera au taux de la fiche de la personne.',
+};

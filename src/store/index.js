@@ -15,6 +15,7 @@ import plannings from './modules/plannings';
 import ui from './modules/ui';
 import notifications from './modules/notifications';
 import vacancesScolaires from './modules/vacancesScolaires';
+import contrats from './modules/contrats';
 
 /**
  * Store racine de l'application (feature 0002).
@@ -463,6 +464,8 @@ export default createStore({
       state.plannings.items = etatRacine.plannings.items;
       state.plannings.selectionId = etatRacine.plannings.selectionId ?? null;
       state.vacancesScolaires.entrees = etatRacine.vacancesScolaires.entrees;
+      state.contrats.modeles = etatRacine.contrats.modeles;
+      state.contrats.documents = etatRacine.contrats.documents;
     },
 
     /**
@@ -662,6 +665,7 @@ export default createStore({
     ui,
     notifications,
     vacancesScolaires,
+    contrats,
   },
 
   plugins: [persistancePlugin],

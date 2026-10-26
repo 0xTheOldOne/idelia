@@ -19,10 +19,15 @@ import {
   STATUTS_ABSENCE,
   ORIGINES_AFFECTATION,
   STATUTS_PLANNING,
+  TYPES_MODELE_CONTRAT,
+  TYPES_CHAMP_LIBRE,
   verifierIntegrite,
 } from '@/domain/schema.js';
 import { dateUtil } from '@/domain/utils/dates.js';
+import { estGuid } from '@/domain/utils/id.js';
 import { LONGUEURS_MAX_ADRESSE } from '@/domain/adresse.js';
+import { estDeltaModeleValide } from '@/domain/contrats/delta.js';
+import { PREFIXE_SAISIE } from '@/domain/contrats/catalogueMarqueurs.js';
 
 /** Taille maximale d'un fichier de sauvegarde importé (octets) : 10 Mo. */
 export const TAILLE_MAX_FICHIER_OCTETS = 10 * 1024 * 1024;
@@ -40,6 +45,9 @@ const MAX = Object.freeze({
   preferences: 200,
   segments: 50,
   vacances: 200,
+  modelesContrats: 200,
+  documentsContrats: 5000,
+  champsLibres: 50,
 });
 
 const LONGUEUR_ID = 100;
@@ -84,6 +92,12 @@ const CONTROLEURS = {
   objet: estObjet,
   tableau: (v, o) => Array.isArray(v) && v.length <= (o.max ?? 1000),
   enum: (v, o) => o.valeurs.includes(v),
+  // Delta Quill d'un modèle de contrat : liste blanche stricte, jamais de HTML (0041).
+  delta: (v) => estDeltaModeleValide(v),
+  // Clé d'un champ à compléter : `saisie.<GUID>` (0041).
+  cleSaisie: (v, o) =>
+    typeof v === 'string' && v.length <= (o.max ?? LONGUEUR_ID)
+    && v.startsWith(PREFIXE_SAISIE) && estGuid(v.slice(PREFIXE_SAISIE.length)),
 };
 
 /**
@@ -283,6 +297,23 @@ const REGLES_AFFECTATION = {
   updatedAt: { type: 'horodatage' },
 };
 
+const REGLES_MODELE_CONTRAT = {
+  id: { type: 'id', requis: true },
+  titre: { type: 'texte', max: 120, requis: true },
+  type: { type: 'enum', valeurs: TYPES_MODELE_CONTRAT, requis: true },
+  contenu: { type: 'delta', requis: true },
+  champsLibres: { type: 'tableau', max: MAX.champsLibres },
+  actif: { type: 'booleen' },
+  createdAt: { type: 'horodatage' },
+  updatedAt: { type: 'horodatage' },
+};
+
+const REGLES_CHAMP_LIBRE = {
+  cle: { type: 'cleSaisie', max: 100, requis: true },
+  libelle: { type: 'texte', max: 80, requis: true },
+  type: { type: 'enum', valeurs: TYPES_CHAMP_LIBRE, requis: true },
+};
+
 /** Collections racine du document, dans l'ordre de contrôle (et de messages). */
 const COLLECTIONS = [
   {
@@ -298,6 +329,10 @@ const COLLECTIONS = [
   {
     nom: 'plannings', regles: REGLES_PLANNING, libelle: 'Planning',
     sous: [{ champ: 'affectations', regles: REGLES_AFFECTATION, libelle: 'affectation' }],
+  },
+  {
+    nom: 'modelesContrats', regles: REGLES_MODELE_CONTRAT, libelle: 'Modèle de contrat',
+    sous: [{ champ: 'champsLibres', regles: REGLES_CHAMP_LIBRE, libelle: 'champ à compléter' }],
   },
 ];
 
@@ -355,8 +390,28 @@ function verifierStructure(doc) {
     erreurs.push('Le champ « vacancesScolaires » est invalide.');
   }
 
+  // Documents contractuels (0042) : liste d'objets seulement ; règles détaillées en 0042.
+  if (!Array.isArray(doc.documentsContrats)) {
+    erreurs.push('Le champ « documentsContrats » doit être une liste.');
+  } else if (doc.documentsContrats.length > MAX.documentsContrats) {
+    erreurs.push(`Trop d'éléments dans « documentsContrats » (maximum ${MAX.documentsContrats}).`);
+  } else if (!doc.documentsContrats.every(estObjet)) {
+    erreurs.push('Le champ « documentsContrats » contient un élément invalide.');
+  }
+
   for (const { nom, regles, libelle, sous, adresse } of COLLECTIONS) {
     controlerCollection(doc[nom], regles, libelle, erreurs, { plafond: { nom, max: MAX[nom] }, sous, adresse });
+  }
+
+  // Un seul champ « Taux de rétrocession » par modèle (0041).
+  if (Array.isArray(doc.modelesContrats)) {
+    doc.modelesContrats.forEach((modele, i) => {
+      if (!estObjet(modele) || !Array.isArray(modele.champsLibres)) return;
+      const nbTaux = modele.champsLibres.filter((c) => estObjet(c) && c.type === 'TAUX_RETROCESSION').length;
+      if (nbTaux > 1) {
+        erreurs.push(`Modèle de contrat n°${i + 1} : un seul champ « Taux de rétrocession » est permis.`);
+      }
+    });
   }
 
   return { ok: erreurs.length === 0, erreurs };

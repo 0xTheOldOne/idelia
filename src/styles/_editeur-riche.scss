@@ -1,0 +1,78 @@
+// Éditeur de texte riche (feature 0041, ADR 0023). Global : Quill crée son DOM hors du
+// scope des composants. Couleurs uniquement via les tokens (ADR 0022) : les deux thèmes
+// fonctionnent d'office. Préfixé `.editeur-riche` pour l'emporter sur `quill.core.css`.
+@use 'tokens' as t;
+@use 'mixins' as m;
+
+.editeur-riche {
+  .ql-container {
+    font-family: inherit;
+    font-size: t.$taille-texte-base;
+  }
+
+  .ql-editor {
+    box-sizing: border-box;
+    max-width: 21cm;
+    min-height: 50vh;
+    margin: 0 auto;
+    padding: t.$espace-4;
+    border: 1px solid t.$couleur-bordure;
+    border-radius: t.$rayon-md;
+    background: t.$couleur-fond;
+    color: t.$couleur-texte;
+    font-family: inherit;
+    font-size: t.$taille-texte-base;
+    line-height: 1.6;
+
+    &:focus,
+    &:focus-visible {
+      @include m.focus-visible;
+    }
+
+    h1 {
+      margin-bottom: t.$espace-3;
+      font-size: t.$taille-titre-1;
+      font-weight: t.$graisse-gras;
+    }
+
+    h2 {
+      margin-bottom: t.$espace-2;
+      font-size: t.$taille-titre-2;
+      font-weight: t.$graisse-gras;
+    }
+
+    &.ql-blank::before {
+      left: t.$espace-4;
+      right: t.$espace-4;
+      color: t.$couleur-texte-attenue;
+      font-style: normal;
+    }
+  }
+
+  // Pastille d'un champ rempli automatiquement.
+  .ql-marqueur {
+    display: inline-block;
+    padding: 0 t.$espace-1;
+    border: 1px solid t.$couleur-primaire;
+    border-radius: t.$rayon-sm;
+    background: m.translucide(t.$couleur-primaire, 0.14);
+    color: t.$couleur-texte;
+    font-weight: t.$graisse-moyenne;
+    white-space: nowrap;
+  }
+
+  // Pastille d'un champ à compléter : pointillés et crayon.
+  .ql-marqueur--saisie {
+    border-style: dashed;
+    border-color: t.$couleur-accent-foncee;
+    background: m.translucide(t.$couleur-accent-foncee, 0.14);
+
+    &::before {
+      content: '✎ ';
+    }
+  }
+}
+
+.editeur-riche__zone {
+  margin-top: t.$espace-2;
+}

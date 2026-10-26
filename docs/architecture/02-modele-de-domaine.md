@@ -226,6 +226,22 @@ Source (API Opendatasoft, CORS `*`) : dates en instants UTC correspondant au min
 
 Non bloquant : un cache absent ou malformé est normalisé (`[]`/filtré), jamais refusé ; `verifierIntegrite` n'est pas concernée.
 
+### ModeleContrat (racine du SaveDocument, `modelesContrats`, 0041)
+
+| champ | type | oblig. | notes |
+|---|---|---|---|
+| id | GUID | oui | `genId()` |
+| titre | string | oui | 1..120 caractères |
+| type | `'CONTRAT'` \| `'AVENANT'` | oui | `TYPES_MODELE_CONTRAT` |
+| contenu | Delta Quill `{ ops }` | oui | jamais de HTML ; liste blanche `estDeltaModeleValide` (texte, `bold`/`italic`/`underline`, `header` 1-2, `list`, `align`, embed `marqueur`) |
+| champsLibres | `ChampLibre[]` | oui | ≤ 50, peut être `[]` |
+| actif | boolean | oui | `false` = archivé (convention `Personne.actif`) |
+| createdAt / updatedAt | ISO UTC | oui | |
+
+`ChampLibre` (imbriqué) : `{ cle: 'saisie.<GUID>', libelle: string 1..80, type: 'TEXTE' \| 'DATE' \| 'NOMBRE' \| 'TAUX_RETROCESSION' }`. `cle` unique dans le modèle ; **au plus un** champ `TAUX_RETROCESSION` par modèle (valeur attendue 0..100, comparée à `Personne.tauxRetrocession` par 0042). Aucune référence vers une autre entité.
+
+**Document contractuel** (`documentsContrats`) : collection réservée, toujours vide en 0041 ; forme et règles définies par la feature 0042.
+
 ## Relations
 
 ```

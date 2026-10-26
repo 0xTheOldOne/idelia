@@ -7,7 +7,7 @@
  * que de la redéclarer).
  */
 
-import { genId } from '@/domain/utils/id.js';
+import { genId, estGuid } from '@/domain/utils/id.js';
 import { normaliserIconeTournee } from '@/domain/iconesTournee.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calendrier/vacancesScolaires.js';
@@ -16,10 +16,7 @@ import { normaliserDateNaissance } from '@/domain/coordonnees.js';
 import { verifierVersion, verifierDocument } from '@/domain/validationImport.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 12;
-
-/** Forme d'un GUID (UUID, toutes versions), insensible à la casse. */
-const FORMAT_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const CURRENT_SCHEMA_VERSION = 13;
 
 /**
  * Table des migrations séquentielles, indexée par version de départ.
@@ -131,7 +128,7 @@ MIGRATIONS[3] = (doc) => {
   const correspondance = new Map();
   /** @param {string} id @returns {string} GUID (nouveau si `id` n'en était pas un). */
   const versGuid = (id) => {
-    if (typeof id !== 'string' || FORMAT_GUID.test(id)) return id;
+    if (typeof id !== 'string' || estGuid(id)) return id;
     if (!correspondance.has(id)) correspondance.set(id, genId());
     return correspondance.get(id);
   };
@@ -372,6 +369,25 @@ MIGRATIONS[11] = (doc) => {
     : doc.personnes;
   return { ...doc, personnes };
 };
+
+/**
+ * Migration v12 → v13 (feature 0041) : modèles de contrats.
+ *
+ * - `modelesContrats` et `documentsContrats` valent la liste existante si c'en
+ *   est une, sinon `[]` (idempotent). `documentsContrats` reste vide en 0041
+ *   (réservé à 0042, qui évite ainsi une nouvelle migration).
+ * - Les modèles de départ ne sont PAS créés ici : on n'injecte jamais de contenu
+ *   dans le fichier de l'utilisatrice sans qu'elle ouvre la page.
+ * - Le reste du document est inchangé.
+ *
+ * @param {object} doc - Document de version 12.
+ * @returns {object} Document équivalent en version 13 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[12] = (doc) => ({
+  ...doc,
+  modelesContrats: Array.isArray(doc.modelesContrats) ? doc.modelesContrats : [],
+  documentsContrats: Array.isArray(doc.documentsContrats) ? doc.documentsContrats : [],
+});
 
 /**
  * Amène un document chargé (ou importé) à la version courante du schéma.
