@@ -18,7 +18,7 @@
     "pdfjs-dist": "6.4.299",
     "quill": "2.0.2",
     "vue": "^3.5.42",
-    "vue-debounce": "^5.0.1",
+    "vue-debounce": "^6.0.0",
     "vue-router": "^4.6.4",
     "vuex": "^4.1.0"
   },
