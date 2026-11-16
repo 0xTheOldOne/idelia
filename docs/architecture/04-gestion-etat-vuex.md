@@ -32,17 +32,21 @@ Chaque module persisté expose une mutation `REPLACE(payload)` pour l'hydratatio
 **Démarrage** — action `app/bootstrap` :
 ```
 doc = await storageRepository.load()
-si doc: doc = migrate(doc); verifierIntegrite(doc); commit REPLACE_ALL(fromSaveDocument(doc))
+si doc: p = preparerDocument(doc)   // migrate + validation ; renvoie aussi rythmesProposes
+        commit REPLACE_ALL(fromSaveDocument(p.doc))
+        si p.rythmesProposes non vide : flush immédiat (document migré persisté) + toast unique
 sinon:  commit REPLACE_ALL(etatParDefaut())   // cabinet par défaut, collections vides
 ```
+`rythmesProposes` = noms des personnes actives dont la migration v14 a proposé un rythme (0043) ; persister aussitôt évite de réafficher le toast au prochain démarrage.
 
 **Import** — action `app/importer(fichier)` :
 ```
 doc = JSON.parse(contenu)
 refuser si doc.schemaVersion > CURRENT_SCHEMA_VERSION
-doc = migrate(doc); verifierIntegrite(doc)
-commit REPLACE_ALL(fromSaveDocument(doc))
+p = preparerDocument(doc)   // migrate + validation ; renvoie aussi rythmesProposes
+commit REPLACE_ALL(fromSaveDocument(p.doc))
 flush immédiat de la persistance
+si p.rythmesProposes non vide : toast unique (à relire, fermeture manuelle)
 ```
 
 **Export** — action `app/exporter` : `toSaveDocument(state)` → `Blob` JSON → téléchargement.

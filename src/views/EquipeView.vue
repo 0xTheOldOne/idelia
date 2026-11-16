@@ -60,7 +60,7 @@
             <div class="equipe-identite">
               <span class="equipe-nom">{{ personne.prenom }} {{ personne.nom }}</span>
               <span class="equipe-details">
-                {{ libelleStatutPersonne(personne.statut) }} · {{ personne.quotite }} %
+                {{ libelleStatutPersonne(personne.statut) }}
                 <template v-if="libelleRythme(personne)"> · {{ libelleRythme(personne) }}</template>
                 <template v-if="periodeTexte(personne)"> · {{ periodeTexte(personne) }}</template>
                 <template v-if="libelleRemplacement(personne, toutesLesPersonnes)"> · {{ libelleRemplacement(personne, toutesLesPersonnes) }}</template>
@@ -156,7 +156,8 @@
               <div class="equipe-identite">
                 <span class="equipe-nom">{{ personne.prenom }} {{ personne.nom }}</span>
                 <span class="equipe-details">
-                  {{ libelleStatutPersonne(personne.statut) }} · {{ personne.quotite }} %
+                  {{ libelleStatutPersonne(personne.statut) }}
+                  <template v-if="libelleRythme(personne)"> · {{ libelleRythme(personne) }}</template>
                 </span>
               </div>
               <div class="equipe-actions">
@@ -261,6 +262,9 @@ import { dateUtil } from '@/domain/utils/dates.js';
  * `'coordonnees'` ou `'identifiants'`, payload de l'événement `modifier`).
  *
  * Contrats (feature 0042) : l'icône signature ouvre `/contrats/<id>` (documents de la personne).
+ *
+ * Rythme de travail (feature 0043) : la ligne d'une personne affiche son statut puis son
+ * rythme (« 15 jours par mois ») ; il n'y a plus de pourcentage de temps de travail.
  *
  * Liens profonds (feature 0027, envoi du planning par e-mail), paramètres
  * d'URL de `/equipe` :

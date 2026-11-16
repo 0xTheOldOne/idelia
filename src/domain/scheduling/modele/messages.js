@@ -33,17 +33,6 @@ function jourFr(date) {
 }
 
 /**
- * Arrondit un nombre à une décimale, pour un affichage lisible d'une charge
- * moyenne/pondérée (équité).
- *
- * @param {number} valeur
- * @returns {number}
- */
-function arrondi1(valeur) {
-  return Math.round((valeur ?? 0) * 10) / 10;
-}
-
-/**
  * Formate les horaires réels d'un segment en clair (ex. `"07:00 – 13:30"`,
  * via `libelleSegment`), défensif vis-à-vis d'horaires manquants (§7.4 du
  * plan, « jamais de crash ») — jamais de code créneau affiché (feature 0016,
@@ -202,10 +191,6 @@ const GABARITS = {
   } = {}) =>
     `${nomPersonne} — ${descriptionPreference} — mais est affectée à la tournée « ${nomTournee} » ` +
     `le ${dateUtil.formatDateFr(date)} (${horairesTexte(heureDebut, heureFin)}).`,
-
-  EQUITE_DESEQUILIBREE: ({ nomPersonne = 'Cette personne', charge = 0, moyenne = 0 } = {}) =>
-    `${nomPersonne} a une charge de travail de ${arrondi1(charge)} affectation(s) sur la période, ` +
-    `contre une moyenne d'équipe de ${arrondi1(moyenne)} : la répartition est déséquilibrée.`,
 
   EQUITE_RYTHME_DEPASSE: ({ nomPersonne = 'Cette personne', jours = 0, rythme = 0, attendu = 0 } = {}) =>
     `${nomPersonne} travaille ${jours} jour(s) sur cette période, plus que son rythme habituel : ` +

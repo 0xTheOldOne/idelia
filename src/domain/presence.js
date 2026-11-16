@@ -89,15 +89,3 @@ export function precisionPresenceLe(personne, date) {
   if (etat === 'APRES_DEPART') return `dernier jour : ${dateUtil.formatDateFr(personne.dateSortie)}`;
   return '';
 }
-
-/**
- * Part des `dates` où la personne est présente.
- *
- * @param {{dateEntree?: (string|null), dateSortie?: (string|null)}|null|undefined} personne
- * @param {string[]} dates - Dates `"YYYY-MM-DD"`.
- * @returns {number} Entre 0 et 1 ; `1` si `dates` est vide.
- */
-export function fractionPresence(personne, dates) {
-  if (!Array.isArray(dates) || dates.length === 0) return 1;
-  return dates.filter((date) => estPresentLe(personne, date)).length / dates.length;
-}

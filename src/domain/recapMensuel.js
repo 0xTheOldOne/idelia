@@ -18,6 +18,9 @@ import { libelleMois, libelleStatutPersonne } from '@/domain/libelles.js';
 
 /**
  * @typedef {'SANS_RYTHME'|'DANS_LE_RYTHME'|'DEPASSE'} EtatRythme
+ *   `SANS_RYTHME` ne subsiste que dans deux cas : personne inconnue (affectation d'une
+ *   personne supprimée) ou rythme invalide dans un document non migré (défensif).
+ *   Toute personne connue d'un document valide a un rythme (0043).
  *
  * @typedef {Object} LigneRecap
  * @property {string} personneId

@@ -8,7 +8,7 @@ Référence : [ADR 0011](../adr/0011-validation-vuelidate-vue-debounce.md). Les 
 - **Messages en français**, orientés correction : dire **ce qu'il faut faire**, pas seulement « invalide ».
   - ❌ « Champ invalide » → ✅ « L'heure de fin doit être après l'heure de début. »
 - Valider ce qui a du sens métier, par exemple :
-  - Personne : prénom et nom requis, couleur valide, quotité 0–100.
+  - Personne : prénom et nom requis, couleur valide, rythme de travail requis (entier de 1 à 31 jours par mois).
   - Tournée : `heureFin` > `heureDebut`, au moins un jour d'application, `nbPersonnesRequises` ≥ 1.
   - Absence : `dateFin` ≥ `dateDebut`.
 - **Ne bloquer que ce qui doit l'être.** Afficher l'erreur au bon moment (après interaction sur le champ ou à la tentative de validation), pas dès l'affichage d'un formulaire vierge.
@@ -21,7 +21,8 @@ Référence : [ADR 0011](../adr/0011-validation-vuelidate-vue-debounce.md). Les 
 ## Patterns d'ergonomie
 
 - **Peu de champs à la fois**, regroupés logiquement ; libellés explicites au-dessus des champs.
-- **Valeurs par défaut raisonnables** (ex. quotité 100 %, créneau `JOURNEE`, statut `DEMANDE`) pour réduire l'effort.
+- **Valeurs par défaut raisonnables** (ex. créneau `JOURNEE`, statut `DEMANDE`) pour réduire l'effort.
+- **Mais une donnée qui engage l'organisation (ex. rythme de travail) n'a pas de valeur par défaut** : elle se saisit consciemment, pour ne jamais planifier sur une valeur que personne n'a choisie.
 - **Ne jamais perdre la saisie** : préserver le brouillon en cas d'erreur.
 - **Action principale** du formulaire mise en avant ; « Annuler » clairement disponible.
 - **Confirmation** avant les actions destructrices (suppression) — même hors formulaire.

@@ -53,7 +53,7 @@ export const GROUPES_MARQUEURS = Object.freeze([
       m('personne.nom', 'Nom de la personne'),
       m('personne.nomComplet', 'Prénom et nom de la personne'),
       m('personne.statut', 'Statut (titulaire ou remplaçant(e))'),
-      m('personne.quotite', 'Quotité de travail'),
+      m('personne.joursTravaillesParMois', 'Rythme de travail (jours par mois)'),
       m('personne.tauxRetrocession', 'Taux de rétrocession actuel (fiche)'),
       m('personne.dateEntree', "Date d'arrivée au cabinet"),
       m('personne.dateNaissance', 'Date de naissance'),
@@ -86,6 +86,9 @@ export const GROUPES_MARQUEURS = Object.freeze([
     marqueurs: Object.freeze([m('date.jour', 'Date du jour')]),
   }),
 ]);
+
+/** Clés retirées du catalogue → clé de remplacement (migrations de schéma). */
+export const CLES_MARQUEURS_RENOMMEES = Object.freeze({ 'personne.quotite': 'personne.joursTravaillesParMois' });
 
 /** Index clé → libellé du catalogue. */
 const LIBELLES_CATALOGUE = new Map(GROUPES_MARQUEURS.flatMap((g) => g.marqueurs.map((x) => [x.cle, x.libelle])));

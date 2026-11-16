@@ -10,7 +10,7 @@ import { STATUTS_PERSONNE, COULEURS_PAR_DEFAUT } from '@/domain/schema.js';
 import { genId } from '@/domain/utils/id.js';
 import { normaliserInitialesVega } from '@/domain/initialesVega.js';
 import { estCouleurFoncee } from '@/domain/utils/couleurs.js';
-import { normaliserRythmeMensuel } from '@/domain/rythmeMensuel.js';
+import { normaliserRythmeMensuel, libelleRythmeMensuel } from '@/domain/rythmeMensuel.js';
 import { normaliserIdentifiants } from '@/domain/identifiantsPro.js';
 import { normaliserAdresse } from '@/domain/adresse.js';
 import { normaliserDateNaissance } from '@/domain/coordonnees.js';
@@ -39,8 +39,7 @@ import { normaliserDateNaissance } from '@/domain/coordonnees.js';
  * @property {string} statut - `'TITULAIRE'` ou `'REMPLACANT'` (voir {@link STATUTS_PERSONNE}).
  * @property {boolean} actif - Soft-delete : `false` = archivée.
  * @property {string} couleur - Couleur de repère au format hex `#RRGGBB`.
- * @property {number} quotite - Temps de travail, 0..100 (%).
- * @property {(number|null)} joursTravaillesParMois - Rythme : jours travaillés par mois complet (1..31), ou `null` (0020).
+ * @property {number} joursTravaillesParMois - Rythme : jours travaillés par mois complet, entier 1..31, obligatoire (0020, 0043).
  * @property {(string|null)} titulaireId - Titulaire remplacée en priorité (id), seulement si statut `REMPLACANT`, sinon `null` (0020).
  * @property {(number|null)} tauxRetrocession - Rétrocession à la titulaire remplacée, 0..100 (%), seulement si statut `REMPLACANT`, sinon `null`.
  * @property {(string|null)} dateEntree - Date d'arrivée `"YYYY-MM-DD"`, ou `null`.
@@ -80,7 +79,6 @@ export function creerPersonne(champs = {}) {
     statut,
     actif: champs.actif ?? true,
     couleur: champs.couleur ?? COULEURS_PAR_DEFAUT[0],
-    quotite: champs.quotite ?? 100,
     joursTravaillesParMois: normaliserRythmeMensuel(champs.joursTravaillesParMois),
     titulaireId: normaliserTitulaireId(statut, champs.titulaireId),
     tauxRetrocession: normaliserTauxRetrocession(statut, champs.tauxRetrocession),
@@ -255,13 +253,12 @@ export function libelleRemplacement(personne, personnes) {
 }
 
 /**
- * Texte du rythme : « 15 jours par mois », ou `''` sans rythme.
+ * Texte du rythme : « 15 jours par mois ». `''` seulement sur une donnée invalide
+ * (le rythme est obligatoire depuis 0043).
  *
  * @param {Personne} personne
  * @returns {string}
  */
 export function libelleRythme(personne) {
-  const rythme = normaliserRythmeMensuel(personne?.joursTravaillesParMois);
-  if (rythme === null) return '';
-  return `${rythme} jour${rythme > 1 ? 's' : ''} par mois`;
+  return libelleRythmeMensuel(personne?.joursTravaillesParMois);
 }

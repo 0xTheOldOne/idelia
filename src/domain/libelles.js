@@ -513,7 +513,6 @@ export const LIBELLES_CAUSE_VIOLATION = {
   TROP_JOURS_CONSECUTIFS: "Trop de jours de travail d'affilée",
   REPOS_HEBDO_INSUFFISANT: 'Pas assez de repos dans la semaine',
   JOUR_FERME: 'Travail un jour de fermeture',
-  EQUITE_DESEQUILIBREE: 'Charge de travail mal répartie',
   EQUITE_RYTHME_DEPASSE: 'Rythme de travail dépassé',
   EQUITE_RYTHME_NON_ATTEINT: 'Rythme de travail non atteint',
   CONTINUITE_ROMPUE: "Changement de personne d'un jour à l'autre",

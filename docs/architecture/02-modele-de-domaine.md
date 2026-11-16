@@ -47,16 +47,15 @@ Ce document définit les concepts métier d'Idelia et leurs structures. Le forma
 | statut | enum | oui | `TITULAIRE`, `REMPLACANT` ; un `REMPLACANT` reçoit les tournées que les titulaires ne peuvent pas assurer (titulaires d'abord) [0021] |
 | actif | boolean | oui | défaut `true` (soft-delete = `false`) |
 | couleur | string hex `#RRGGBB` | oui | affichage calendrier |
-| quotite | number 0..100 | oui | défaut `100` (% temps de travail) |
 | dateEntree | `"YYYY-MM-DD"` \| null | non | premier jour de présence (inclus) ; **active** : le moteur ne planifie pas la personne avant [0031] |
-| dateSortie | `"YYYY-MM-DD"` \| null | non | dernier jour de présence (inclus), ≥ `dateEntree` ; **active** : pas de planification après. Borne vide = ouverte. Règle unique dans `src/domain/presence.js` (`etatPresenceLe`, `estPresentLe`, `aDesDatesDePresence`, `libellePresenceLe`, `precisionPresenceLe`, `fractionPresence`) [0031] |
+| dateSortie | `"YYYY-MM-DD"` \| null | non | dernier jour de présence (inclus), ≥ `dateEntree` ; **active** : pas de planification après. Borne vide = ouverte. Règle unique dans `src/domain/presence.js` (`etatPresenceLe`, `estPresentLe`, `aDesDatesDePresence`, `libellePresenceLe`, `precisionPresenceLe`) [0031] |
 | contact | `{ email?, telephone? }` | non | |
 | adresse | `AdressePostale` | oui (bloc toujours présent) | 4 clés, `''` par défaut ; voir « AdressePostale » ci-dessous (utilisée aussi par `Personne.adresse` [0040]) |
 | dateNaissance | `"YYYY-MM-DD"` \| null | non | `null` par défaut ; à la saisie : date passée, âge entre 16 et 100 ans ; normalisation dans `src/domain/coordonnees.js` [0040] |
 | ordreAffichage | integer | non | |
 | notes | string | non | |
 | initialesVega | string `^[A-Z0-9]{2,4}$` \| null | non | code « PS » de la personne dans Vega ; `null` si non renseigné ; **unique** parmi toutes les personnes (actives et archivées) ; stocké en majuscules, sans espaces [0034] |
-| joursTravaillesParMois | integer 1..31 | null | non | rythme habituel en **jours travaillés par mois complet** ; `null` = pas de rythme (l'équité utilise alors `quotite`) [0020] |
+| joursTravaillesParMois | integer 1..31 | oui | rythme habituel en **jours travaillés par mois complet**, obligatoire pour toute personne [0020, 0043] ; la migration v14 propose une valeur dérivée de l'ancienne quotité |
 | titulaireId | uuid → Personne | null | non | titulaire remplacée **en priorité** ; renseigné **seulement si `statut = REMPLACANT`** (sinon `null`) ; obligatoire **à la saisie** pour une remplaçante [0036] ; données antérieures non migrées (signalées par le bilan) ; une seule titulaire par remplaçante, une titulaire peut avoir plusieurs remplaçantes ; jamais soi-même ; conservé si la titulaire est archivée [0020] ; lu par le moteur : priorité les jours où cette titulaire ne travaille pas [0021] |
 | tauxRetrocession | integer 0..100 | null | non | part (%) rétrocédée à la titulaire remplacée ; renseigné **seulement si `statut = REMPLACANT`** (sinon `null`) ; obligatoire **à la saisie** pour une remplaçante [0036] ; données antérieures non migrées (signalées par le bilan) ; saisi à côté de « Remplace en priorité », exploité par le bilan de la Feuille de route [0036] |
 | identifiants | IdentifiantsPro | oui (bloc toujours présent) | identifiants professionnels ; 6 clés, chacune `string` (1 à 30 caractères, sans espace, majuscules) ou `null` ; toutes `null` par défaut [0030] |

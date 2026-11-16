@@ -95,3 +95,22 @@ export function clesMarqueursUtilisees(delta) {
   }
   return cles;
 }
+
+/**
+ * Nouveau Delta où chaque embed `marqueur` dont la clé figure dans `correspondance` reçoit la nouvelle clé
+ * (attributs conservés). Toute autre op est recopiée. Tolérant : entrée non conforme → renvoyée telle quelle.
+ * Ne modifie jamais son entrée.
+ *
+ * @param {*} delta
+ * @param {Readonly<Record<string, string>>} correspondance
+ * @returns {*}
+ */
+export function renommerMarqueurs(delta, correspondance) {
+  if (!delta || typeof delta !== 'object' || !Array.isArray(delta.ops)) return delta;
+  const ops = delta.ops.map((op) => {
+    const cle = op?.insert?.marqueur?.cle;
+    if (typeof cle !== 'string' || !Object.prototype.hasOwnProperty.call(correspondance ?? {}, cle)) return op;
+    return { ...op, insert: { ...op.insert, marqueur: { ...op.insert.marqueur, cle: correspondance[cle] } } };
+  });
+  return { ...delta, ops };
+}

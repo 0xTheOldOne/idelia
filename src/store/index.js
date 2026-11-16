@@ -6,6 +6,7 @@ import { CURRENT_SCHEMA_VERSION, preparerDocument } from '@/storage/migrations.j
 import { storageRepository } from '@/storage/storageRepository.js';
 import { dateUtil } from '@/domain/utils/dates.js';
 import { logoNonConforme, MESSAGE_LOGO_NON_REPRIS } from '@/domain/cabinet.js';
+import { messageRythmesProposes } from '@/domain/rythmeMensuel.js';
 
 import cabinet from './modules/cabinet';
 import personnes from './modules/personnes';
@@ -500,7 +501,7 @@ export default createStore({
      * @param {import('vuex').ActionContext} context
      * @returns {Promise<ResultatChargement>} `'DONNEES'`, `'VIDE'` ou `'ERREUR'`.
      */
-    async bootstrap({ commit }) {
+    async bootstrap({ commit, dispatch, state }) {
       try {
         const doc = await storageRepository.load();
         if (doc === null) {
@@ -514,6 +515,23 @@ export default createStore({
           throw new Error(preparation.message);
         }
         commit('REPLACE_ALL', fromSaveDocument(preparation.doc));
+
+        // Rythmes proposés (0043) : la migration a rempli des rythmes manquants. On persiste
+        // tout de suite (stockage en v14) pour que le toast ne s'affiche qu'une seule fois.
+        const rythmesProposes = preparation.rythmesProposes ?? [];
+        if (rythmesProposes.length > 0) {
+          modifieDepuisEcritureFichier = true;
+          try {
+            await flushImmediat({ state, commit });
+          } catch (e) {
+            console.error(e);
+          }
+          dispatch('notifications/notifier', {
+            type: 'avertissement',
+            message: messageRythmesProposes(rythmesProposes),
+            duree: 0,
+          }, { root: true });
+        }
         return 'DONNEES';
       } catch (e) {
         console.error(e);
@@ -594,6 +612,16 @@ export default createStore({
 
         if (logoEcarte) {
           dispatch('notifications/notifier', { type: 'avertissement', message: MESSAGE_LOGO_NON_REPRIS }, { root: true });
+        }
+
+        // Rythmes proposés (0043) : à relire, fermeture manuelle.
+        const rythmesProposes = preparation.rythmesProposes ?? [];
+        if (rythmesProposes.length > 0) {
+          dispatch('notifications/notifier', {
+            type: 'avertissement',
+            message: messageRythmesProposes(rythmesProposes),
+            duree: 0,
+          }, { root: true });
         }
 
         return { ok: true, message: 'Import réussi.' };

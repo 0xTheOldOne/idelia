@@ -6,7 +6,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```jsonc
 {
-  "schemaVersion": 13,             // entier, en tête : pilote les migrations (v13 = modelesContrats + documentsContrats, v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession, v11 = cabinet.adresseCabinet + cabinet.logo, v12 = Personne.adresse + dateNaissance)
+  "schemaVersion": 14,             // entier, en tête : pilote les migrations (v14 = suppression de `Personne.quotite`, rythme obligatoire, v13 = modelesContrats + documentsContrats, v2 = modèle Tournée à segments, v3 = Planning.genereLe, v4 = ids en GUID, v5 = Personne.initialesVega, v6 = Personne.joursTravaillesParMois + titulaireId, v7 = Tournee.icone, v8 = Personne.identifiants, v9 = cabinet.zoneScolaire + cache vacancesScolaires, v10 = Personne.tauxRetrocession, v11 = cabinet.adresseCabinet + cabinet.logo, v12 = Personne.adresse + dateNaissance)
   "meta": {
     "app": "Idelia",
     "appVersion": "1.0.0",
@@ -28,7 +28,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
 
 ```json
 {
-  "schemaVersion": 13,
+  "schemaVersion": 14,             // v14 = suppression de `Personne.quotite`, rythme obligatoire
   "meta": { "app": "Idelia", "appVersion": "1.0.0", "exportedAt": "2026-07-07T09:30:00.000Z", "generator": "idelia-web" },
   "cabinet": {
     "nomCabinet": "Cabinet des Tilleuls",
@@ -44,7 +44,7 @@ Le **SaveDocument** est la représentation canonique de l'état d'Idelia : c'est
     {
       "id": "89efbb0f-5e16-4188-b64b-029c88a7e1b2", "prenom": "Claire", "nom": "Martin",
       "statut": "TITULAIRE", "actif": true, "couleur": "#2E86AB",
-      "quotite": 100, "joursTravaillesParMois": 15, "titulaireId": null, "tauxRetrocession": null, "dateEntree": "2019-09-01", "dateSortie": null,
+      "joursTravaillesParMois": 15, "titulaireId": null, "tauxRetrocession": null, "dateEntree": "2019-09-01", "dateSortie": null,
       "contact": { "email": null, "telephone": "0600000000" },
       "adresse": { "ligne1": "", "ligne2": "", "codePostal": "", "ville": "" }, "dateNaissance": null,
       "ordreAffichage": 1, "notes": "", "initialesVega": "CM",
@@ -127,7 +127,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 
 ## Versionnement & migrations
 
-- `CURRENT_SCHEMA_VERSION` (= **9**) et le pipeline vivent dans `src/storage/migrations.js`.
+- `CURRENT_SCHEMA_VERSION` (= **14**) et le pipeline vivent dans `src/storage/migrations.js`.
 - `MIGRATIONS = { 1: v1→v2, 2: v2→v3, … }` : `migrate(doc)` applique les migrations **séquentiellement** jusqu'à la version courante.
 - `migrate()` est appelée **à la fois** dans `storageRepository.load()` (état persistant ancien) et à l'import (vieux fichiers).
 - Toute évolution de la forme des données ⇒ **bump** de `schemaVersion` + fonction de migration.
@@ -143,6 +143,7 @@ Elles sont la **seule** frontière de (dé)sérialisation. Le plugin de persista
 - **`MIGRATIONS[10]` (v10 → v11)** — [feature 0039](../../features/0039-page-cabinet-et-menu.md) : `cabinet.adresseCabinet` = `normaliserAdresse(...)` (idempotent : absent ou malformé → 4 chaînes vides) et `cabinet.logo = cabinet.logo ?? null`. Les autres entités sont inchangées. Un logo non conforme ne bloque jamais l'import : `fromSaveDocument` le ramène à `null` et `importer` affiche un avertissement.
 - **`MIGRATIONS[11]` (v11 → v12)** — [feature 0040](../../features/0040-coordonnees-des-personnes.md) : chaque `Personne` (objet) reçoit `adresse: normaliserAdresse(personne.adresse)` (idempotent : absent ou malformé → 4 chaînes vides) et `dateNaissance: normaliserDateNaissance(personne.dateNaissance)` (absent ou invalide → `null`). Les autres entités sont inchangées. Un bloc absent ou `null` dans un fichier déjà en v12 est normalisé par `fromSaveDocument`, sans erreur.
 - **`MIGRATIONS[12]` (v12 → v13)** — [feature 0041](../../features/0041-modeles-de-contrats.md) : racines `modelesContrats` et `documentsContrats` = la liste existante si c'en est une, sinon `[]` (idempotent). `documentsContrats` reste vide en 0041 (réservé à 0042, sans nouvelle migration). Les modèles de départ ne sont pas créés par la migration. À l'import, `contenu` (Delta) est contrôlé par la liste blanche `estDeltaModeleValide` (ni lien, ni image, ni `retain`/`delete`), `champsLibres[].cle` doit valoir `saisie.<GUID>`, au plus un champ `TAUX_RETROCESSION` par modèle ; `verifierIntegrite` n'ajoute aucun contrôle référentiel (0042 : `personneId`, `modeleId`).
+- **`MIGRATIONS[13]` (v13 → v14)** — [feature 0043](../../features/0043-rythme-de-travail-obligatoire.md) : fin du temps de travail en %, rythme obligatoire. Pour chaque `Personne` (active ou archivée), `joursTravaillesParMois` est conservé s'il est un entier de 1 à 31, sinon **proposé** par `rythmeDepuisQuotite(ancienneQuotité, cabinet)` (`rythmeMensuel.js`) : jours par semaine = `min(jours d'ouverture, 7 − repos hebdomadaire minimal)` (5 si < 1), rythme = `round(quotité/100 × jours par semaine × 52/12)` borné à 1..31 (quotité absente ou invalide = 100) ; puis l'ancienne propriété `quotite` est supprimée. Les pastilles `personne.quotite` des `modelesContrats[].contenu` et `documentsContrats[].contenu` sont renommées `personne.joursTravaillesParMois`, de même que les `cle` des `documentsContrats[].valeursSaisies` (libellé, type et valeur conservés). Le **texte** des documents (brouillon ou signé) n'est **jamais réécrit** et `updatedAt` reste inchangé. Idempotente. `preparerDocument` renvoie `rythmesProposes` (noms des personnes actives concernées) pour que le store affiche un toast à relire.
 
 ## Intégrité référentielle
 

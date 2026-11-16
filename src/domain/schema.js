@@ -233,8 +233,11 @@ export function toSaveDocument(rootState, options) {
  * @returns {object}
  */
 function normaliserPersonneChargee(p) {
+  // `quotite` retirée en v14 (0043) : une clé résiduelle (fichier édité à la main) est écartée.
+  // eslint-disable-next-line no-unused-vars
+  const { quotite, ...reste } = p ?? {};
   return {
-    ...p,
+    ...reste,
     identifiants: normaliserIdentifiants(p?.identifiants),
     adresse: normaliserAdresse(p?.adresse),
     dateNaissance: normaliserDateNaissance(p?.dateNaissance),

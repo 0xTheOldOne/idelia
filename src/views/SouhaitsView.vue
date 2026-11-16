@@ -31,7 +31,8 @@
         </button>
       </div>
       <p class="souhaits-rappel">
-        {{ libelleStatutPersonne(personne.statut) }} · {{ personne.quotite }} %
+        {{ libelleStatutPersonne(personne.statut) }}
+        <template v-if="libelleRythme(personne)"> · {{ libelleRythme(personne) }}</template>
       </p>
 
       <div class="souhaits-explication">
@@ -167,6 +168,7 @@ import {
 import DialogueConfirmation from '@/components/communs/DialogueConfirmation.vue';
 import FormulairePreference from '@/components/equipe/FormulairePreference.vue';
 import { libelleStatutPersonne, libelleNaturePreference } from '@/domain/libelles.js';
+import { libelleRythme } from '@/domain/personnes.js';
 import { decrirePreference, NIVEAUX_IMPORTANCE, poidsVersNiveau } from '@/domain/preferences.js';
 
 /**
@@ -244,6 +246,7 @@ export default {
       'basculerPreference',
     ]),
     libelleStatutPersonne,
+    libelleRythme,
     libelleNaturePreference,
     decrirePreference,
 

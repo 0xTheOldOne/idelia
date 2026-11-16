@@ -8,6 +8,7 @@ import { dateUtil } from '@/domain/utils/dates.js';
 import { adresseSurUneLigne } from '@/domain/adresse.js';
 import { libelleStatutPersonne } from '@/domain/libelles.js';
 import { normaliserIdentifiant } from '@/domain/identifiantsPro.js';
+import { libelleRythmeMensuel } from '@/domain/rythmeMensuel.js';
 import { libelleMarqueur, estChampLibre } from '@/domain/contrats/catalogueMarqueurs.js';
 import { clesMarqueursUtilisees } from '@/domain/contrats/delta.js';
 import { estTauxSaisiValide } from '@/domain/contrats/modeles.js';
@@ -75,8 +76,8 @@ function valeurPersonne(champ, p) {
       return nomComplet(p);
     case 'statut':
       return texte(libelleStatutPersonne(p.statut));
-    case 'quotite':
-      return pourcentage(p.quotite);
+    case 'joursTravaillesParMois':
+      return texte(libelleRythmeMensuel(p.joursTravaillesParMois));
     case 'tauxRetrocession':
       return pourcentage(p.tauxRetrocession);
     case 'dateEntree':

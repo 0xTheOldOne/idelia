@@ -14,9 +14,12 @@ import { normaliserCacheVacances, normaliserZoneScolaire } from '@/domain/calend
 import { normaliserAdresse } from '@/domain/adresse.js';
 import { normaliserDateNaissance } from '@/domain/coordonnees.js';
 import { verifierVersion, verifierDocument } from '@/domain/validationImport.js';
+import { estRythmeStockeValide, rythmeDepuisQuotite, personnesSansRythmeValide } from '@/domain/rythmeMensuel.js';
+import { CLES_MARQUEURS_RENOMMEES } from '@/domain/contrats/catalogueMarqueurs.js';
+import { renommerMarqueurs } from '@/domain/contrats/delta.js';
 
 /** Version courante du schéma de données. */
-export const CURRENT_SCHEMA_VERSION = 13;
+export const CURRENT_SCHEMA_VERSION = 14;
 
 /**
  * Table des migrations séquentielles, indexée par version de départ.
@@ -389,6 +392,73 @@ MIGRATIONS[12] = (doc) => ({
   documentsContrats: Array.isArray(doc.documentsContrats) ? doc.documentsContrats : [],
 });
 
+/** @param {*} v @returns {boolean} `true` si `v` est un objet simple (ni `null`, ni tableau). */
+const estObjetSimple = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * Migration v13 → v14 (feature 0043) : fin du temps de travail en %, rythme
+ * obligatoire. **Totale** : `preparerDocument` valide le document après migration.
+ *
+ * - `doc.personnes` (actives ET archivées, objets seulement) : `joursTravaillesParMois`
+ *   conservé s'il est un entier de 1 à 31, sinon remplacé par
+ *   `rythmeDepuisQuotite(personne.quotite, doc.cabinet)` ; `quotite` retiré.
+ * - `doc.modelesContrats[].contenu` et `doc.documentsContrats[].contenu` : embeds
+ *   `personne.quotite` renommés `personne.joursTravaillesParMois` (attributs conservés).
+ * - `doc.documentsContrats[].valeursSaisies[].cle` : même renommage ; libellé, type et
+ *   valeur conservés (copie figée).
+ * - Le TEXTE des documents n'est jamais réécrit (brouillon ou signé). `updatedAt` est
+ *   inchangé : migration technique. Idempotente.
+ * - Élément non objet laissé tel quel : `verifierStructure` le rejettera.
+ *
+ * @param {object} doc - Document de version 13.
+ * @returns {object} Document équivalent en version 14 (`schemaVersion` posé par `migrate`).
+ */
+MIGRATIONS[13] = (doc) => {
+  const cabinet = estObjetSimple(doc.cabinet) ? doc.cabinet : null;
+
+  const personnes = Array.isArray(doc.personnes)
+    ? doc.personnes.map((personne) => {
+      if (!estObjetSimple(personne)) return personne;
+      const { quotite, ...reste } = personne;
+      return {
+        ...reste,
+        joursTravaillesParMois: estRythmeStockeValide(personne.joursTravaillesParMois)
+          ? personne.joursTravaillesParMois
+          : rythmeDepuisQuotite(quotite, cabinet),
+      };
+    })
+    : doc.personnes;
+
+  /** Renomme les pastilles du contenu d'un modèle ou d'un document. */
+  const avecContenuRenomme = (element) =>
+    estObjetSimple(element)
+      ? { ...element, contenu: renommerMarqueurs(element.contenu, CLES_MARQUEURS_RENOMMEES) }
+      : element;
+
+  const modelesContrats = Array.isArray(doc.modelesContrats)
+    ? doc.modelesContrats.map(avecContenuRenomme)
+    : doc.modelesContrats;
+
+  const documentsContrats = Array.isArray(doc.documentsContrats)
+    ? doc.documentsContrats.map((document) => {
+      const renomme = avecContenuRenomme(document);
+      if (!estObjetSimple(renomme) || !Array.isArray(renomme.valeursSaisies)) return renomme;
+      return {
+        ...renomme,
+        valeursSaisies: renomme.valeursSaisies.map((saisie) =>
+          estObjetSimple(saisie)
+          && typeof saisie.cle === 'string'
+          && Object.prototype.hasOwnProperty.call(CLES_MARQUEURS_RENOMMEES, saisie.cle)
+            ? { ...saisie, cle: CLES_MARQUEURS_RENOMMEES[saisie.cle] }
+            : saisie
+        ),
+      };
+    })
+    : doc.documentsContrats;
+
+  return { ...doc, personnes, modelesContrats, documentsContrats };
+};
+
 /**
  * Amène un document chargé (ou importé) à la version courante du schéma.
  *
@@ -431,8 +501,12 @@ export function migrate(doc) {
  * (structure + intégrité). Ne lève jamais ; les messages sont en français,
  * sans détail technique, prêts à être affichés.
  *
+ * En cas de succès, `rythmesProposes` liste les noms complets des personnes ACTIVES
+ * dont le rythme a été proposé par la migration v14 (0043) : calculée sur le document
+ * BRUT quand `brut.schemaVersion < 14`, vide sinon.
+ *
  * @param {*} brut - Valeur issue de `JSON.parse` (forme quelconque).
- * @returns {{ ok: true, doc: object } | { ok: false, message: string, erreurs?: string[] }}
+ * @returns {{ ok: true, doc: object, rythmesProposes: string[] } | { ok: false, message: string, erreurs?: string[] }}
  */
 export function preparerDocument(brut) {
   const version = verifierVersion(brut, CURRENT_SCHEMA_VERSION);
@@ -447,5 +521,6 @@ export function preparerDocument(brut) {
 
   const { ok, erreurs } = verifierDocument(doc);
   if (!ok) return { ok: false, message: 'La sauvegarde contient des incohérences.', erreurs };
-  return { ok: true, doc };
+  const rythmesProposes = brut.schemaVersion < 14 ? personnesSansRythmeValide(brut.personnes) : [];
+  return { ok: true, doc, rythmesProposes };
 }

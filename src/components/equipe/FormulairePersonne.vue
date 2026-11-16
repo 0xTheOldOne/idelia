@@ -252,38 +252,10 @@
         </div>
       </div>
 
-      <!-- Temps de travail -->
+      <!-- Rythme de travail -->
       <div class="row g-3 mb-4">
         <div class="col-sm-6">
-          <label for="personne-quotite" class="form-label">Temps de travail</label>
-          <div class="input-group formulaire-quotite">
-            <input
-              id="personne-quotite"
-              v-model.number="formulaire.quotite"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              class="form-control"
-              :class="{ 'is-invalid': v$.formulaire.quotite.$error }"
-              :aria-describedby="
-                describedBy('personne-quotite-aide', v$.formulaire.quotite.$error ? 'personne-quotite-erreur' : null)
-              "
-              @blur="v$.formulaire.quotite.$touch()"
-            >
-            <span class="input-group-text">%</span>
-          </div>
-          <div id="personne-quotite-aide" class="form-text">
-            Proportion du temps plein travaillé par cette personne.
-          </div>
-          <p v-if="v$.formulaire.quotite.$error" id="personne-quotite-erreur" class="formulaire-erreur">
-            <PhWarning :size="14" weight="bold" aria-hidden="true" />
-            <span>{{ v$.formulaire.quotite.$errors[0].$message }}</span>
-          </p>
-        </div>
-
-        <div class="col-sm-6">
-          <label for="personne-rythme" class="form-label">Rythme de travail (facultatif)</label>
+          <label for="personne-rythme" class="form-label">Rythme de travail</label>
           <div class="input-group formulaire-rythme">
             <input
               id="personne-rythme"
@@ -293,7 +265,9 @@
               max="31"
               step="1"
               inputmode="numeric"
-              placeholder="15"
+              placeholder="ex. 15"
+              required
+              aria-required="true"
               class="form-control"
               :class="{ 'is-invalid': v$.formulaire.joursTravaillesParMois.$error }"
               :aria-describedby="
@@ -307,10 +281,9 @@
             <span class="input-group-text">jours par mois</span>
           </div>
           <div id="personne-rythme-aide" class="form-text">
-            Nombre de jours travaillés dans un mois complet, par exemple 15. Le planning cherche à
-            s'en approcher, en tenant compte des jours d'ouverture et des absences. Si ce champ est
-            rempli, c'est lui qui compte pour répartir le travail (et non le pourcentage). Laissez
-            vide si ce n'est pas fixé.
+            Nombre de jours travaillés dans un mois complet, par exemple 15. Pour un temps plein,
+            comptez environ 21 à 22 jours. Le planning cherche à s'en approcher, en tenant compte des
+            jours d'ouverture du cabinet et des absences.
           </div>
           <p
             v-if="v$.formulaire.joursTravaillesParMois.$error"
@@ -580,7 +553,7 @@
 
 <script>
 import { useVuelidate } from '@vuelidate/core';
-import { required, requiredIf, integer, between, email, maxLength, helpers } from '@vuelidate/validators';
+import { required, requiredIf, email, maxLength, helpers } from '@vuelidate/validators';
 import { PhCheck, PhInfo, PhWarning } from '@phosphor-icons/vue';
 
 import ModaleBase from '@/components/communs/ModaleBase.vue';
@@ -771,23 +744,13 @@ export default {
         couleur: {
           required: helpers.withMessage('Choisissez une couleur de repère.', required),
         },
-        quotite: {
+        joursTravaillesParMois: {
           required: helpers.withMessage(
-            'Indiquez un temps de travail entre 0 et 100 %.',
+            'Indiquez le nombre de jours travaillés par mois, par exemple 15.',
             required
           ),
-          integer: helpers.withMessage(
-            'Indiquez un temps de travail en pourcentage entier (sans virgule).',
-            integer
-          ),
-          between: helpers.withMessage(
-            'Indiquez un temps de travail entre 0 et 100 %.',
-            between(0, 100)
-          ),
-        },
-        joursTravaillesParMois: {
           rythme: helpers.withMessage(
-            'Indiquez un nombre entier de jours entre 1 et 31, ou laissez le champ vide.',
+            'Indiquez un nombre entier de jours entre 1 et 31.',
             (valeur) => estRythmeMensuelValide(valeur)
           ),
         },
@@ -863,7 +826,6 @@ export default {
           statut: this.personne.statut,
           initialesVega: this.personne.initialesVega ?? '',
           couleur: this.personne.couleur,
-          quotite: this.personne.quotite,
           joursTravaillesParMois: this.personne.joursTravaillesParMois ?? '',
           titulaireId: this.personne.titulaireId ?? '',
           tauxRetrocession: this.personne.tauxRetrocession ?? '',
@@ -886,7 +848,6 @@ export default {
         statut: 'TITULAIRE',
         initialesVega: '',
         couleur: this.couleursSuggerees[0] ?? '#0E8A8F',
-        quotite: 100,
         joursTravaillesParMois: '',
         titulaireId: '',
         tauxRetrocession: '',
@@ -1037,7 +998,6 @@ export default {
         { onglet: 'general', validation: f.titulaireId, id: 'personne-titulaire' },
         { onglet: 'general', validation: f.tauxRetrocession, id: 'personne-retrocession' },
         { onglet: 'general', validation: f.couleur, id: 'personne-couleur-libre' },
-        { onglet: 'general', validation: f.quotite, id: 'personne-quotite' },
         { onglet: 'general', validation: f.joursTravaillesParMois, id: 'personne-rythme' },
         { onglet: 'general', validation: f.dateSortie, id: 'personne-date-sortie' },
         { onglet: 'general', validation: f.contact.email, id: 'personne-email' },
@@ -1081,7 +1041,6 @@ export default {
         statut: this.formulaire.statut,
         initialesVega: normaliserInitialesVega(this.formulaire.initialesVega),
         couleur: this.formulaire.couleur,
-        quotite: this.formulaire.quotite,
         joursTravaillesParMois: normaliserRythmeMensuel(this.formulaire.joursTravaillesParMois),
         titulaireId: normaliserTitulaireId(this.formulaire.statut, this.formulaire.titulaireId),
         tauxRetrocession: normaliserTauxRetrocession(this.formulaire.statut, this.formulaire.tauxRetrocession),
@@ -1118,10 +1077,6 @@ export default {
 .formulaire-initiales {
   max-width: 10rem;
   text-transform: uppercase;
-}
-
-.formulaire-quotite {
-  max-width: 12rem;
 }
 
 .formulaire-rythme {
